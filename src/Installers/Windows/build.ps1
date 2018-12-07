@@ -18,7 +18,9 @@ param(
     [string]$PackageVersionPropsUrl = $null,
     [string]$AccessTokenSuffix = $null,
     [string]$AssetRootUrl = $null,
-    [switch]$clean
+    [switch]$clean,
+    [Parameter(ValueFromRemainingArguments = $true)]
+    [string[]] $msbuildArgs = @()
 )
 
 $ErrorActionPreference = 'Stop'
@@ -54,7 +56,6 @@ try {
             "-p:Configuration=$Configuration"
     }
 
-    [string[]] $msbuildArgs = @()
 
     if ($clean) {
         $msbuildArgs += '-t:Clean'
