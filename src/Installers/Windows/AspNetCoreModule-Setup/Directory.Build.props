@@ -28,8 +28,8 @@
 
     <!-- Variables used by ANCM wxs projects. -->
     <CustomActionVariable>CustomAction=$(AspNetCoreSetupRoot)CustomAction\bin\$(Configuration)\$(Platform)\aspnetcoreca.dll</CustomActionVariable>
-    <PreBuiltANCMSchema>$(RepositoryRoot).deps\ANCM\Microsoft.AspNetCore.AspNetCoreModule\$(MicrosoftAspNetCoreAspNetCoreModulePackageVersion)\</PreBuiltANCMSchema>
-    <PreBuiltANCMV2Schema>$(RepositoryRoot).deps\ANCM\Microsoft.AspNetCore.AspNetCoreModuleV2\$(MicrosoftAspNetCoreAspNetCoreModuleV2PackageVersion)\</PreBuiltANCMV2Schema>
+    <PreBuiltANCMSchema>$(RepositoryRoot).deps\ANCM\Microsoft.AspNetCore.AspNetCoreModule\2.2.0\</PreBuiltANCMSchema>
+    <PreBuiltANCMV2Schema>$(RepositoryRoot).deps\ANCM\Microsoft.AspNetCore.AspNetCoreModuleV2\2.2.0\</PreBuiltANCMV2Schema>
     <PreBuiltANCMRoot>$(PreBuiltANCMSchema)contentFiles\any\any\</PreBuiltANCMRoot>
     <PreBuiltANCMV2Root>$(PreBuiltANCMV2Schema)contentFiles\any\any\</PreBuiltANCMV2Root>
 
