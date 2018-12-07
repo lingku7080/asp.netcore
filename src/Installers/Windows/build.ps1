@@ -5,7 +5,7 @@
 #requires -version 5
 [cmdletbinding()]
 param(
-    [string]$Configuration = 'Debug',
+    [string]$Configuration = 'Release',
     [Parameter(Mandatory = $true)]
     [Alias("x86")]
     [string]$Runtime86Zip,
