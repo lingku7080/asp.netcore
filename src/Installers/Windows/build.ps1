@@ -18,11 +18,12 @@ param(
     [string]$PackageVersionPropsUrl = $null,
     [string]$AccessTokenSuffix = $null,
     [string]$AssetRootUrl = $null,
-    [switch]$clean,
-    [Parameter(ValueFromRemainingArguments = $true)]
-    [string[]] $msbuildArgs = @()
+    [switch]$clean
 )
 
+$msbuildArgs = "-p:MicrosoftNetCoreAppPackageVersion=2.2.0 "
+
+Write-Host $msbuildArgs
 $ErrorActionPreference = 'Stop'
 $repoRoot = Resolve-Path "$PSScriptRoot/../../../"
 Import-Module -Scope Local "$repoRoot/scripts/common.psm1" -Force
