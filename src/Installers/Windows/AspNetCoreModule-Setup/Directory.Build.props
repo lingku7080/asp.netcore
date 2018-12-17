@@ -7,7 +7,7 @@
     <_ThreeDigitDayOfYear>$([System.DateTime]::UtcNow.DayOfYear.ToString().PadLeft(3, '0'))</_ThreeDigitDayOfYear>
 
     <!-- Properties used by IIS-Common and IIS-Setup for libs/dlls -->
-    <BUILD_MAJOR>320</BUILD_MAJOR>
+    <BUILD_MAJOR>18320</BUILD_MAJOR>
     <BLDVERMAJOR>$(PRODUCT_MAJOR)</BLDVERMAJOR>
     <BLDVERMINOR>$(PRODUCT_MINOR)</BLDVERMINOR>
     <BLDNUMMAJOR>$(BUILD_MAJOR)</BLDNUMMAJOR>
