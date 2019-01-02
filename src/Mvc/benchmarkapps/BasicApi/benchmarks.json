@@ -8,7 +8,7 @@
     "ReadyStateText": "Application started.",
     "Source": {
       "Repository": "https://github.com/aspnet/AspNetCore.git",
-      "BranchOrCommit": "master",
+      "BranchOrCommit": "dougbu/use.certificate",
       "Project": "src/Mvc/benchmarkapps/BasicApi/BasicApi.csproj"
     }
   },
