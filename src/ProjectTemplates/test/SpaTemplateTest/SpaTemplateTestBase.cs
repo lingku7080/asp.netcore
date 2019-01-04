@@ -191,7 +191,21 @@ namespace Templates.Test.SpaTemplateTest
             File.WriteAllText(Path.Combine(Project.TemplatePublishDir, "appsettings.json"), testAppSettings);
         }
 
-        private void TestBasicNavigation(bool visitFetchData, bool usesAuth, IWebDriver browser, ILogs logs)
+        private void AssertLogsOk()
+        {
+            var logs = Browser.Manage().Logs.GetLog("browser");
+
+            var badLogs = logs.Where(l => l.Level >= LogLevel.Warning);
+
+            foreach (var badLog in badLogs)
+            {
+                Output.WriteLine($"[{badLog.Timestamp}] - {badLog.Level} - {badLog.Message}");
+            }
+
+            Assert.Empty(badLogs);
+        }
+
+        private void TestBasicNavigation()
         {
             browser.Exists(By.TagName("ul"));
             // <title> element gets project ID injected into it during template execution
