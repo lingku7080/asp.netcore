@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
@@ -78,19 +80,16 @@ namespace Microsoft.AspNetCore.Mvc.ViewComponents
 
             var viewEngine = ViewEngine ?? ResolveViewEngine(context);
             var viewContext = context.ViewContext;
-            var isNullOrEmptyViewName = string.IsNullOrEmpty(ViewName);
+            var viewName = ViewName;
 
-            ViewEngineResult result = null;
-            IEnumerable<string> originalLocations = null;
-            if (!isNullOrEmptyViewName)
+            if (string.IsNullOrEmpty(Path.GetExtension(viewName)))
             {
-                // If view name was passed in is already a path, the view engine will handle this.
-                result = viewEngine.GetView(viewContext.ExecutingFilePath, ViewName, isMainPage: false);
-                originalLocations = result.SearchedLocations;
-            }
+                // This isn't a path.
+                if (string.IsNullOrEmpty(viewName))
+                {
+                    viewName = DefaultViewName;
+                }
 
-            if (result == null || !result.Success)
-            {
                 // This will produce a string like:
                 //
                 //  Components/Cart/Default
@@ -102,17 +101,15 @@ namespace Microsoft.AspNetCore.Mvc.ViewComponents
                 //  Areas/Blog/Views/Shared/Components/Cart/Default.cshtml
                 //
                 // This supports a controller or area providing an override for component views.
-                var viewName = isNullOrEmptyViewName ? DefaultViewName : ViewName;
-                var qualifiedViewName = string.Format(
+                viewName = string.Format(
                     CultureInfo.InvariantCulture,
                     ViewPathFormat,
                     context.ViewComponentDescriptor.ShortName,
                     viewName);
-
-                result = viewEngine.FindView(viewContext, qualifiedViewName, isMainPage: false);
             }
 
-            var view = result.EnsureSuccessful(originalLocations).View;
+            var result = await viewEngine.FindViewAsync(viewContext, viewName, viewContext.ExecutingFilePath, isMainPage: false);
+            var view = result.EnsureSuccessful(Enumerable.Empty<string>()).View;
             using (view as IDisposable)
             {
                 if (_diagnosticListener == null)

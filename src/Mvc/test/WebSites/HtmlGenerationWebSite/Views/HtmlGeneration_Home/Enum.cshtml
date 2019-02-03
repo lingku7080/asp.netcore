@@ -1,4 +1,4 @@
 ﻿@using HtmlGenerationWebSite.Models
 @model AClass
-@Html.DisplayFor(x => x.DayOfWeek)
-@Html.DisplayFor(x => x.Month)
+@await Html.DisplayForAsync(x => x.DayOfWeek)
+@await Html.DisplayForAsync(x => x.Month)

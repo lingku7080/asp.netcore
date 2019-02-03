@@ -1,4 +1,4 @@
 ﻿@using HtmlGenerationWebSite.Models
 @model Item
-@Html.EditorFor(model => model.Name)
+@await Html.EditorForAsync(model => model.Name)
 @Html.Editor("Id")

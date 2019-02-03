@@ -3,7 +3,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Razor;
@@ -18,33 +17,18 @@ namespace Microsoft.AspNetCore.Mvc.RazorPages.Infrastructure
     /// </summary>
     public class PageResultExecutor : ViewExecutor
     {
-        private readonly IRazorViewEngine _razorViewEngine;
-        private readonly IRazorPageActivator _razorPageActivator;
-        private readonly DiagnosticListener _diagnosticListener;
-        private readonly HtmlEncoder _htmlEncoder;
-
         /// <summary>
         /// Creates a new <see cref="PageResultExecutor"/>.
         /// </summary>
         /// <param name="writerFactory">The <see cref="IHttpResponseStreamWriterFactory"/>.</param>
         /// <param name="compositeViewEngine">The <see cref="ICompositeViewEngine"/>.</param>
-        /// <param name="razorViewEngine">The <see cref="IRazorViewEngine"/>.</param>
-        /// <param name="razorPageActivator">The <see cref="IRazorPageActivator"/>.</param>
         /// <param name="diagnosticListener">The <see cref="DiagnosticListener"/>.</param>
-        /// <param name="htmlEncoder">The <see cref="HtmlEncoder"/>.</param>
         public PageResultExecutor(
             IHttpResponseStreamWriterFactory writerFactory,
             ICompositeViewEngine compositeViewEngine,
-            IRazorViewEngine razorViewEngine,
-            IRazorPageActivator razorPageActivator,
-            DiagnosticListener diagnosticListener,
-            HtmlEncoder htmlEncoder)
+            DiagnosticListener diagnosticListener)
             : base(writerFactory, compositeViewEngine, diagnosticListener)
         {
-            _razorViewEngine = razorViewEngine;
-            _htmlEncoder = htmlEncoder;
-            _razorPageActivator = razorPageActivator;
-            _diagnosticListener = diagnosticListener;
         }
 
         /// <summary>
@@ -79,12 +63,8 @@ namespace Microsoft.AspNetCore.Mvc.RazorPages.Infrastructure
             var pageAdapter = new RazorPageAdapter(result.Page, pageContext.ActionDescriptor.DeclaredModelTypeInfo);
 
             viewContext.View = new RazorView(
-                _razorViewEngine,
-                _razorPageActivator,
-                viewStarts,
                 pageAdapter,
-                _htmlEncoder,
-                _diagnosticListener)
+                viewStarts)
             {
                 OnAfterPageActivated = (page, currentViewContext) =>
                 {

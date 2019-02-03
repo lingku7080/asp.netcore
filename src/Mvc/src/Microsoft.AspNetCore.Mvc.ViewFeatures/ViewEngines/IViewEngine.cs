@@ -1,6 +1,8 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
+
 namespace Microsoft.AspNetCore.Mvc.ViewEngines
 {
     /// <summary>
@@ -18,6 +20,9 @@ namespace Microsoft.AspNetCore.Mvc.ViewEngines
         /// <returns>The <see cref="ViewEngineResult"/> of locating the view.</returns>
         /// <remarks>Use <see cref="GetView(string, string, bool)"/> when the absolute or relative
         /// path of the view is known.</remarks>
+        /// <remarks>
+        /// Consider using <see cref="ViewEngineBase.FindViewAsync(ActionContext, string, string, bool)"/> instead.
+        /// </remarks>
         ViewEngineResult FindView(ActionContext context, string viewName, bool isMainPage);
 
         /// <summary>
@@ -28,6 +33,9 @@ namespace Microsoft.AspNetCore.Mvc.ViewEngines
         /// <param name="viewPath">The path to the view.</param>
         /// <param name="isMainPage">Determines if the page being found is the main page for an action.</param>
         /// <returns>The <see cref="ViewEngineResult"/> of locating the view.</returns>
+        /// <remarks>
+        /// Consider using <see cref="ViewEngineBase.FindViewAsync(ActionContext, string, string, bool)"/> instead.
+        /// </remarks>
         ViewEngineResult GetView(string executingFilePath, string viewPath, bool isMainPage);
     }
 }

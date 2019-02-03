@@ -14,7 +14,7 @@ namespace Microsoft.AspNetCore.Mvc.ApplicationModels
     {
         private static readonly Action<ILogger, string, Exception> _unsupportedAreaPath;
 
-        private static readonly string IndexFileName = "Index" + RazorViewEngine.ViewExtension;
+        private static readonly string IndexFileName = "Index.cshtml";
         private readonly RazorPagesOptions _options;
         private readonly ILogger _logger;
         private readonly string _normalizedRootDirectory;
@@ -127,7 +127,7 @@ namespace Microsoft.AspNetCore.Mvc.ApplicationModels
 
             // Include the trailing slash of the root directory at the start of the viewEnginePath
             var pageNameIndex = areaEndIndex + AreaPagesRoot.Length - 1;
-            var viewEnginePath = relativePath.Substring(pageNameIndex, relativePath.Length - pageNameIndex - RazorViewEngine.ViewExtension.Length);
+            var viewEnginePath = relativePath.Substring(pageNameIndex, relativePath.Length - pageNameIndex - ".cshtml".Length);
 
             result = (areaName, viewEnginePath);
             return true;
@@ -139,9 +139,9 @@ namespace Microsoft.AspNetCore.Mvc.ApplicationModels
             // path = "/Pages/AllMyPages/Home.cshtml"
             // Result = "/Home"
             Debug.Assert(path.StartsWith(rootDirectory, StringComparison.OrdinalIgnoreCase));
-            Debug.Assert(path.EndsWith(RazorViewEngine.ViewExtension, StringComparison.OrdinalIgnoreCase));
+            Debug.Assert(path.EndsWith(".cshtml", StringComparison.OrdinalIgnoreCase));
             var startIndex = rootDirectory.Length - 1;
-            var endIndex = path.Length - RazorViewEngine.ViewExtension.Length;
+            var endIndex = path.Length - ".cshtml".Length;
             return path.Substring(startIndex, endIndex - startIndex);
         }
 

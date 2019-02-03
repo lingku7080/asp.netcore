@@ -109,7 +109,7 @@
         </div>
         <div>
             <label asp-for="Customer.Gender" class="order"></label>
-            @Html.EditorFor(model => model.Customer.Gender)
+            @await Html.EditorForAsync(model => model.Customer.Gender)
             <span asp-validation-for="Customer.Gender"></span>
         </div>
         <div asp-validation-summary="All" class="order"></div>

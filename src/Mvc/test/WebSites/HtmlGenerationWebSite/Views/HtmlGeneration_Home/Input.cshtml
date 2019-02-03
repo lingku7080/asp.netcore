@@ -17,10 +17,10 @@
     <input asp-for="ConcreteFiles" name="ConcreteFiles" />
     <input asp-for="EnumerableFiles" name="EnumerableFiles">
 
-    @Html.EditorFor(m => m.InterfaceFile)
-    @Html.EditorFor(m => m.InterfaceFiles)
-    @Html.EditorFor(m => m.ConcreteFile)
-    @Html.EditorFor(m => m.ConcreteFiles)
-    @Html.EditorFor(m => m.EnumerableFiles)
+    @await Html.EditorForAsync(m => m.InterfaceFile)
+    @await Html.EditorForAsync(m => m.InterfaceFiles)
+    @await Html.EditorForAsync(m => m.ConcreteFile)
+    @await Html.EditorForAsync(m => m.ConcreteFiles)
+    @await Html.EditorForAsync(m => m.EnumerableFiles)
 </body>
 </html>

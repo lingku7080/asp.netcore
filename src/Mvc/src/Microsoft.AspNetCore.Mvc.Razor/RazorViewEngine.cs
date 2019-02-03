@@ -25,6 +25,7 @@ namespace Microsoft.AspNetCore.Mvc.Razor
     /// by default. For the controllers in an area, views should exist in
     /// <see cref="RazorViewEngineOptions.AreaViewLocationFormats"/>.
     /// </remarks>
+    [Obsolete("This type is obsolete and is no longer used by the runtime.")]
     public class RazorViewEngine : IRazorViewEngine
     {
         public static readonly string ViewExtension = ".cshtml";

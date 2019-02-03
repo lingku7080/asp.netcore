@@ -46,16 +46,7 @@ namespace Microsoft.AspNetCore.Mvc.Razor.Compilation
             var viewType = viewDescriptor.Type;
             if (viewType != null)
             {
-                var newExpression = Expression.New(viewType);
-                var pathProperty = viewType.GetTypeInfo().GetProperty(nameof(IRazorPage.Path));
-
-                // Generate: page.Path = relativePath;
-                // Use the normalized path specified from the result.
-                var propertyBindExpression = Expression.Bind(pathProperty, Expression.Constant(viewDescriptor.RelativePath));
-                var objectInitializeExpression = Expression.MemberInit(newExpression, propertyBindExpression);
-                var pageFactory = Expression
-                    .Lambda<Func<IRazorPage>>(objectInitializeExpression)
-                    .Compile();
+                var pageFactory = RazorViewLookup.CreatePageFactory(viewDescriptor);
                 return new RazorPageFactoryResult(viewDescriptor, pageFactory);
             }
             else

@@ -18,7 +18,7 @@
 </div>
 
 <div class="row">
-    @Html.DisplayFor(m => m)
+    @await Html.DisplayForAsync(m => m)
 </div>
 <div class="row">
     @(await Html.PartialAsync("PartialForViewModel"))
@@ -27,11 +27,11 @@
     @(await Component.InvokeAsync<CheckViewData>())
 </div>
 <div class="row">
-    @Html.DisplayFor(m => m.Integer)
+    @await Html.DisplayForAsync(m => m.Integer)
 </div>
 <div class="row">
-    @Html.DisplayFor(m => m.NullableLong)
+    @await Html.DisplayForAsync(m => m.NullableLong)
 </div>
 <div class="row">
-    @Html.DisplayFor(m => m.Template)
+    @await Html.DisplayForAsync(m => m.Template)
 </div>

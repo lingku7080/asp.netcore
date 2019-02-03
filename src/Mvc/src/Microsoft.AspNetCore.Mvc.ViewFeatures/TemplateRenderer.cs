@@ -4,8 +4,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -16,14 +18,14 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.AspNetCore.Mvc.ViewFeatures
 {
-    internal class TemplateRenderer
+    internal readonly struct TemplateRenderer
     {
         private const string DisplayTemplateViewPath = "DisplayTemplates";
         private const string EditorTemplateViewPath = "EditorTemplates";
         public const string IEnumerableOfIFormFileName = "IEnumerable`" + nameof(IFormFile);
 
-        private static readonly Dictionary<string, Func<IHtmlHelper, IHtmlContent>> _defaultDisplayActions =
-            new Dictionary<string, Func<IHtmlHelper, IHtmlContent>>(StringComparer.OrdinalIgnoreCase)
+        private static readonly Dictionary<string, Func<IHtmlHelper, object>> _defaultDisplayActions =
+            new Dictionary<string, Func<IHtmlHelper, object>>(StringComparer.OrdinalIgnoreCase)
             {
                 { "Collection", DefaultDisplayTemplates.CollectionTemplate },
                 { "EmailAddress", DefaultDisplayTemplates.EmailAddressTemplate },
@@ -37,8 +39,8 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
                 { typeof(object).Name, DefaultDisplayTemplates.ObjectTemplate },
             };
 
-        private static readonly Dictionary<string, Func<IHtmlHelper, IHtmlContent>> _defaultEditorActions =
-            new Dictionary<string, Func<IHtmlHelper, IHtmlContent>>(StringComparer.OrdinalIgnoreCase)
+        private static readonly Dictionary<string, Func<IHtmlHelper, object>> _defaultEditorActions =
+            new Dictionary<string, Func<IHtmlHelper, object>>(StringComparer.OrdinalIgnoreCase)
             {
                 { "Collection", DefaultEditorTemplates.CollectionTemplate },
                 { "EmailAddress", DefaultEditorTemplates.EmailAddressInputTemplate },
@@ -114,19 +116,15 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
             _readOnly = readOnly;
         }
 
-        public IHtmlContent Render()
+        public async Task<IHtmlContent> RenderAsync()
         {
             var defaultActions = GetDefaultActions();
-            var modeViewPath = _readOnly ? DisplayTemplateViewPath : EditorTemplateViewPath;
+            var templateViewPath = _readOnly ? DisplayTemplateViewPath : EditorTemplateViewPath;
 
             foreach (var viewName in GetViewNames())
             {
-                var viewEngineResult = _viewEngine.GetView(_viewContext.ExecutingFilePath, viewName, isMainPage: false);
-                if (!viewEngineResult.Success)
-                {
-                    var fullViewName = modeViewPath + "/" + viewName;
-                    viewEngineResult = _viewEngine.FindView(_viewContext, fullViewName, isMainPage: false);
-                }
+                var fullViewName = GetFullViewName(templateViewPath, viewName);
+                var viewEngineResult = await _viewEngine.FindViewAsync(_viewContext, fullViewName, _viewContext.ExecutingFilePath, isMainPage: false);
 
                 if (viewEngineResult.Success)
                 {
@@ -138,8 +136,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
                         using (view as IDisposable)
                         {
                             var viewContext = new ViewContext(_viewContext, viewEngineResult.View, _viewData, writer);
-                            var renderTask = viewEngineResult.View.RenderAsync(viewContext);
-                            renderTask.GetAwaiter().GetResult();
+                            await viewEngineResult.View.RenderAsync(viewContext);
                             return viewBuffer;
                         }
                     }
@@ -147,7 +144,13 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
 
                 if (defaultActions.TryGetValue(viewName, out var defaultAction))
                 {
-                    return defaultAction(MakeHtmlHelper(_viewContext, _viewData));
+                    var result = defaultAction(MakeHtmlHelper(_viewContext, _viewData));
+                    if (result is Task<IHtmlContent> task)
+                    {
+                        return await task;
+                    }
+
+                    return (IHtmlContent)result;
                 }
             }
 
@@ -155,7 +158,18 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
                 Resources.FormatTemplateHelpers_NoTemplate(_viewData.ModelExplorer.ModelType.FullName));
         }
 
-        private Dictionary<string, Func<IHtmlHelper, IHtmlContent>> GetDefaultActions()
+        private static string GetFullViewName(string templatePath, string viewName)
+        {
+            if (viewName.StartsWith("~") || viewName.StartsWith("/") || !string.IsNullOrEmpty(Path.GetExtension(viewName)))
+            {
+                // If it looks like a path, leave it alone.
+                return viewName;
+            }
+
+            return templatePath + '/' + viewName;
+        }
+
+        private Dictionary<string, Func<IHtmlHelper, object>> GetDefaultActions()
         {
             return _readOnly ? _defaultDisplayActions : _defaultEditorActions;
         }

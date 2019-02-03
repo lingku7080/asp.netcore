@@ -21,7 +21,7 @@
 </div>
 
 <div class="row">
-    @Html.DisplayFor(m => m, templateName: "LackModel")
+    @await Html.DisplayForAsync(m => m, templateName: "LackModel")
 </div>
 <div class="row">
     @(await Html.PartialAsync(partialViewName: "DisplayTemplates/LackModel.cshtml"))
@@ -30,11 +30,11 @@
     @(await Component.InvokeAsync<CheckViewData___LackModel>())
 </div>
 <div class="row">
-    @Html.DisplayFor(m => m.Integer, templateName: "Int32 - LackModel")
+    @await Html.DisplayForAsync(m => m.Integer, templateName: "Int32 - LackModel")
 </div>
 <div class="row">
-    @Html.DisplayFor(m => m.NullableLong, templateName: "Int64 - LackModel")
+    @await Html.DisplayForAsync(m => m.NullableLong, templateName: "Int64 - LackModel")
 </div>
 <div class="row">
-    @Html.DisplayFor(m => m.Template, templateName: "LackModel")
+    @await Html.DisplayForAsync(m => m.Template, templateName: "LackModel")
 </div>

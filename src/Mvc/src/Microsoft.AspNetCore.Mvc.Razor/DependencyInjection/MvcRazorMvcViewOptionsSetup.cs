@@ -13,20 +13,11 @@ namespace Microsoft.Extensions.DependencyInjection
     /// </summary>
     internal class MvcRazorMvcViewOptionsSetup : IConfigureOptions<MvcViewOptions>
     {
-        private readonly IRazorViewEngine _razorViewEngine;
+        private readonly DefaultRazorViewEngine _razorViewEngine;
 
-        /// <summary>
-        /// Initializes a new instance of <see cref="MvcRazorMvcViewOptionsSetup"/>.
-        /// </summary>
-        /// <param name="razorViewEngine">The <see cref="IRazorViewEngine"/>.</param>
-        public MvcRazorMvcViewOptionsSetup(IRazorViewEngine razorViewEngine)
+        public MvcRazorMvcViewOptionsSetup(DefaultRazorViewEngine razorViewEngine)
         {
-            if (razorViewEngine == null)
-            {
-                throw new ArgumentNullException(nameof(razorViewEngine));
-            }
-
-            _razorViewEngine = razorViewEngine;
+            _razorViewEngine = razorViewEngine ?? throw new ArgumentNullException(nameof(razorViewEngine));
         }
 
         /// <summary>

@@ -140,7 +140,10 @@ namespace Microsoft.Extensions.DependencyInjection
             services.TryAddEnumerable(
                 ServiceDescriptor.Transient<IConfigureOptions<RazorViewEngineOptions>, RazorViewEngineOptionsSetup>());
 
-            services.TryAddSingleton<IRazorViewEngine, RazorViewEngine>();
+            services.TryAddSingleton<RazorViewLookup>();
+            services.TryAddSingleton<DefaultRazorViewEngine>();
+            services.TryAddScoped<RazorViewExecutor>();
+
             services.TryAddSingleton<IViewCompilerProvider, DefaultViewCompilerProvider>();
 
             // In the default scenario the following services are singleton by virtue of being initialized as part of

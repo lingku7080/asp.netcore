@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 
 namespace Microsoft.AspNetCore.Mvc.Razor
@@ -8,6 +9,7 @@ namespace Microsoft.AspNetCore.Mvc.Razor
     /// <summary>
     /// An <see cref="IViewEngine"/> used to render pages that use the Razor syntax.
     /// </summary>
+    [Obsolete("This API is obsolete and is no longer used by the runtime.")]
     public interface IRazorViewEngine : IViewEngine
     {
         /// <summary>

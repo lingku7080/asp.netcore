@@ -10,7 +10,6 @@ using System.Reflection;
 using System.Threading.Tasks;
 using BasicWebSite.Models;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace Microsoft.AspNetCore.Mvc.FunctionalTests
@@ -44,7 +43,7 @@ namespace Microsoft.AspNetCore.Mvc.FunctionalTests
             var responseContent = await response.Content.ReadAsStringAsync();
 
             // Assert
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            await response.AssertStatusCodeAsync(HttpStatusCode.OK);
             Assert.Equal(expectedMediaType, response.Content.Headers.ContentType);
 
 #if GENERATE_BASELINES
@@ -65,6 +64,7 @@ namespace Microsoft.AspNetCore.Mvc.FunctionalTests
 
             // Act
             var response = await Client.GetAsync("PassThrough/Index?value=123");
+            await response.AssertStatusCodeAsync(HttpStatusCode.OK);
             var responseContent = await response.Content.ReadAsStringAsync();
 
             // Assert

@@ -3,7 +3,9 @@
 
 using System;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Html;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 
 namespace Microsoft.AspNetCore.Mvc.Rendering
 {
@@ -435,6 +437,66 @@ namespace Microsoft.AspNetCore.Mvc.Rendering
             }
 
             return htmlHelper.EditorFor(expression, templateName, htmlFieldName, additionalViewData: null);
+        }
+
+        /// <summary>
+        /// Returns HTML markup for the <paramref name="expression"/>, using an editor template and specified HTML
+        /// field name. The template is found using the <paramref name="templateName"/> or the
+        /// <paramref name="expression"/>'s <see cref="ModelBinding.ModelMetadata"/>.
+        /// </summary>
+        /// <param name="htmlHelper">The <see cref="IHtmlHelper{TModel}"/> instance this method extends.</param>
+        /// <param name="expression">An expression to be evaluated against the current model.</param>
+        /// <param name="templateName">The name of the template that is used to create the HTML markup.</param>
+        /// <param name="htmlFieldName">
+        /// A <see cref="string"/> used to disambiguate the names of HTML elements that are created for properties
+        /// that have the same name.
+        /// </param>
+        /// <param name="additionalViewData">
+        /// An anonymous <see cref="object"/> or <see cref="System.Collections.Generic.IDictionary{String, Object}"/>
+        /// that can contain additional view data that will be merged into the
+        /// <see cref="ViewFeatures.ViewDataDictionary{TModel}"/> instance created for the template.
+        /// </param>
+        /// <typeparam name="TModel">The type of the model.</typeparam>
+        /// <typeparam name="TResult">The type of the <paramref name="expression"/> result.</typeparam>
+        /// <returns>A <see cref="Task"/> that on completion returns a new <see cref="IHtmlContent"/> containing the &lt;input&gt; element(s).</returns>
+        /// <remarks>
+        /// <para>
+        /// For example the default <see cref="object"/> editor template includes &lt;label&gt; and &lt;input&gt;
+        /// elements for each property in the <paramref name="expression"/> result.
+        /// </para>
+        /// <para>
+        /// Custom templates are found under a <c>EditorTemplates</c> folder. The folder name is case-sensitive on
+        /// case-sensitive file systems.
+        /// </para>
+        /// </remarks>
+        public static Task<IHtmlContent> EditorForAsync<TModel, TResult>(
+            this IHtmlHelper<TModel> htmlHelper,
+            Expression<Func<TModel, TResult>> expression,
+            object additionalViewData = null,
+            string templateName = null,
+            string htmlFieldName = null)
+        {
+            if (htmlHelper == null)
+            {
+                throw new ArgumentNullException(nameof(htmlHelper));
+            }
+
+            if (expression == null)
+            {
+                throw new ArgumentNullException(nameof(expression));
+            }
+
+            if (htmlHelper is HtmlHelper<TModel> defaultHtmlHelper)
+            {
+                var modelExpression = defaultHtmlHelper.GetModelExpression(expression);
+                return defaultHtmlHelper.GenerateEditorAsync(
+                    modelExpression.ModelExplorer,
+                    htmlFieldName ?? HtmlHelper.GetExpressionText(modelExpression.Name),
+                    templateName,
+                    additionalViewData);
+            }
+
+            return Task.FromResult(htmlHelper.EditorFor(expression, templateName, htmlFieldName, additionalViewData));
         }
 
         /// <summary>

@@ -2,10 +2,8 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -62,7 +60,17 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
         /// <param name="actionContext">The <see cref="ActionContext"/> associated with the current request.</param>
         /// <param name="viewResult">The <see cref="ViewResult"/>.</param>
         /// <returns>A <see cref="ViewEngineResult"/>.</returns>
+        [Obsolete("This API is obsolete and no longer used by the runtime. Use " + nameof(FindViewAsync) + ".")]
         public virtual ViewEngineResult FindView(ActionContext actionContext, ViewResult viewResult)
+            => FindViewAsync(actionContext, viewResult).GetAwaiter().GetResult();
+
+        /// <summary>
+        /// Attempts to find the <see cref="IView"/> associated with <paramref name="viewResult"/>.
+        /// </summary>
+        /// <param name="actionContext">The <see cref="ActionContext"/> associated with the current request.</param>
+        /// <param name="viewResult">The <see cref="ViewResult"/>.</param>
+        /// <returns>A <see cref="ValueTask{TResult}"/> that on completion returns a <see cref="ViewEngineResult"/>.</returns>
+        public virtual async ValueTask<ViewEngineResult> FindViewAsync(ActionContext actionContext, ViewResult viewResult)
         {
             if (actionContext == null)
             {
@@ -80,32 +88,8 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
 
             var stopwatch = ValueStopwatch.StartNew();
 
-            var result = viewEngine.GetView(executingFilePath: null, viewPath: viewName, isMainPage: true);
-            var originalResult = result;
-            if (!result.Success)
-            {
-                result = viewEngine.FindView(actionContext, viewName, isMainPage: true);
-            }
-
+            var result = await viewEngine.FindViewAsync(actionContext, viewName, executingFilePath: null, isMainPage: true);
             Logger.ViewResultExecuting(result.ViewName);
-            if (!result.Success)
-            {
-                if (originalResult.SearchedLocations.Any())
-                {
-                    if (result.SearchedLocations.Any())
-                    {
-                        // Return a new ViewEngineResult listing all searched locations.
-                        var locations = new List<string>(originalResult.SearchedLocations);
-                        locations.AddRange(result.SearchedLocations);
-                        result = ViewEngineResult.NotFound(viewName, locations);
-                    }
-                    else
-                    {
-                        // GetView() searched locations but FindView() did not. Use first ViewEngineResult.
-                        result = originalResult;
-                    }
-                }
-            }
 
             if (DiagnosticSource.IsEnabled())
             {
@@ -175,7 +159,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
 
             var stopwatch = ValueStopwatch.StartNew();
 
-            var viewEngineResult = FindView(context, result);
+            var viewEngineResult = await FindViewAsync(context, result);
             viewEngineResult.EnsureSuccessful(originalLocations: null);
 
             var view = viewEngineResult.View;

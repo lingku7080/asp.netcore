@@ -22,10 +22,8 @@ using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.ObjectPool;
 using Microsoft.Extensions.Options;
 using Moq;
-using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace Microsoft.AspNetCore.Mvc
@@ -40,7 +38,7 @@ namespace Microsoft.AspNetCore.Mvc
 
             // Assert
             var viewEngine = Assert.Single(options.ViewEngines);
-            Assert.IsType<RazorViewEngine>(viewEngine);
+            Assert.IsType<DefaultRazorViewEngine>(viewEngine);
         }
 
         [Fact]

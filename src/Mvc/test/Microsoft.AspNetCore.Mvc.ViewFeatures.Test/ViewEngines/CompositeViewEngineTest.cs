@@ -32,6 +32,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewEngines
             Assert.Equal(new[] { viewEngine1, viewEngine2 }, result);
         }
 
+#pragma warning disable CS0618 // Type or member is obsolete
         [Fact]
         public void FindView_IsMainPage_Throws_WhenNoViewEnginesAreRegistered()
         {
@@ -48,7 +49,6 @@ namespace Microsoft.AspNetCore.Mvc.ViewEngines
                 () => compositeViewEngine.FindView(actionContext, viewName, isMainPage: true));
             Assert.Equal(expected, exception.Message);
         }
-
 
         [Fact]
         public void FindView_IsMainPage_ReturnsNotFoundResult_WhenExactlyOneViewEngineIsRegisteredWhichReturnsNotFoundResult()
@@ -427,6 +427,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewEngines
             Assert.False(result.Success);
             Assert.Equal(new[] { "1", "2", "3", "4", "5" }, result.SearchedLocations);
         }
+#pragma warning restore CS0618 // Type or member is obsolete
 
         private static ActionContext GetActionContext()
         {

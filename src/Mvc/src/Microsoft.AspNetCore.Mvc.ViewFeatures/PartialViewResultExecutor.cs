@@ -62,7 +62,11 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
         /// <param name="actionContext">The <see cref="ActionContext"/> associated with the current request.</param>
         /// <param name="viewResult">The <see cref="PartialViewResult"/>.</param>
         /// <returns>A <see cref="ViewEngineResult"/>.</returns>
+        [Obsolete("This API is obsolete and no longer used by the runtime. Use " + nameof(FindViewAsync) + ".")]
         public virtual ViewEngineResult FindView(ActionContext actionContext, PartialViewResult viewResult)
+            => FindViewAsync(actionContext, viewResult).GetAwaiter().GetResult();
+
+        public virtual async ValueTask<ViewEngineResult> FindViewAsync(ActionContext actionContext, PartialViewResult viewResult)
         {
             if (actionContext == null)
             {
@@ -79,32 +83,8 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
 
             var stopwatch = ValueStopwatch.StartNew();
 
-            var result = viewEngine.GetView(executingFilePath: null, viewPath: viewName, isMainPage: false);
-            var originalResult = result;
-            if (!result.Success)
-            {
-                result = viewEngine.FindView(actionContext, viewName, isMainPage: false);
-            }
-
+            var result = await viewEngine.FindViewAsync(actionContext, viewName, executingFilePath: null, isMainPage: false);
             Logger.PartialViewResultExecuting(result.ViewName);
-            if (!result.Success)
-            {
-                if (originalResult.SearchedLocations.Any())
-                {
-                    if (result.SearchedLocations.Any())
-                    {
-                        // Return a new ViewEngineResult listing all searched locations.
-                        var locations = new List<string>(originalResult.SearchedLocations);
-                        locations.AddRange(result.SearchedLocations);
-                        result = ViewEngineResult.NotFound(viewName, locations);
-                    }
-                    else
-                    {
-                        // GetView() searched locations but FindView() did not. Use first ViewEngineResult.
-                        result = originalResult;
-                    }
-                }
-            }
 
             if (result.Success)
             {
@@ -131,7 +111,6 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
 
             return result;
         }
-
         /// <summary>
         /// Executes the <see cref="IView"/> asynchronously.
         /// </summary>
@@ -180,7 +159,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
 
             var stopwatch = ValueStopwatch.StartNew();
 
-            var viewEngineResult = FindView(context, result);
+            var viewEngineResult = await FindViewAsync(context, result);
             viewEngineResult.EnsureSuccessful(originalLocations: null);
 
             var view = viewEngineResult.View;

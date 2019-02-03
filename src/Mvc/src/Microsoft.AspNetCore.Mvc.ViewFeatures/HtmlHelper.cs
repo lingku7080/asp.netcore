@@ -483,7 +483,10 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
             return RenderPartialCoreAsync(partialViewName, model, viewData, ViewContext.Writer);
         }
 
-        protected virtual IHtmlContent GenerateDisplay(
+        protected virtual IHtmlContent GenerateDisplay(ModelExplorer modelExplorer, string htmlFieldName, string templateName, object additionalViewData)
+            => GenerateDisplayAsync(modelExplorer, htmlFieldName, templateName, additionalViewData).GetAwaiter().GetResult();
+
+        internal Task<IHtmlContent> GenerateDisplayAsync(
             ModelExplorer modelExplorer,
             string htmlFieldName,
             string templateName,
@@ -500,7 +503,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
                 readOnly: true,
                 additionalViewData: additionalViewData);
 
-            return templateBuilder.Build();
+            return templateBuilder.BuildAsync();
         }
 
         protected virtual async Task RenderPartialCoreAsync(
@@ -514,24 +517,15 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
                 throw new ArgumentNullException(nameof(partialViewName));
             }
 
-            var viewEngineResult = _viewEngine.GetView(
-                ViewContext.ExecutingFilePath,
+            var viewEngineResult = await _viewEngine.FindViewAsync(
+                ViewContext,
                 partialViewName,
+                ViewContext.ExecutingFilePath,
                 isMainPage: false);
-            var originalLocations = viewEngineResult.SearchedLocations;
-            if (!viewEngineResult.Success)
-            {
-                viewEngineResult = _viewEngine.FindView(ViewContext, partialViewName, isMainPage: false);
-            }
 
             if (!viewEngineResult.Success)
             {
                 var locations = string.Empty;
-                if (originalLocations.Any())
-                {
-                    locations = Environment.NewLine + string.Join(Environment.NewLine, originalLocations);
-                }
-
                 if (viewEngineResult.SearchedLocations.Any())
                 {
                     locations +=
@@ -803,7 +797,10 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
             return tagBuilder;
         }
 
-        protected virtual IHtmlContent GenerateEditor(
+        protected virtual IHtmlContent GenerateEditor(ModelExplorer modelExplorer, string htmlFieldName, string templateName, object additionalViewData)
+            => GenerateEditorAsync(modelExplorer, htmlFieldName, templateName, additionalViewData).GetAwaiter().GetResult();
+
+        internal Task<IHtmlContent> GenerateEditorAsync(
             ModelExplorer modelExplorer,
             string htmlFieldName,
             string templateName,
@@ -820,7 +817,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
                 readOnly: false,
                 additionalViewData: additionalViewData);
 
-            return templateBuilder.Build();
+            return templateBuilder.BuildAsync();
         }
 
         /// <summary>
@@ -1247,7 +1244,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
             return selectList;
         }
 
-        private static string GetExpressionText(string expression)
+        internal static string GetExpressionText(string expression)
         {
             // If it's exactly "model", then give them an empty string, to replicate the lambda behavior.
             return string.Equals(expression, "model", StringComparison.OrdinalIgnoreCase) ? string.Empty : expression;

@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Globalization;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -12,14 +13,14 @@ using Microsoft.AspNetCore.Mvc.ViewFeatures.Buffers;
 
 namespace Microsoft.AspNetCore.Mvc.ViewFeatures
 {
-    internal class TemplateBuilder
+    internal readonly struct TemplateBuilder
     {
         private readonly IViewEngine _viewEngine;
         private readonly IViewBufferScope _bufferScope;
         private readonly ViewContext _viewContext;
         private readonly ViewDataDictionary _viewData;
         private readonly ModelExplorer _modelExplorer;
-        private object _model;
+        private readonly object _model;
         private readonly ModelMetadata _metadata;
         private readonly string _htmlFieldName;
         private readonly string _templateName;
@@ -74,20 +75,20 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
 
             _model = modelExplorer.Model;
             _metadata = modelExplorer.Metadata;
-        }
 
-        public IHtmlContent Build()
-        {
             if (_metadata.ConvertEmptyStringToNull && string.Empty.Equals(_model))
             {
                 _model = null;
             }
+        }
 
+        public Task<IHtmlContent> BuildAsync()
+        {
             // Normally this shouldn't happen, unless someone writes their own custom Object templates which
             // don't check to make sure that the object hasn't already been displayed
             if (_viewData.TemplateInfo.Visited(_modelExplorer))
             {
-                return HtmlString.Empty;
+                return Task.FromResult<IHtmlContent>(HtmlString.Empty);
             }
 
             // Create VDD of type object so any model type is allowed.
@@ -158,7 +159,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
                 _templateName,
                 _readOnly);
 
-            return templateRenderer.Render();
+            return templateRenderer.RenderAsync();
         }
     }
 }

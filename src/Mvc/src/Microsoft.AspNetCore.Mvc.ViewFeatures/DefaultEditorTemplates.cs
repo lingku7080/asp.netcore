@@ -9,6 +9,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Text.Encodings.Web;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -53,7 +54,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
                 htmlAttributes: CreateHtmlAttributes(htmlHelper, "list-box tri-state"));
         }
 
-        public static IHtmlContent CollectionTemplate(IHtmlHelper htmlHelper)
+        public static async Task<IHtmlContent> CollectionTemplate(IHtmlHelper htmlHelper)
         {
             var viewData = htmlHelper.ViewData;
             var model = viewData.Model;
@@ -119,7 +120,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
                         templateName: null,
                         readOnly: false,
                         additionalViewData: null);
-                    result.AppendHtml(templateBuilder.Build());
+                    result.AppendHtml(await templateBuilder.BuildAsync());
                 }
 
                 return result;
@@ -228,7 +229,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
                 htmlAttributes: CreateHtmlAttributes(htmlHelper, "text-box multi-line"));
         }
 
-        public static IHtmlContent ObjectTemplate(IHtmlHelper htmlHelper)
+        public static async Task<IHtmlContent> ObjectTemplate(IHtmlHelper htmlHelper)
         {
             var viewData = htmlHelper.ViewData;
             var templateInfo = viewData.TemplateInfo;
@@ -274,7 +275,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
                     readOnly: false,
                     additionalViewData: null);
 
-                var templateBuilderResult = templateBuilder.Build();
+                var templateBuilderResult = await templateBuilder.BuildAsync();
                 if (!propertyMetadata.HideSurroundingHtml)
                 {
                     var label = htmlHelper.Label(propertyMetadata.PropertyName, labelText: null, htmlAttributes: null);

@@ -358,7 +358,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
                 htmlAttributes);
         }
 
-        private ModelExpression GetModelExpression<TResult>(Expression<Func<TModel, TResult>> expression)
+        internal ModelExpression GetModelExpression<TResult>(Expression<Func<TModel, TResult>> expression)
         {
             return _modelExpressionProvider.CreateModelExpression(ViewData, expression);
         }

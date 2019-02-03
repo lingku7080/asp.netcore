@@ -46,7 +46,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
         }
 
         [Fact]
-        public void ObjectTemplateDisplaysSimplePropertiesOnObjectByDefault()
+        public async Task ObjectTemplateDisplaysSimplePropertiesOnObjectByDefault()
         {
             var expected =
                 "<div class=\"HtmlEncode[[display-label]]\">HtmlEncode[[Property1]]</div>" + Environment.NewLine
@@ -61,14 +61,14 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
             var html = DefaultTemplatesUtilities.GetHtmlHelper(model);
 
             // Act
-            var result = DefaultDisplayTemplates.ObjectTemplate(html);
+            var result = await DefaultDisplayTemplates.ObjectTemplate(html);
 
             // Assert
             Assert.Equal(expected, HtmlContentUtilities.HtmlContentToString(result));
         }
 
         [Fact]
-        public void ObjectTemplateDisplaysNullDisplayTextWhenObjectIsNull()
+        public async Task ObjectTemplateDisplaysNullDisplayTextWhenObjectIsNull()
         {
             // Arrange
             var provider = new TestModelMetadataProvider();
@@ -80,7 +80,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
             var html = DefaultTemplatesUtilities.GetHtmlHelper(provider: provider);
 
             // Act
-            var result = DefaultDisplayTemplates.ObjectTemplate(html);
+            var result = await DefaultDisplayTemplates.ObjectTemplate(html);
 
             // Assert
             Assert.Equal("(null value)", HtmlContentUtilities.HtmlContentToString(result));
@@ -88,7 +88,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
 
         [Theory]
         [MemberData(nameof(HtmlEncodeData))]
-        public void ObjectTemplateDisplaysSimpleDisplayTextWhenTemplateDepthGreaterThanOne(
+        public async Task ObjectTemplateDisplaysSimpleDisplayTextWhenTemplateDepthGreaterThanOne(
             string simpleDisplayText,
             bool htmlEncode,
             string expectedResult)
@@ -110,14 +110,14 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
             html.ViewData.TemplateInfo.AddVisited("bar");
 
             // Act
-            var result = DefaultDisplayTemplates.ObjectTemplate(html);
+            var result = await DefaultDisplayTemplates.ObjectTemplate(html);
 
             // Assert
             Assert.Equal(expectedResult, HtmlContentUtilities.HtmlContentToString(result));
         }
 
         [Fact]
-        public void ObjectTemplate_IgnoresPropertiesWith_ScaffoldColumnFalse()
+        public async Task ObjectTemplate_IgnoresPropertiesWith_ScaffoldColumnFalse()
         {
             // Arrange
             var expected = "<div class=\"HtmlEncode[[display-label]]\">HtmlEncode[[Property1]]</div>" + Environment.NewLine +
@@ -136,14 +136,14 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
             var htmlHelper = DefaultTemplatesUtilities.GetHtmlHelper(model, viewEngine.Object);
 
             // Act
-            var result = DefaultDisplayTemplates.ObjectTemplate(htmlHelper);
+            var result = await DefaultDisplayTemplates.ObjectTemplate(htmlHelper);
 
             // Assert
             Assert.Equal(expected, HtmlContentUtilities.HtmlContentToString(result));
         }
 
         [Fact]
-        public void ObjectTemplate_HonorsHideSurroundingHtml()
+        public async Task ObjectTemplate_HonorsHideSurroundingHtml()
         {
             // Arrange
             var expected =
@@ -163,14 +163,14 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
             var html = DefaultTemplatesUtilities.GetHtmlHelper(model, provider);
 
             // Act
-            var result = DefaultDisplayTemplates.ObjectTemplate(html);
+            var result = await DefaultDisplayTemplates.ObjectTemplate(html);
 
             // Assert
             Assert.Equal(expected, HtmlContentUtilities.HtmlContentToString(result));
         }
 
         [Fact]
-        public void ObjectTemplate_OrdersProperties_AsExpected()
+        public async Task ObjectTemplate_OrdersProperties_AsExpected()
         {
             // Arrange
             var model = new OrderedModel();
@@ -205,7 +205,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
             var expected = stringBuilder.ToString();
 
             // Act
-            var result = DefaultDisplayTemplates.ObjectTemplate(html);
+            var result = await DefaultDisplayTemplates.ObjectTemplate(html);
 
             // Assert
             Assert.Equal(expected, HtmlContentUtilities.HtmlContentToString(result));

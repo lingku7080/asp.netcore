@@ -14,7 +14,7 @@
         {
             for (int i = 0; i < Model.Count; ++i)
             {
-                @Html.EditorFor(m => m[i])
+                @await Html.EditorForAsync(m => m[i])
             }
             <input type="submit" />
         }

@@ -7,15 +7,15 @@
 {
     <div>
         @Html.LabelFor(p => p.Name)
-        @Html.EditorFor(p => p.Name)
+        @await Html.EditorForAsync(p => p.Name)
     </div>
     <div>
         @Html.LabelFor(p => p.Age)
-        @Html.EditorFor(p => p.Age)
+        @await Html.EditorForAsync(p => p.Age)
     </div>
     <div>
         @Html.LabelFor(p => p.BirthDate)
-        @Html.EditorFor(p => p.BirthDate)
+        @await Html.EditorForAsync(p => p.BirthDate)
     </div>
     <input type="submit" />
 

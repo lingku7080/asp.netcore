@@ -23,7 +23,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
     public class PartialViewResultExecutorTest
     {
         [Fact]
-        public void FindView_UsesViewEngine_FromPartialViewResult()
+        public async Task FindViewAsync_UsesViewEngine_FromPartialViewResult()
         {
             // Arrange
             var context = GetActionContext();
@@ -49,7 +49,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
             };
 
             // Act
-            var viewEngineResult = executor.FindView(context, viewResult);
+            var viewEngineResult = await executor.FindViewAsync(context, viewResult);
 
             // Assert
             Assert.Equal(viewName, viewEngineResult.ViewName);
@@ -57,7 +57,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
         }
 
         [Fact]
-        public void FindView_UsesActionDescriptorName_IfViewNameIsNull()
+        public async Task FindViewAsync_UsesActionDescriptorName_IfViewNameIsNull()
         {
             // Arrange
             var viewName = "some-view-name";
@@ -71,7 +71,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
             };
 
             // Act
-            var viewEngineResult = executor.FindView(context, viewResult);
+            var viewEngineResult = await executor.FindViewAsync(context, viewResult);
 
             // Assert
             Assert.Equal(viewName, viewEngineResult.ViewName);
@@ -79,7 +79,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
 
         [Fact]
         [ReplaceCulture("de-CH", "de-CH")]
-        public void FindView_UsesActionDescriptorName_IfViewNameIsNull_UsesInvariantCulture()
+        public async Task FindViewAsync_UsesActionDescriptorName_IfViewNameIsNull_UsesInvariantCulture()
         {
             // Arrange
             var viewName = "10/31/2018 07:37:38 -07:00";
@@ -95,14 +95,14 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
             };
 
             // Act
-            var viewEngineResult = executor.FindView(context, viewResult);
+            var viewEngineResult = await executor.FindViewAsync(context, viewResult);
 
             // Assert
             Assert.Equal(viewName, viewEngineResult.ViewName);
         }
 
         [Fact]
-        public void FindView_ReturnsExpectedNotFoundResult_WithGetViewLocations()
+        public async Task FindViewAsync_ReturnsExpectedNotFoundResult_WithGetViewLocations()
         {
             // Arrange
             var expectedLocations = new[] { "location1", "location2" };
@@ -128,7 +128,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
             };
 
             // Act
-            var result = executor.FindView(context, viewResult);
+            var result = await executor.FindViewAsync(context, viewResult);
 
             // Assert
             Assert.False(result.Success);
@@ -137,7 +137,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
         }
 
         [Fact]
-        public void FindView_ReturnsExpectedNotFoundResult_WithFindViewLocations()
+        public async Task FindViewAsync_ReturnsExpectedNotFoundResult_WithFindViewLocations()
         {
             // Arrange
             var expectedLocations = new[] { "location1", "location2" };
@@ -163,7 +163,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
             };
 
             // Act
-            var result = executor.FindView(context, viewResult);
+            var result = await executor.FindViewAsync(context, viewResult);
 
             // Assert
             Assert.False(result.Success);
@@ -172,7 +172,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
         }
 
         [Fact]
-        public void FindView_ReturnsExpectedNotFoundResult_WithAllLocations()
+        public async Task FindViewAsync_ReturnsExpectedNotFoundResult_WithAllLocations()
         {
             // Arrange
             var expectedLocations = new[] { "location1", "location2", "location3", "location4" };
@@ -198,7 +198,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
             };
 
             // Act
-            var result = executor.FindView(context, viewResult);
+            var result = await executor.FindViewAsync(context, viewResult);
 
             // Assert
             Assert.False(result.Success);
@@ -207,7 +207,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
         }
 
         [Fact]
-        public void FindView_WritesDiagnostic_ViewFound()
+        public async Task FindViewAsync_WritesDiagnostic_ViewFound()
         {
             // Arrange
             var diagnosticListener = new DiagnosticListener("Test");
@@ -226,7 +226,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
             };
 
             // Act
-            var viewEngineResult = executor.FindView(context, viewResult);
+            var viewEngineResult = await executor.FindViewAsync(context, viewResult);
 
             // Assert
             Assert.Equal(viewName, viewEngineResult.ViewName);
@@ -240,7 +240,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
         }
 
         [Fact]
-        public void FindView_WritesDiagnostic_ViewNotFound()
+        public async Task FindViewAsync_WritesDiagnostic_ViewNotFound()
         {
             // Arrange
             var diagnosticListener = new DiagnosticListener("Test");
@@ -269,7 +269,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
             };
 
             // Act
-            var viewEngineResult = executor.FindView(context, viewResult);
+            var viewEngineResult = await executor.FindViewAsync(context, viewResult);
 
             // Assert
             Assert.False(viewEngineResult.Success);

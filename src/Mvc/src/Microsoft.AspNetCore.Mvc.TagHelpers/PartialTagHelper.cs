@@ -111,13 +111,12 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
             // Reset the TagName. We don't want `partial` to render.
             output.TagName = null;
 
-            var result = FindView(Name);
-            var viewSearchedLocations = result.SearchedLocations;
-            var fallBackViewSearchedLocations = Enumerable.Empty<string>();
+            var result = await _viewEngine.FindViewAsync(ViewContext, Name, ViewContext.ExecutingFilePath, isMainPage: false);
 
+            var fallBackViewSearchedLocations = Enumerable.Empty<string>();
             if (!result.Success && !string.IsNullOrEmpty(FallbackName))
             {
-                result = FindView(FallbackName);
+                result = await _viewEngine.FindViewAsync(ViewContext, FallbackName, ViewContext.ExecutingFilePath, isMainPage: false);
                 fallBackViewSearchedLocations = result.SearchedLocations;
             }
 
@@ -129,7 +128,7 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
                     return;
                 }
 
-                var locations = Environment.NewLine + string.Join(Environment.NewLine, viewSearchedLocations);
+                var locations = Environment.NewLine + string.Join(Environment.NewLine, result.SearchedLocations);
                 var errorMessage = Resources.FormatViewEngine_PartialViewNotFound(Name, locations);
 
                 if (!string.IsNullOrEmpty(FallbackName))
@@ -179,24 +178,6 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
 
             // A value for Model or For was not specified, fallback to the ViewContext's ViewData model.
             return ViewContext.ViewData.Model;
-        }
-
-        private ViewEngineResult FindView(string partialName)
-        {
-            var viewEngineResult = _viewEngine.GetView(ViewContext.ExecutingFilePath, partialName, isMainPage: false);
-            var getViewLocations = viewEngineResult.SearchedLocations;
-            if (!viewEngineResult.Success)
-            {
-                viewEngineResult = _viewEngine.FindView(ViewContext, partialName, isMainPage: false);
-            }
-
-            if (!viewEngineResult.Success)
-            {
-                var searchedLocations = Enumerable.Concat(getViewLocations, viewEngineResult.SearchedLocations);
-                return ViewEngineResult.NotFound(partialName, searchedLocations);
-            }
-
-            return viewEngineResult;
         }
 
         private async Task RenderPartialViewAsync(TextWriter writer, object model, IView view)

@@ -257,7 +257,7 @@ ViewWithNestedLayout-Content
         {
             // Arrange
             var expected = @"<title>viewstart-value</title>
-~/Views/NestedViewStarts/NestedViewStarts/Layout.cshtml
+/Views/NestedViewStarts/NestedViewStarts/Layout.cshtml
 index-content";
 
             // Act

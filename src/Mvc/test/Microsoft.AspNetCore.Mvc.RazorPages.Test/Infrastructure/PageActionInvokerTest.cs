@@ -1670,10 +1670,7 @@ namespace Microsoft.AspNetCore.Mvc.RazorPages.Infrastructure
                 : base(
                     Mock.Of<IHttpResponseStreamWriterFactory>(),
                     Mock.Of<ICompositeViewEngine>(),
-                    Mock.Of<IRazorViewEngine>(),
-                    Mock.Of<IRazorPageActivator>(),
-                    new DiagnosticListener("Microsoft.AspNetCore"),
-                    HtmlEncoder.Default)
+                    new DiagnosticListener("Microsoft.AspNetCore"))
             {
                 _executeAction = executeAction;
             }

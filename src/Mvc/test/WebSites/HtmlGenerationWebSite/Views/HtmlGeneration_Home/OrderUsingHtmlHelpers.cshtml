@@ -100,7 +100,7 @@
         </div>
         <div>
             @Html.LabelFor(m => m.Customer.Gender, htmlAttributes: new { @class = "order" })
-            @Html.EditorFor(model => model.Customer.Gender, templateName: "GenderUsingHtmlHelpers")
+            @await Html.EditorForAsync(model => model.Customer.Gender, templateName: "GenderUsingHtmlHelpers")
             @Html.ValidationMessageFor(m => m.Customer.Gender)
         </div>
         @Html.ValidationSummary(message: null, htmlAttributes: new { @class = "order" })

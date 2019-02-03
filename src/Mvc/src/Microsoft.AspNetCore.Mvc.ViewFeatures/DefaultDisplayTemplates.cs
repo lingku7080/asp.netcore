@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -71,7 +72,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
             };
         }
 
-        public static IHtmlContent CollectionTemplate(IHtmlHelper htmlHelper)
+        public static async Task<IHtmlContent> CollectionTemplate(IHtmlHelper htmlHelper)
         {
             var model = htmlHelper.ViewData.Model;
             if (model == null)
@@ -136,7 +137,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
                         templateName: null,
                         readOnly: true,
                         additionalViewData: null);
-                    result.AppendHtml(templateBuilder.Build());
+                    result.AppendHtml(await templateBuilder.BuildAsync());
                 }
 
                 return result;
@@ -185,7 +186,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
             return new HtmlString(htmlHelper.ViewData.TemplateInfo.FormattedModelValue.ToString());
         }
 
-        public static IHtmlContent ObjectTemplate(IHtmlHelper htmlHelper)
+        public static async Task<IHtmlContent> ObjectTemplate(IHtmlHelper htmlHelper)
         {
             var viewData = htmlHelper.ViewData;
             var templateInfo = viewData.TemplateInfo;
@@ -231,7 +232,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
                     readOnly: true,
                     additionalViewData: null);
 
-                var templateBuilderResult = templateBuilder.Build();
+                var templateBuilderResult = await templateBuilder.BuildAsync();
                 if (!propertyMetadata.HideSurroundingHtml)
                 {
                     var label = propertyMetadata.GetDisplayName();

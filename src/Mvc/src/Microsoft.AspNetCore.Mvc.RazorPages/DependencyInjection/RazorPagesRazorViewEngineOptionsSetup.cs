@@ -28,14 +28,14 @@ namespace Microsoft.Extensions.DependencyInjection
 
             var rootDirectory = _pagesOptions.RootDirectory;
             Debug.Assert(!string.IsNullOrEmpty(rootDirectory));
-            var defaultPageSearchPath = CombinePath(rootDirectory, "{1}/{0}" + RazorViewEngine.ViewExtension);
+            var defaultPageSearchPath = CombinePath(rootDirectory, "{1}/{0}.cshtml");
             options.PageViewLocationFormats.Add(defaultPageSearchPath);
 
             // /Pages/Shared/{0}.cshtml
-            var pagesSharedDirectory = CombinePath(rootDirectory, "Shared/{0}" + RazorViewEngine.ViewExtension);
+            var pagesSharedDirectory = CombinePath(rootDirectory, "Shared/{0}.cshtml");
             options.PageViewLocationFormats.Add(pagesSharedDirectory);
 
-            options.PageViewLocationFormats.Add("/Views/Shared/{0}" + RazorViewEngine.ViewExtension);
+            options.PageViewLocationFormats.Add("/Views/Shared/{0}.cshtml");
 
             var areaDirectory = CombinePath("/Areas/", "{2}");
             // Areas/{2}/Pages/
@@ -46,17 +46,17 @@ namespace Microsoft.Extensions.DependencyInjection
             // Areas/{2}/Views/Shared/{0}.cshtml
             // Pages/Shared/{0}.cshtml
             // Views/Shared/{0}.cshtml
-            var areaSearchPath = CombinePath(areaPagesDirectory, "{1}/{0}" + RazorViewEngine.ViewExtension);
+            var areaSearchPath = CombinePath(areaPagesDirectory, "{1}/{0}.cshtml");
             options.AreaPageViewLocationFormats.Add(areaSearchPath);
 
-            var areaPagesSharedSearchPath = CombinePath(areaPagesDirectory, "Shared/{0}" + RazorViewEngine.ViewExtension);
+            var areaPagesSharedSearchPath = CombinePath(areaPagesDirectory, "Shared/{0}.cshtml");
             options.AreaPageViewLocationFormats.Add(areaPagesSharedSearchPath);
 
-            var areaViewsSharedSearchPath = CombinePath(areaDirectory, "Views/Shared/{0}" + RazorViewEngine.ViewExtension);
+            var areaViewsSharedSearchPath = CombinePath(areaDirectory, "Views/Shared/{0}.cshtml");
             options.AreaPageViewLocationFormats.Add(areaViewsSharedSearchPath);
 
             options.AreaPageViewLocationFormats.Add(pagesSharedDirectory);
-            options.AreaPageViewLocationFormats.Add("/Views/Shared/{0}" + RazorViewEngine.ViewExtension);
+            options.AreaPageViewLocationFormats.Add("/Views/Shared/{0}.cshtml");
 
             options.ViewLocationFormats.Add(pagesSharedDirectory);
             options.AreaViewLocationFormats.Add(pagesSharedDirectory);

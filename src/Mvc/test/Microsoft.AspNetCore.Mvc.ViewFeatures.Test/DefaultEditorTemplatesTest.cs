@@ -178,7 +178,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
         }
 
         [Fact]
-        public void ObjectTemplateEditsSimplePropertiesOnObjectByDefault()
+        public async Task ObjectTemplateEditsSimplePropertiesOnObjectByDefault()
         {
             // Arrange
             var expected =
@@ -199,7 +199,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
             var html = DefaultTemplatesUtilities.GetHtmlHelper(model);
 
             // Act
-            var result = DefaultEditorTemplates.ObjectTemplate(html);
+            var result = await DefaultEditorTemplates.ObjectTemplate(html);
 
             // Assert
             Assert.Equal(expected, HtmlContentUtilities.HtmlContentToString(result));
@@ -209,7 +209,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
         // Expect almost the same HTML as in ObjectTemplateEditsSimplePropertiesOnObjectByDefault(). Only difference is
         // the <div class="editor-label">...</div> is not present for Property1.
         [Fact]
-        public void ObjectTemplateSkipsLabel_IfDisplayNameIsEmpty()
+        public async Task ObjectTemplateSkipsLabel_IfDisplayNameIsEmpty()
         {
             // Arrange
             var expected =
@@ -236,7 +236,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
             var html = DefaultTemplatesUtilities.GetHtmlHelper(model, provider);
 
             // Act
-            var result = DefaultEditorTemplates.ObjectTemplate(html);
+            var result = await DefaultEditorTemplates.ObjectTemplate(html);
 
             // Assert
             Assert.Equal(expected, HtmlContentUtilities.HtmlContentToString(result));
@@ -244,7 +244,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
 
         [Theory]
         [MemberData(nameof(ObjectTemplate_ChecksWriteTo_NotToStringData))]
-        public void ObjectTemplate_ChecksWriteTo_NotToString(IHtmlContent labelContent, string expectedLabel)
+        public async Task ObjectTemplate_ChecksWriteTo_NotToString(IHtmlContent labelContent, string expectedLabel)
         {
             // Arrange
             var expected =
@@ -278,14 +278,14 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
                 .Returns(HtmlString.Empty);
 
             // Act
-            var result = DefaultEditorTemplates.ObjectTemplate(helperMock.Object);
+            var result = await DefaultEditorTemplates.ObjectTemplate(helperMock.Object);
 
             // Assert
             Assert.Equal(expected, HtmlContentUtilities.HtmlContentToString(result));
         }
 
         [Fact]
-        public void ObjectTemplateDisplaysNullDisplayTextWithNullModelAndTemplateDepthGreaterThanOne()
+        public async Task ObjectTemplateDisplaysNullDisplayTextWithNullModelAndTemplateDepthGreaterThanOne()
         {
             // Arrange
             var provider = new TestModelMetadataProvider();
@@ -301,7 +301,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
             html.ViewData.TemplateInfo.AddVisited("bar");
 
             // Act
-            var result = DefaultEditorTemplates.ObjectTemplate(html);
+            var result = await DefaultEditorTemplates.ObjectTemplate(html);
 
             // Assert
             Assert.Equal(html.ViewData.ModelMetadata.NullDisplayText, HtmlContentUtilities.HtmlContentToString(result));
@@ -309,7 +309,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
 
         [Theory]
         [MemberData(nameof(DefaultDisplayTemplatesTest.HtmlEncodeData), MemberType = typeof(DefaultDisplayTemplatesTest))]
-        public void ObjectTemplateDisplaysSimpleDisplayTextWithNonNullModelTemplateDepthGreaterThanOne(
+        public async Task ObjectTemplateDisplaysSimpleDisplayTextWithNonNullModelTemplateDepthGreaterThanOne(
             string simpleDisplayText,
             bool htmlEncode,
             string expectedResult)
@@ -334,14 +334,14 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
             html.ViewData.TemplateInfo.AddVisited("bar");
 
             // Act
-            var result = DefaultEditorTemplates.ObjectTemplate(html);
+            var result = await DefaultEditorTemplates.ObjectTemplate(html);
 
             // Assert
             Assert.Equal(expectedResult, HtmlContentUtilities.HtmlContentToString(result));
         }
 
         [Fact]
-        public void ObjectTemplate_IgnoresPropertiesWith_ScaffoldColumnFalse()
+        public async Task ObjectTemplate_IgnoresPropertiesWith_ScaffoldColumnFalse()
         {
             // Arrange
             var expected =
@@ -367,14 +367,14 @@ Environment.NewLine;
             var htmlHelper = DefaultTemplatesUtilities.GetHtmlHelper(model, viewEngine.Object);
 
             // Act
-            var result = DefaultEditorTemplates.ObjectTemplate(htmlHelper);
+            var result = await DefaultEditorTemplates.ObjectTemplate(htmlHelper);
 
             // Assert
             Assert.Equal(expected, HtmlContentUtilities.HtmlContentToString(result));
         }
 
         [Fact]
-        public void ObjectTemplate_HonorsHideSurroundingHtml()
+        public async Task ObjectTemplate_HonorsHideSurroundingHtml()
         {
             // Arrange
             var expected =
@@ -397,14 +397,14 @@ Environment.NewLine;
             var html = DefaultTemplatesUtilities.GetHtmlHelper(model, provider: provider);
 
             // Act
-            var result = DefaultEditorTemplates.ObjectTemplate(html);
+            var result = await DefaultEditorTemplates.ObjectTemplate(html);
 
             // Assert
             Assert.Equal(expected, HtmlContentUtilities.HtmlContentToString(result));
         }
 
         [Fact]
-        public void ObjectTemplate_OrdersProperties_AsExpected()
+        public async Task ObjectTemplate_OrdersProperties_AsExpected()
         {
             // Arrange
             var model = new OrderedModel();
@@ -441,7 +441,7 @@ Environment.NewLine;
             var expected = stringBuilder.ToString();
 
             // Act
-            var result = DefaultEditorTemplates.ObjectTemplate(html);
+            var result = await DefaultEditorTemplates.ObjectTemplate(html);
 
             // Assert
             Assert.Equal(expected, HtmlContentUtilities.HtmlContentToString(result));

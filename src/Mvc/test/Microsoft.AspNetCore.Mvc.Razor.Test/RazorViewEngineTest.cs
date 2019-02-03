@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Razor.Compilation;
@@ -23,6 +22,7 @@ using Xunit;
 
 namespace Microsoft.AspNetCore.Mvc.Razor
 {
+#pragma warning disable CS0618 // Type or member is obsolete
     public class RazorViewEngineTest
     {
         private static readonly Dictionary<string, object> _areaTestContext = new Dictionary<string, object>()
@@ -1908,7 +1908,7 @@ namespace Microsoft.AspNetCore.Mvc.Razor
             IEnumerable<string> areaViewLocationFormats = null,
             IEnumerable<string> pageViewLocationFormats = null)
         {
-            var optionsSetup = new RazorViewEngineOptionsSetup(Mock.Of<IHostingEnvironment>());
+            var optionsSetup = new RazorViewEngineOptionsSetup();
 
             var options = new RazorViewEngineOptions();
             optionsSetup.Configure(options);
@@ -2005,5 +2005,6 @@ namespace Microsoft.AspNetCore.Mvc.Razor
 
             public IMemoryCache ViewLookupCachePublic => ViewLookupCache;
         }
+#pragma warning restore CS0618 // Type or member is obsolete
     }
 }

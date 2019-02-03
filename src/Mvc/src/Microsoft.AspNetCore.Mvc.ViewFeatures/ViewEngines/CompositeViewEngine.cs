@@ -25,6 +25,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewEngines
         public IReadOnlyList<IViewEngine> ViewEngines { get; }
 
         /// <inheritdoc />
+        [Obsolete("This method is obsolete and is no longer used by the runtime.")]
         public ViewEngineResult FindView(ActionContext context, string viewName, bool isMainPage)
         {
             if (context == null)
@@ -78,6 +79,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewEngines
         }
 
         /// <inheritdoc />
+        [Obsolete("This method is obsolete and is no longer used by the runtime.")]
         public ViewEngineResult GetView(string executingFilePath, string viewPath, bool isMainPage)
         {
             if (string.IsNullOrEmpty(viewPath))
