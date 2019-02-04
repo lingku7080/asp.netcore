@@ -72,9 +72,11 @@
     <Exec Command="$(InjectDepsApp) &quot;$(PublishDepsFilePath)&quot; $(RuntimeIdentifier) " />
   </Target>
 
-  <Target Name="PreventProjectReferencesFromBuilding" BeforeTargets="BeforeResolveReferences" Condition="'@(TestAssetPublishProfile->Count())' != '0'">
-    <PropertyGroup>
-      <BuildProjectReferences Condition="'$(HasTestAssetProfile)' == 'true'">false</BuildProjectReferences>
+  <Target Name="PreventProjectReferencesFromBuilding" BeforeTargets="BeforeResolveReferences;ResolvePackageAssets" Condition="'@(TestAssetPublishProfile->Count())' != '0'">
+    <PropertyGroup Condition="'$(HasTestAssetProfile)' == 'true'">
+      <!-- parallel publish would cause cache misses with a lot of warnings -->
+      <DisablePackageAssetsCache>true</DisablePackageAssetsCache>
+      <BuildProjectReferences>false</BuildProjectReferences>
     </PropertyGroup>
   </Target>
 
@@ -90,13 +92,27 @@
   </Target>
 
   <Target Name="PublishTestsAssets" AfterTargets="Build;Publish" Condition="'$(TestAssetProfile)' == '' AND '@(TestAssetPublishProfile->Count())' != '0'">
-
+    <ItemGroup>
+      <AssetsToBuild
+       Include="$(MSBuildProjectFullPath)"
+       Properties="%(TestAssetPublishProfile.BuildProperties)"
+       Condition="'%(TestAssetPublishProfile.BuildProperties)' != ''"
+       UndefineProperties="Platform;PlatformTarget"
+       />
+      <AssetsToPublish
+       Include="$(MSBuildProjectFullPath)"
+       Properties="NoBuild=true;NoRestore=true;TestAssetProfile=%(TestAssetPublishProfile.Identity);ReferenceTestTasks=false;%(TestAssetPublishProfile.Properties)"
+       UndefineProperties="Platform;PlatformTarget"
+       />
+    </ItemGroup>
     <!--
       _InsidePublishTestsAssets is to avoid invoking this target recursively
       Platform;PlatformTarget removal is fix builds inside VS -->
-    <MSBuild Projects="$(MSBuildProjectFullPath)"
+    <MSBuild Projects="@(AssetsToBuild)"
+        Targets="Build"
+        BuildInParallel="true" />
+    <MSBuild Projects="@(AssetsToPublish)"
              Targets="Publish"
-             RemoveProperties="Platform;PlatformTarget"
-             Properties="TestAssetProfile=%(TestAssetPublishProfile.Identity);ReferenceTestTasks=false;%(TestAssetPublishProfile.Properties)" />
+             BuildInParallel="true" />
   </Target>
 </Project>

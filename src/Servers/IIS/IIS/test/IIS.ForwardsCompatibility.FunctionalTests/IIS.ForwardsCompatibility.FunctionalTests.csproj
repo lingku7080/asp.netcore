@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.0</TargetFramework>
@@ -13,7 +13,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Common.Tests\Common.Tests.csproj" />
-    <ProjectReference Include="..\testassets\**\*.csproj">
+    <ProjectReference Include="..\testassets\InProcessForwardsCompatibilityWebSite\InProcessWebSite.csproj">
+      <ReferenceOutputAssembly>False</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\testassets\OutOfProcessWebSite\OutOfProcessWebSite.csproj">
       <ReferenceOutputAssembly>False</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="$(RepositoryRoot)src\Hosting\Server.IntegrationTesting\src\Microsoft.AspNetCore.Server.IntegrationTesting.csproj" />
