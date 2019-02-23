@@ -221,7 +221,7 @@ namespace Microsoft.AspNetCore.Mvc.Rendering
             }
         }
 
-        private void AppendAttributes(TextWriter writer, HtmlEncoder encoder)
+        private void AppendAttributes(TextWriter writer, TextEncoder encoder)
         {
             // Perf: Avoid allocating enumerator for `_attributes` if possible
             if (_attributes != null && _attributes.Count > 0)
@@ -286,7 +286,7 @@ namespace Microsoft.AspNetCore.Mvc.Rendering
         }
 
         /// <inheritdoc />
-        public void WriteTo(TextWriter writer, HtmlEncoder encoder)
+        public void WriteTo(TextWriter writer, TextEncoder encoder)
         {
             if (writer == null)
             {
@@ -328,7 +328,7 @@ namespace Microsoft.AspNetCore.Mvc.Rendering
         private static void WriteTo(
             TagBuilder tagBuilder,
             TextWriter writer,
-            HtmlEncoder encoder,
+            TextEncoder encoder,
             TagRenderMode tagRenderMode)
         {
             switch (tagRenderMode)
@@ -386,7 +386,7 @@ namespace Microsoft.AspNetCore.Mvc.Rendering
                 _tagRenderMode = tagRenderMode;
             }
 
-            public void WriteTo(TextWriter writer, HtmlEncoder encoder)
+            public void WriteTo(TextWriter writer, TextEncoder encoder)
             {
                 TagBuilder.WriteTo(_tagBuilder, writer, encoder, _tagRenderMode);
             }

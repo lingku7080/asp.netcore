@@ -145,12 +145,12 @@ namespace Microsoft.AspNetCore.Razor.TagHelpers
         /// <summary>
         /// Gets the content.
         /// </summary>
-        /// <param name="encoder">The <see cref="HtmlEncoder"/>.</param>
+        /// <param name="encoder">The <see cref="TextEncoder"/>.</param>
         /// <returns>A <see cref="string"/> containing the content.</returns>
-        public abstract string GetContent(HtmlEncoder encoder);
+        public abstract string GetContent(TextEncoder encoder);
 
         /// <inheritdoc />
-        public abstract void WriteTo(TextWriter writer, HtmlEncoder encoder);
+        public abstract void WriteTo(TextWriter writer, TextEncoder encoder);
 
         /// <inheritdoc />
         IHtmlContentBuilder IHtmlContentBuilder.AppendHtml(IHtmlContent content)

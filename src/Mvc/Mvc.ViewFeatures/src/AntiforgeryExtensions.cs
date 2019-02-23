@@ -55,7 +55,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
             // Though _requestToken normally contains only US-ASCII letters, numbers, '-', and '_', must assume the
             // IAntiforgeryTokenSerializer implementation has been overridden. Similarly, users may choose a
             // _fieldName containing almost any character.
-            public void WriteTo(TextWriter writer, HtmlEncoder encoder)
+            public void WriteTo(TextWriter writer, TextEncoder encoder)
             {
                 writer.Write("<input name=\"");
                 encoder.Encode(writer, _fieldName);

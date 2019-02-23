@@ -41,11 +41,11 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
         /// </summary>
         /// <param name="factory">The factory containing the private <see cref="IMemoryCache"/> instance
         /// used by the <see cref="CacheTagHelper"/>.</param>
-        /// <param name="htmlEncoder">The <see cref="HtmlEncoder"/> to use.</param>
+        /// <param name="encoder">The <see cref="TextEncoder"/> to use.</param>
         public CacheTagHelper(
             CacheTagHelperMemoryCacheFactory factory,
-            HtmlEncoder htmlEncoder)
-            : base(htmlEncoder)
+            TextEncoder encoder)
+            : base(encoder)
         {
             MemoryCache = factory.Cache;
         }
@@ -218,7 +218,7 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
 
             using (var writer = new CharBufferTextWriter())
             {
-                content.WriteTo(writer, HtmlEncoder);
+                content.WriteTo(writer, TextEncoder);
                 return new CharBufferHtmlContent(writer.Buffer);
             }
         }
@@ -261,7 +261,7 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
 
             public PagedCharBuffer Buffer => _buffer;
 
-            public void WriteTo(TextWriter writer, HtmlEncoder encoder)
+            public void WriteTo(TextWriter writer, TextEncoder encoder)
             {
                 var length = Buffer.Length;
                 if (length == 0)

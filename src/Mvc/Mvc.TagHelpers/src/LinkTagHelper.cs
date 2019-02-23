@@ -101,7 +101,7 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
         /// <param name="hostingEnvironment">The <see cref="IHostingEnvironment"/>.</param>
         /// <param name="cacheProvider"></param>
         /// <param name="fileVersionProvider">The <see cref="IFileVersionProvider"/>.</param>
-        /// <param name="htmlEncoder">The <see cref="HtmlEncoder"/>.</param>
+        /// <param name="htmlEncoder">The <see cref="TextEncoder"/>.</param>
         /// <param name="javaScriptEncoder">The <see cref="JavaScriptEncoder"/>.</param>
         /// <param name="urlHelperFactory">The <see cref="IUrlHelperFactory"/>.</param>
         // Decorated with ActivatorUtilitiesConstructor since we want to influence tag helper activation
@@ -110,7 +110,7 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
             IWebHostEnvironment hostingEnvironment,
             TagHelperMemoryCacheProvider cacheProvider,
             IFileVersionProvider fileVersionProvider,
-            HtmlEncoder htmlEncoder,
+            TextEncoder htmlEncoder,
             JavaScriptEncoder javaScriptEncoder,
             IUrlHelperFactory urlHelperFactory)
             : base(urlHelperFactory, htmlEncoder)

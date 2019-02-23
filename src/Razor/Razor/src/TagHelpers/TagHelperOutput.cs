@@ -14,7 +14,7 @@ namespace Microsoft.AspNetCore.Razor.TagHelpers
     /// </summary>
     public class TagHelperOutput : IHtmlContentContainer
     {
-        private readonly Func<bool, HtmlEncoder, Task<TagHelperContent>> _getChildContentAsync;
+        private readonly Func<bool, TextEncoder, Task<TagHelperContent>> _getChildContentAsync;
         private TagHelperContent _preElement;
         private TagHelperContent _preContent;
         private TagHelperContent _content;
@@ -37,13 +37,13 @@ namespace Microsoft.AspNetCore.Razor.TagHelpers
         /// <param name="tagName">The HTML element's tag name.</param>
         /// <param name="attributes">The HTML attributes.</param>
         /// <param name="getChildContentAsync">
-        /// A delegate used to execute children asynchronously with the given <see cref="HtmlEncoder"/> in scope and
+        /// A delegate used to execute children asynchronously with the given <see cref="TextEncoder"/> in scope and
         /// return their rendered content.
         /// </param>
         public TagHelperOutput(
             string tagName,
             TagHelperAttributeList attributes,
-            Func<bool, HtmlEncoder, Task<TagHelperContent>> getChildContentAsync)
+            Func<bool, TextEncoder, Task<TagHelperContent>> getChildContentAsync)
         {
             if (getChildContentAsync == null)
             {
@@ -233,7 +233,7 @@ namespace Microsoft.AspNetCore.Razor.TagHelpers
         /// <returns>A <see cref="Task"/> that on completion returns content rendered by children.</returns>
         /// <remarks>
         /// This method is memoized. Multiple calls will not cause children to re-execute with the page's original
-        /// <see cref="HtmlEncoder"/>.
+        /// <see cref="TextEncoder"/>.
         /// </remarks>
         public Task<TagHelperContent> GetChildContentAsync()
         {
@@ -245,7 +245,7 @@ namespace Microsoft.AspNetCore.Razor.TagHelpers
         /// </summary>
         /// <param name="useCachedResult">
         /// If <c>true</c>, multiple calls will not cause children to re-execute with the page's original
-        /// <see cref="HtmlEncoder"/>; returns cached content.
+        /// <see cref="TextEncoder"/>; returns cached content.
         /// </param>
         /// <returns>A <see cref="Task"/> that on completion returns content rendered by children.</returns>
         public Task<TagHelperContent> GetChildContentAsync(bool useCachedResult)
@@ -258,15 +258,15 @@ namespace Microsoft.AspNetCore.Razor.TagHelpers
         /// rendered content.
         /// </summary>
         /// <param name="encoder">
-        /// The <see cref="HtmlEncoder"/> to use when the page handles non-<see cref="IHtmlContent"/> C# expressions.
-        /// If <c>null</c>, executes children with the page's current <see cref="HtmlEncoder"/>.
+        /// The <see cref="TextEncoder"/> to use when the page handles non-<see cref="IHtmlContent"/> C# expressions.
+        /// If <c>null</c>, executes children with the page's current <see cref="TextEncoder"/>.
         /// </param>
         /// <returns>A <see cref="Task"/> that on completion returns content rendered by children.</returns>
         /// <remarks>
-        /// This method is memoized. Multiple calls with the same <see cref="HtmlEncoder"/> instance will not cause
+        /// This method is memoized. Multiple calls with the same <see cref="TextEncoder"/> instance will not cause
         /// children to re-execute with that encoder in scope.
         /// </remarks>
-        public Task<TagHelperContent> GetChildContentAsync(HtmlEncoder encoder)
+        public Task<TagHelperContent> GetChildContentAsync(TextEncoder encoder)
         {
             return GetChildContentAsync(useCachedResult: true, encoder: encoder);
         }
@@ -276,15 +276,15 @@ namespace Microsoft.AspNetCore.Razor.TagHelpers
         /// rendered content.
         /// </summary>
         /// <param name="useCachedResult">
-        /// If <c>true</c>, multiple calls with the same <see cref="HtmlEncoder"/> will not cause children to
+        /// If <c>true</c>, multiple calls with the same <see cref="TextEncoder"/> will not cause children to
         /// re-execute; returns cached content.
         /// </param>
         /// <param name="encoder">
-        /// The <see cref="HtmlEncoder"/> to use when the page handles non-<see cref="IHtmlContent"/> C# expressions.
-        /// If <c>null</c>, executes children with the page's current <see cref="HtmlEncoder"/>.
+        /// The <see cref="TextEncoder"/> to use when the page handles non-<see cref="IHtmlContent"/> C# expressions.
+        /// If <c>null</c>, executes children with the page's current <see cref="TextEncoder"/>.
         /// </param>
         /// <returns>A <see cref="Task"/> that on completion returns content rendered by children.</returns>
-        public Task<TagHelperContent> GetChildContentAsync(bool useCachedResult, HtmlEncoder encoder)
+        public Task<TagHelperContent> GetChildContentAsync(bool useCachedResult, TextEncoder encoder)
         {
             return _getChildContentAsync(useCachedResult, encoder);
         }
@@ -395,7 +395,7 @@ namespace Microsoft.AspNetCore.Razor.TagHelpers
             Attributes.Clear();
         }
 
-        public void WriteTo(TextWriter writer, HtmlEncoder encoder)
+        public void WriteTo(TextWriter writer, TextEncoder encoder)
         {
             if (writer == null)
             {

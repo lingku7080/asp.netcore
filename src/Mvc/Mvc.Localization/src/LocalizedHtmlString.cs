@@ -82,7 +82,7 @@ namespace Microsoft.AspNetCore.Mvc.Localization
         public bool IsResourceNotFound { get; }
 
         /// <inheritdoc />
-        public void WriteTo(TextWriter writer, HtmlEncoder encoder)
+        public void WriteTo(TextWriter writer, TextEncoder encoder)
         {
             if (writer == null)
             {

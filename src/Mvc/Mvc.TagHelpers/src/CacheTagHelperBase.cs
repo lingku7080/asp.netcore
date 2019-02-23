@@ -37,19 +37,19 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
         /// <summary>
         /// Creates a new <see cref="CacheTagHelperBase"/>.
         /// </summary>
-        /// <param name="htmlEncoder">The <see cref="HtmlEncoder"/> to use.</param>
-        public CacheTagHelperBase(HtmlEncoder htmlEncoder)
+        /// <param name="encoder">The <see cref="TextEncoder"/> to use.</param>
+        public CacheTagHelperBase(TextEncoder encoder)
         {
-            HtmlEncoder = htmlEncoder;
+            TextEncoder = encoder;
         }
 
         /// <inheritdoc />
         public override int Order => -1000;
 
         /// <summary>
-        /// Gets the <see cref="System.Text.Encodings.Web.HtmlEncoder"/> which encodes the content to be cached.
+        /// Gets the <see cref="TextEncoder"/> which encodes the content to be cached.
         /// </summary>
-        protected HtmlEncoder HtmlEncoder { get; }
+        protected TextEncoder TextEncoder { get; }
 
         /// <summary>
         /// Gets or sets the <see cref="ViewContext"/> for the current executing View.

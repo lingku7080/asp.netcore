@@ -16,11 +16,11 @@ namespace Microsoft.AspNetCore.Razor.Runtime.TagHelpers
     public class TagHelperExecutionContext
     {
         private readonly List<ITagHelper> _tagHelpers;
-        private readonly Action<HtmlEncoder> _startTagHelperWritingScope;
+        private readonly Action<TextEncoder> _startTagHelperWritingScope;
         private readonly Func<TagHelperContent> _endTagHelperWritingScope;
         private TagHelperContent _childContent;
         private Func<Task> _executeChildContentAsync;
-        private Dictionary<HtmlEncoder, TagHelperContent> _perEncoderChildContent;
+        private Dictionary<TextEncoder, TagHelperContent> _perEncoderChildContent;
         private TagHelperAttributeList _allAttributes;
 
         /// <summary>
@@ -48,7 +48,7 @@ namespace Microsoft.AspNetCore.Razor.Runtime.TagHelpers
         /// <param name="executeChildContentAsync">A delegate used to execute the child content asynchronously.</param>
         /// <param name="startTagHelperWritingScope">
         /// A delegate used to start a writing scope in a Razor page and optionally override the page's
-        /// <see cref="HtmlEncoder"/> within that scope.
+        /// <see cref="TextEncoder"/> within that scope.
         /// </param>
         /// <param name="endTagHelperWritingScope">A delegate used to end a writing scope in a Razor page.</param>
         public TagHelperExecutionContext(
@@ -57,7 +57,7 @@ namespace Microsoft.AspNetCore.Razor.Runtime.TagHelpers
             IDictionary<object, object> items,
             string uniqueId,
             Func<Task> executeChildContentAsync,
-            Action<HtmlEncoder> startTagHelperWritingScope,
+            Action<TextEncoder> startTagHelperWritingScope,
             Func<TagHelperContent> endTagHelperWritingScope)
         {
             if (startTagHelperWritingScope == null)
@@ -246,7 +246,7 @@ namespace Microsoft.AspNetCore.Razor.Runtime.TagHelpers
         }
 
         /// <summary>
-        /// Executes children asynchronously with the page's <see cref="HtmlEncoder" /> in scope and
+        /// Executes children asynchronously with the page's <see cref="TextEncoder" /> in scope and
         /// sets <see cref="Output"/>'s <see cref="TagHelperOutput.Content"/> to the rendered results.
         /// </summary>
         /// <returns>A <see cref="Task"/> that on completion sets <see cref="Output"/>'s
@@ -274,7 +274,7 @@ namespace Microsoft.AspNetCore.Razor.Runtime.TagHelpers
         }
 
         // Internal for testing.
-        internal async Task<TagHelperContent> GetChildContentAsync(bool useCachedResult, HtmlEncoder encoder)
+        internal async Task<TagHelperContent> GetChildContentAsync(bool useCachedResult, TextEncoder encoder)
         {
             // Get cached content for this encoder.
             TagHelperContent childContent;
@@ -287,7 +287,7 @@ namespace Microsoft.AspNetCore.Razor.Runtime.TagHelpers
                 if (_perEncoderChildContent == null)
                 {
                     childContent = null;
-                    _perEncoderChildContent = new Dictionary<HtmlEncoder, TagHelperContent>();
+                    _perEncoderChildContent = new Dictionary<TextEncoder, TagHelperContent>();
                 }
                 else
                 {

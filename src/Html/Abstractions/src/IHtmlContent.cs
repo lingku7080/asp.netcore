@@ -16,7 +16,7 @@ namespace Microsoft.AspNetCore.Html
         /// to the specified <paramref name="writer"/>.
         /// </summary>
         /// <param name="writer">The <see cref="TextWriter"/> to which the content is written.</param>
-        /// <param name="encoder">The <see cref="HtmlEncoder"/> which encodes the content to be written.</param>
-        void WriteTo(TextWriter writer, HtmlEncoder encoder);
+        /// <param name="encoder">The <see cref="TextEncoder"/> which encodes the content to be written.</param>
+        void WriteTo(TextWriter writer, TextEncoder encoder);
     }
 }

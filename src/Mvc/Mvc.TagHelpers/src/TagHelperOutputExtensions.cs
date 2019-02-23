@@ -161,11 +161,11 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
         /// </summary>
         /// <param name="tagHelperOutput">The <see cref="TagHelperOutput"/> this method extends.</param>
         /// <param name="classValue">The class value to add.</param>
-        /// <param name="htmlEncoder">The current HTML encoder.</param>
+        /// <param name="encoder">The current text encoder.</param>
         public static void AddClass(
             this TagHelperOutput tagHelperOutput,
             string classValue,
-            HtmlEncoder htmlEncoder)
+            TextEncoder encoder)
         {
             if (tagHelperOutput == null)
             {
@@ -177,7 +177,7 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
                 return;
             }
 
-            var encodedSpaceChars = SpaceChars.Where(x => !x.Equals('\u0020')).Select(x => htmlEncoder.Encode(x.ToString())).ToArray();
+            var encodedSpaceChars = SpaceChars.Where(x => !x.Equals('\u0020')).Select(x => encoder.Encode(x.ToString())).ToArray();
 
             if (SpaceChars.Any(classValue.Contains) || encodedSpaceChars.Any(value => classValue.IndexOf(value, StringComparison.Ordinal) >= 0))
             {
@@ -190,9 +190,9 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
             }
             else
             {
-                var currentClassValue = ExtractClassValue(classAttribute, htmlEncoder);
+                var currentClassValue = ExtractClassValue(classAttribute, encoder);
 
-                var encodedClassValue = htmlEncoder.Encode(classValue);
+                var encodedClassValue = encoder.Encode(classValue);
 
                 if (string.Equals(currentClassValue, encodedClassValue, StringComparison.Ordinal))
                 {
@@ -223,18 +223,18 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
         /// </summary>
         /// <param name="tagHelperOutput">The <see cref="TagHelperOutput"/> this method extends.</param>
         /// <param name="classValue">The class value to remove.</param>
-        /// <param name="htmlEncoder">The current HTML encoder.</param>
+        /// <param name="encoder">The current text encoder.</param>
         public static void RemoveClass(
             this TagHelperOutput tagHelperOutput,
             string classValue,
-            HtmlEncoder htmlEncoder)
+            TextEncoder encoder)
         {
             if (tagHelperOutput == null)
             {
                 throw new ArgumentNullException(nameof(tagHelperOutput));
             }
 
-            var encodedSpaceChars = SpaceChars.Where(x => !x.Equals('\u0020')).Select(x => htmlEncoder.Encode(x.ToString())).ToArray();
+            var encodedSpaceChars = SpaceChars.Where(x => !x.Equals('\u0020')).Select(x => encoder.Encode(x.ToString())).ToArray();
 
             if (SpaceChars.Any(classValue.Contains) || encodedSpaceChars.Any(value => classValue.IndexOf(value, StringComparison.Ordinal) >= 0))
             {
@@ -246,14 +246,14 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
                 return;
             }
 
-            var currentClassValue = ExtractClassValue(classAttribute, htmlEncoder);
+            var currentClassValue = ExtractClassValue(classAttribute, encoder);
 
             if (string.IsNullOrEmpty(currentClassValue))
             {
                 return;
             }
 
-            var encodedClassValue = htmlEncoder.Encode(classValue);
+            var encodedClassValue = encoder.Encode(classValue);
 
             if (string.Equals(currentClassValue, encodedClassValue, StringComparison.Ordinal))
             {
@@ -290,13 +290,13 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
 
         private static string ExtractClassValue(
             TagHelperAttribute classAttribute,
-            HtmlEncoder htmlEncoder)
+            TextEncoder encoder)
         {
             string extractedClassValue;
             switch (classAttribute.Value)
             {
                 case string valueAsString:
-                    extractedClassValue = htmlEncoder.Encode(valueAsString);
+                    extractedClassValue = encoder.Encode(valueAsString);
                     break;
                 case HtmlString valueAsHtmlString:
                     extractedClassValue = valueAsHtmlString.Value;
@@ -304,12 +304,12 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
                 case IHtmlContent htmlContent:
                     using (var stringWriter = new StringWriter())
                     {
-                        htmlContent.WriteTo(stringWriter, htmlEncoder);
+                        htmlContent.WriteTo(stringWriter, encoder);
                         extractedClassValue = stringWriter.ToString();
                     }
                     break;
                 default:
-                    extractedClassValue = htmlEncoder.Encode(classAttribute.Value?.ToString());
+                    extractedClassValue = encoder.Encode(classAttribute.Value?.ToString());
                     break;
             }
             var currentClassValue = extractedClassValue ?? string.Empty;
@@ -377,7 +377,7 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
                 _right = right;
             }
 
-            public void WriteTo(TextWriter writer, HtmlEncoder encoder)
+            public void WriteTo(TextWriter writer, TextEncoder encoder)
             {
                 if (writer == null)
                 {

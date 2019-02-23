@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -57,7 +57,7 @@ namespace Microsoft.AspNetCore.Html
         }
 
         /// <inheritdoc />
-        public void WriteTo(TextWriter writer, HtmlEncoder encoder)
+        public void WriteTo(TextWriter writer, TextEncoder encoder)
         {
             if (writer == null)
             {
@@ -91,12 +91,12 @@ namespace Microsoft.AspNetCore.Html
         // https://msdn.microsoft.com/en-us/library/system.string.format(v=vs.110).aspx#Format6_Example
         private class EncodingFormatProvider : IFormatProvider, ICustomFormatter
         {
-            private readonly HtmlEncoder _encoder;
+            private readonly TextEncoder _encoder;
             private readonly IFormatProvider _formatProvider;
 
             private StringWriter _writer;
 
-            public EncodingFormatProvider(IFormatProvider formatProvider, HtmlEncoder encoder)
+            public EncodingFormatProvider(IFormatProvider formatProvider, TextEncoder encoder)
             {
                 Debug.Assert(formatProvider != null);
                 Debug.Assert(encoder != null);

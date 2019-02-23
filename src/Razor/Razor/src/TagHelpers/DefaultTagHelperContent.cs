@@ -170,7 +170,7 @@ namespace Microsoft.AspNetCore.Razor.TagHelpers
         public override string GetContent() => GetContent(HtmlEncoder.Default);
 
         /// <inheritdoc />
-        public override string GetContent(HtmlEncoder encoder)
+        public override string GetContent(TextEncoder encoder)
         {
             if (!_hasContent)
             {
@@ -185,7 +185,7 @@ namespace Microsoft.AspNetCore.Razor.TagHelpers
         }
 
         /// <inheritdoc />
-        public override void WriteTo(TextWriter writer, HtmlEncoder encoder)
+        public override void WriteTo(TextWriter writer, TextEncoder encoder)
         {
             if (writer == null)
             {
@@ -214,7 +214,7 @@ namespace Microsoft.AspNetCore.Razor.TagHelpers
             }
         }
 
-        private void WriteToCore(object entry, TextWriter writer, HtmlEncoder encoder)
+        private void WriteToCore(object entry, TextWriter writer, TextEncoder encoder)
         {
             if (entry == null)
             {

@@ -186,7 +186,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures.Buffers
         }
 
         /// <inheritdoc />
-        public void WriteTo(TextWriter writer, HtmlEncoder encoder)
+        public void WriteTo(TextWriter writer, TextEncoder encoder)
         {
             if (writer == null)
             {
@@ -224,9 +224,9 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures.Buffers
         /// Writes the buffered content to <paramref name="writer"/>.
         /// </summary>
         /// <param name="writer">The <see cref="TextWriter"/>.</param>
-        /// <param name="encoder">The <see cref="HtmlEncoder"/>.</param>
+        /// <param name="encoder">The <see cref="TextEncoder"/>.</param>
         /// <returns>A <see cref="Task"/> which will complete once content has been written.</returns>
-        public async Task WriteToAsync(TextWriter writer, HtmlEncoder encoder)
+        public async Task WriteToAsync(TextWriter writer, TextEncoder encoder)
         {
             if (writer == null)
             {
@@ -400,7 +400,7 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures.Buffers
                 _unencoded = unencoded;
             }
 
-            public void WriteTo(TextWriter writer, HtmlEncoder encoder)
+            public void WriteTo(TextWriter writer, TextEncoder encoder)
             {
                 encoder.Encode(writer, _unencoded);
             }

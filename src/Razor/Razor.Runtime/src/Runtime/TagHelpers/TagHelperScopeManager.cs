@@ -22,11 +22,11 @@ namespace Microsoft.AspNetCore.Razor.Runtime.TagHelpers
         /// </summary>
         /// <param name="startTagHelperWritingScope">
         /// A delegate used to start a writing scope in a Razor page and optionally override the page's
-        /// <see cref="HtmlEncoder"/> within that scope.
+        /// <see cref="TextEncoder"/> within that scope.
         /// </param>
         /// <param name="endTagHelperWritingScope">A delegate used to end a writing scope in a Razor page.</param>
         public TagHelperScopeManager(
-            Action<HtmlEncoder> startTagHelperWritingScope,
+            Action<TextEncoder> startTagHelperWritingScope,
             Func<TagHelperContent> endTagHelperWritingScope)
         {
             if (startTagHelperWritingScope == null)
@@ -121,13 +121,13 @@ namespace Microsoft.AspNetCore.Razor.Runtime.TagHelpers
 
         private class ExecutionContextPool
         {
-            private readonly Action<HtmlEncoder> _startTagHelperWritingScope;
+            private readonly Action<TextEncoder> _startTagHelperWritingScope;
             private readonly Func<TagHelperContent> _endTagHelperWritingScope;
             private readonly List<TagHelperExecutionContext> _executionContexts;
             private int _nextIndex;
 
             public ExecutionContextPool(
-                Action<HtmlEncoder> startTagHelperWritingScope,
+                Action<TextEncoder> startTagHelperWritingScope,
                 Func<TagHelperContent> endTagHelperWritingScope)
             {
                 _executionContexts = new List<TagHelperExecutionContext>();

@@ -20,8 +20,8 @@ namespace Microsoft.AspNetCore.Mvc.Razor
         /// Creates a new instance of <see cref="HelperResult"/>.
         /// </summary>
         /// <param name="asyncAction">The asynchronous delegate to invoke when
-        /// <see cref="WriteTo(TextWriter, HtmlEncoder)"/> is called.</param>
-        /// <remarks>Calls to <see cref="WriteTo(TextWriter, HtmlEncoder)"/> result in a blocking invocation of
+        /// <see cref="WriteTo(TextWriter, TextEncoder)"/> is called.</param>
+        /// <remarks>Calls to <see cref="WriteTo(TextWriter, TextEncoder)"/> result in a blocking invocation of
         /// <paramref name="asyncAction"/>.</remarks>
         public HelperResult(Func<TextWriter, Task> asyncAction)
         {
@@ -34,7 +34,7 @@ namespace Microsoft.AspNetCore.Mvc.Razor
         }
 
         /// <summary>
-        /// Gets the asynchronous delegate to invoke when <see cref="WriteTo(TextWriter, HtmlEncoder)"/> is called.
+        /// Gets the asynchronous delegate to invoke when <see cref="WriteTo(TextWriter, TextEncoder)"/> is called.
         /// </summary>
         public Func<TextWriter, Task> WriteAction => _asyncAction;
 
@@ -42,8 +42,8 @@ namespace Microsoft.AspNetCore.Mvc.Razor
         /// Method invoked to produce content from the <see cref="HelperResult"/>.
         /// </summary>
         /// <param name="writer">The <see cref="TextWriter"/> instance to write to.</param>
-        /// <param name="encoder">The <see cref="HtmlEncoder"/> to encode the content.</param>
-        public virtual void WriteTo(TextWriter writer, HtmlEncoder encoder)
+        /// <param name="encoder">The <see cref="TextEncoder"/> to encode the content.</param>
+        public virtual void WriteTo(TextWriter writer, TextEncoder encoder)
         {
             if (writer == null)
             {

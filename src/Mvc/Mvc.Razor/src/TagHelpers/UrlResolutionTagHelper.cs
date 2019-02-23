@@ -88,8 +88,8 @@ namespace Microsoft.AspNetCore.Mvc.Razor.TagHelpers
         /// Creates a new <see cref="UrlResolutionTagHelper"/>.
         /// </summary>
         /// <param name="urlHelperFactory">The <see cref="IUrlHelperFactory"/>.</param>
-        /// <param name="htmlEncoder">The <see cref="HtmlEncoder"/>.</param>
-        public UrlResolutionTagHelper(IUrlHelperFactory urlHelperFactory, HtmlEncoder htmlEncoder)
+        /// <param name="htmlEncoder">The <see cref="TextEncoder"/>.</param>
+        public UrlResolutionTagHelper(IUrlHelperFactory urlHelperFactory, TextEncoder htmlEncoder)
         {
             UrlHelperFactory = urlHelperFactory;
             HtmlEncoder = htmlEncoder;
@@ -100,7 +100,7 @@ namespace Microsoft.AspNetCore.Mvc.Razor.TagHelpers
 
         protected IUrlHelperFactory UrlHelperFactory { get; }
 
-        protected HtmlEncoder HtmlEncoder { get; }
+        protected TextEncoder HtmlEncoder { get; }
 
         [HtmlAttributeNotBound]
         [ViewContext]
@@ -360,7 +360,7 @@ namespace Microsoft.AspNetCore.Mvc.Razor.TagHelpers
                 _secondSegment = secondSegment;
             }
 
-            public void WriteTo(TextWriter writer, HtmlEncoder encoder)
+            public void WriteTo(TextWriter writer, TextEncoder encoder)
             {
                 encoder.Encode(writer, _firstSegment, 0, _firstSegmentLength);
                 writer.Write(_secondSegment);

@@ -8,10 +8,10 @@ using System.Text.Encodings.Web;
 namespace Microsoft.AspNetCore.Razor.TagHelpers
 {
     /// <summary>
-    /// A <see cref="HtmlEncoder"/> that does not encode. Should not be used when writing directly to a response
+    /// A <see cref="TextEncoder"/> that does not encode. Should not be used when writing directly to a response
     /// expected to contain valid HTML.
     /// </summary>
-    public class NullHtmlEncoder : HtmlEncoder
+    public class NullHtmlEncoder : TextEncoder
     {
         /// <summary>
         /// Initializes a <see cref="NullHtmlEncoder"/> instance.
@@ -21,85 +21,20 @@ namespace Microsoft.AspNetCore.Razor.TagHelpers
         }
 
         /// <summary>
-        /// A <see cref="HtmlEncoder"/> instance that does not encode. Should not be used when writing directly to a
+        /// A <see cref="TextEncoder"/> instance that does not encode. Should not be used when writing directly to a
         /// response expected to contain valid HTML.
         /// </summary>
-        public static new NullHtmlEncoder Default { get; } = new NullHtmlEncoder();
+        public static NullHtmlEncoder Default { get; } = new NullHtmlEncoder();
 
-        /// <inheritdoc />
-        public override int MaxOutputCharactersPerInputCharacter
-        {
-            get
-            {
-                return 1;
-            }
-        }
+        public override int MaxOutputCharactersPerInputCharacter => 1;
 
-        /// <inheritdoc />
-        public override string Encode(string value)
-        {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
-            return value;
-        }
-
-        /// <inheritdoc />
-        public override void Encode(TextWriter output, char[] value, int startIndex, int characterCount)
-        {
-            if (output == null)
-            {
-                throw new ArgumentNullException(nameof(output));
-            }
-
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
-            if (characterCount == 0)
-            {
-                return;
-            }
-
-            output.Write(value, startIndex, characterCount);
-        }
-
-        /// <inheritdoc />
-        public override void Encode(TextWriter output, string value, int startIndex, int characterCount)
-        {
-            if (output == null)
-            {
-                throw new ArgumentNullException(nameof(output));
-            }
-
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
-            if (characterCount == 0)
-            {
-                return;
-            }
-
-            output.Write(value.Substring(startIndex, characterCount));
-        }
-
-        /// <inheritdoc />
         public override unsafe int FindFirstCharacterToEncode(char* text, int textLength)
         {
             return -1;
         }
 
         /// <inheritdoc />
-        public override unsafe bool TryEncodeUnicodeScalar(
-            int unicodeScalar,
-            char* buffer,
-            int bufferLength,
-            out int numberOfCharactersWritten)
+        public override unsafe bool TryEncodeUnicodeScalar(int unicodeScalar, char* buffer, int bufferLength, out int numberOfCharactersWritten)
         {
             if (buffer == null)
             {
