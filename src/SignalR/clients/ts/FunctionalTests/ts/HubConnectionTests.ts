@@ -54,6 +54,9 @@ describe("hubConnection", () => {
             it("can invoke server method and receive result", (done) => {
                 const message = "你好，世界！";
 
+                // Force test to fail.
+                expect(true).toBe(false);
+
                 const hubConnection = getConnectionBuilder(transportType)
                     .withHubProtocol(protocol)
                     .build();

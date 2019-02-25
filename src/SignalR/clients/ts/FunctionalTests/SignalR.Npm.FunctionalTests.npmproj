@@ -42,11 +42,21 @@
       <_TestSauceArgs>--verbose --no-color --configuration $(Configuration) --sauce-user "$(SauceUser)" --sauce-key "$(SauceKey)"</_TestSauceArgs>
       <_TestSauceArgs Condition="'$(BrowserTestHostName)' != ''">$(_TestSauceArgs) --use-hostname "$(BrowserTestHostName)"</_TestSauceArgs>
     </PropertyGroup>
+    
     <Message Text="test:sauce Args = $(_TestSauceArgs)" Importance="high" />
     <Exec Command="npm run test:sauce -- $(_TestSauceArgs)"
           Condition="'$(DailyTests)' == 'true'"
           WorkingDirectory="$(RepositoryRoot)src/SignalR/clients/ts/FunctionalTests"
-          IgnoreStandardErrorWarningFormat="true" />
+          IgnoreStandardErrorWarningFormat="true"
+          ContinueOnError="true">
+      <Output TaskParameter="ExitCode" PropertyName="ErrorCode"/>
+      <Message Importance="high" Text="First run failed with $(ErrorCode)"/>
+    </Exec>
+    <Message Condition="'$(ErrorCode)' == '1'" Text="Rerunning sauce labs tests" Importance="high" />
+    <Exec Command="npm run test:sauce -- $(_TestSauceArgs)"
+      Condition="'$(ErrorCode)' == '1'"
+      WorkingDirectory="$(RepositoryRoot)src/SignalR/clients/ts/FunctionalTests"
+      IgnoreStandardErrorWarningFormat="true"/>
   </Target>
 
 </Project>
