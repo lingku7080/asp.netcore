@@ -170,6 +170,7 @@ namespace Microsoft.AspNetCore.Http.Connections.Internal
                 connection.Cancellation = new CancellationTokenSource();
 
                 var ws = new WebSocketsTransport(options.WebSockets, connection.Application, connection, _loggerFactory);
+                await ws.Start(context);
 
                 await DoPersistentConnection(connectionDelegate, ws, context, connection);
             }
