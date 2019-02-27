@@ -86,7 +86,7 @@ namespace Microsoft.AspNetCore.Mvc.Routing
                         route.RouteName,
                         conventionalRouteOrder++,
                         route.DataTokens,
-                        suppressLinkGeneration: false,
+                        suppressLinkGeneration: true,
                         suppressPathMatching: false,
                         conventions);
                     endpoints.Add(builder);

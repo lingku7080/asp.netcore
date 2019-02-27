@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using Microsoft.AspNetCore.Routing.DecisionTree;
+using Microsoft.AspNetCore.Routing.Patterns;
 using Microsoft.AspNetCore.Routing.Tree;
 
 namespace Microsoft.AspNetCore.Routing.Internal
@@ -21,12 +22,38 @@ namespace Microsoft.AspNetCore.Routing.Internal
         private static readonly RouteValueDictionary EmptyAmbientValues = new RouteValueDictionary();
 
         private readonly DecisionTreeNode<OutboundMatch> _root;
+        private readonly List<OutboundMatch> _conventionalEntries;
         private readonly Dictionary<string, HashSet<object>> _knownValues;
 
         public LinkGenerationDecisionTree(IReadOnlyList<OutboundMatch> entries)
         {
+            var attributedEntries = new List<OutboundMatch>();
+            _conventionalEntries = new List<OutboundMatch>();
+            for (var i = 0; i < entries.Count; i++)
+            {
+                var isAttributeRoute = true;
+                var entry = entries[i];
+                foreach (var kvp in entry.Entry.RequiredLinkValues)
+                {
+                    if (object.ReferenceEquals(RoutePattern.RequiredValueAny, kvp.Value))
+                    {
+                        isAttributeRoute = false;
+                        break;
+                    }
+                }
+
+                if (isAttributeRoute)
+                {
+                    attributedEntries.Add(entry);
+                }
+                else
+                {
+                    _conventionalEntries.Add(entry);
+                }
+            }
+
             _root = DecisionTreeBuilder<OutboundMatch>.GenerateTree(
-                entries,
+                attributedEntries,
                 new OutboundMatchClassifier());
 
             _knownValues = new Dictionary<string, HashSet<object>>(StringComparer.OrdinalIgnoreCase);
@@ -49,10 +76,11 @@ namespace Microsoft.AspNetCore.Routing.Internal
         public IList<OutboundMatchResult> GetMatches(RouteValueDictionary values, RouteValueDictionary ambientValues)
         {
             // Perf: Avoid allocation for List if there aren't any Matches or Criteria
-            if (_root.Matches.Count > 0 || _root.Criteria.Count > 0)
+            if (_root.Matches.Count > 0 || _root.Criteria.Count > 0 || _conventionalEntries.Count > 0)
             {
                 var results = new List<OutboundMatchResult>();
                 Walk(results, values, ambientValues ?? EmptyAmbientValues, _root, isFallbackPath: false);
+                ProcessConventionalEntries(results, values, ambientValues ?? EmptyAmbientValues);
                 results.Sort(OutboundMatchResultComparer.Instance);
                 return results;
             }
@@ -144,6 +172,17 @@ namespace Microsoft.AspNetCore.Routing.Internal
                         Walk(results, values, ambientValues, branch, isFallbackPath: true);
                     }
                 }
+            }
+        }
+
+        private void ProcessConventionalEntries(
+            List<OutboundMatchResult> results,
+            RouteValueDictionary values,
+            RouteValueDictionary ambientvalues)
+        {
+            for (var i = 0; i < _conventionalEntries.Count; i++)
+            {
+                results.Add(new OutboundMatchResult(_conventionalEntries[i], isFallbackMatch: false));
             }
         }
 
