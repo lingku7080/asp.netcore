@@ -44,4 +44,8 @@
     <Reference Include="Microsoft.Extensions.Logging" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(BenchmarksTargetFramework)' != ''">
+    <FrameworkReference Update="Microsoft.AspNetCore.App" RuntimeFrameworkVersion="$(BenchmarksAspNetCoreVersion)" />
+    <FrameworkReference Update="Microsoft.NETCore.App" RuntimeFrameworkVersion="$(BenchmarksAspNetCoreVersion)" />
+  </ItemGroup>
 </Project>
