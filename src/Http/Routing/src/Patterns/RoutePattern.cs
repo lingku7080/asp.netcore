@@ -21,7 +21,7 @@ namespace Microsoft.AspNetCore.Routing.Patterns
         /// A marker object that can be used in <see cref="RequiredValues"/> to designate that
         /// any non-null or non-empty value is required.
         /// </summary>
-        public static object RequiredValueAny = new object();
+        public static object RequiredValueMatchAny = new object();
 
         private const string SeparatorString = "/";
 

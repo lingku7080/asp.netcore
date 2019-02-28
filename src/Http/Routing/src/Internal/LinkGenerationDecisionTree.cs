@@ -35,7 +35,7 @@ namespace Microsoft.AspNetCore.Routing.Internal
                 var entry = entries[i];
                 foreach (var kvp in entry.Entry.RequiredLinkValues)
                 {
-                    if (object.ReferenceEquals(RoutePattern.RequiredValueAny, kvp.Value))
+                    if (object.ReferenceEquals(RoutePattern.RequiredValueMatchAny, kvp.Value))
                     {
                         isAttributeRoute = false;
                         break;

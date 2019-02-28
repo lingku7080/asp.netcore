@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing.Internal;
 using Microsoft.AspNetCore.Routing.Template;
@@ -31,69 +32,93 @@ namespace Microsoft.AspNetCore.Routing
 
             var state = State;
 
-            IList<OutboundMatchResult> matchResults = null;
-            if (string.IsNullOrEmpty(address.RouteName))
+            List<RouteEndpoint> matches = null;
+            if (string.IsNullOrEmpty(address.RouteName) && state.Lookups.Count > 0)
             {
-                matchResults = state.AllMatchesLinkGenerationTree.GetMatches(
-                    address.ExplicitValues,
-                    address.AmbientValues);
-            }
-            else if (state.NamedMatches.TryGetValue(address.RouteName, out var namedMatchResults))
-            {
-                matchResults = namedMatchResults;
-            }
+                matches = new List<RouteEndpoint>();
 
-            if (matchResults != null)
-            {
-                var matchCount = matchResults.Count;
-                if (matchCount > 0)
+                var outboundEndpointMatches1 = new List<OutboundEndpointMatch>();
+
+                var lookup = state.Lookups[0];
+                lookup.AddMatches(outboundEndpointMatches1, address.ExplicitValues, address.AmbientValues);
+
+                OutboundEndpointMatch.QualityKind? quality1 = null;
+                for (var i = 0; i < outboundEndpointMatches1.Count; i++)
                 {
-                    if (matchResults.Count == 1)
+                    var match = outboundEndpointMatches1[i];
+                    if (quality1 == null)
                     {
-                        // Special case having a single result to avoid creating iterator state machine
-                        return new[] { (RouteEndpoint)matchResults[0].Match.Entry.Data };
+                        quality1 = match.Quality;
+                    }
+                    else if (match.Quality.CompareTo(quality1) < 0)
+                    {
+                        // better quality found
+                        quality1 = match.Quality;
+                    }
+                }
+
+                for (var i = 1; i < state.Lookups.Count; i++)
+                {
+                    var outboundEndpointMatches2 = new List<OutboundEndpointMatch>();
+
+                    lookup = state.Lookups[i];
+                    lookup.AddMatches(outboundEndpointMatches2, address.ExplicitValues, address.AmbientValues);
+
+                    OutboundEndpointMatch.QualityKind? quality2 = null;
+                    for (var j = 0; j < outboundEndpointMatches1.Count; j++)
+                    {
+                        var match = outboundEndpointMatches2[j];
+                        if (quality2 == null)
+                        {
+                            quality2 = match.Quality;
+                        }
+                        else if (match.Quality.CompareTo(quality2) < 0)
+                        {
+                            // better quality found
+                            quality2 = match.Quality;
+                        }
+                    }
+
+                    if (quality1.HasValue && (!quality2.HasValue || quality1.Value <= quality2))
+                    {
+                        // Ignore the second lookup, it's got worse results.
+                        outboundEndpointMatches2.Clear();
+                    }
+                    else if (quality2.HasValue && (!quality1.HasValue || quality2.Value <= quality1))
+                    {
+                        // Second lookup is better.
+                        outboundEndpointMatches1 = outboundEndpointMatches2;
+                        quality1 = quality2;
                     }
                     else
                     {
-                        // Use separate method since one cannot have regular returns in an iterator method
-                        return GetEndpoints(matchResults, matchCount);
+                        // This is ambiguous. Neither of these really wants to match.
+                        throw null;
                     }
                 }
+
+                outboundEndpointMatches1.Sort(new OutboundEndpointMatchComparer());
+
+                matches = new List<RouteEndpoint>(outboundEndpointMatches1.Count);
+                for (var i = 0; i < outboundEndpointMatches1.Count; i++)
+                {
+                    matches.Add(outboundEndpointMatches1[i].Endpoint);
+                }
             }
-
-            return Array.Empty<Endpoint>();
-        }
-
-        private static IEnumerable<Endpoint> GetEndpoints(IList<OutboundMatchResult> matchResults, int matchCount)
-        {
-            for (var i = 0; i < matchCount; i++)
+            else
             {
-                yield return (RouteEndpoint)matchResults[i].Match.Entry.Data;
+                state.RouteNameMatches.TryGetValue(address.RouteName, out matches);
             }
+
+            return (IEnumerable<Endpoint>)matches ?? Array.Empty<RouteEndpoint>();
         }
 
         private StateEntry Initialize(IReadOnlyList<Endpoint> endpoints)
         {
-            var allOutboundMatches = new List<OutboundMatch>();
-            var namedOutboundMatchResults = new Dictionary<string, List<OutboundMatchResult>>(StringComparer.OrdinalIgnoreCase);
+            // We need to filter out anything that can't be used to generate a URL.
+            var endpointsThatCanGenerate = new List<RouteEndpoint>();
+            var endpointsByRouteName = new Dictionary<string, List<RouteEndpoint>>(StringComparer.OrdinalIgnoreCase);
 
-            // Decision tree is built using the 'required values' of actions.
-            // - When generating a url using route values, decision tree checks the explicitly supplied route values +
-            //   ambient values to see if they have a match for the required-values-based-tree.
-            // - When generating a url using route name, route values for controller, action etc.might not be provided
-            //   (this is expected because as a user I want to avoid writing all those and instead chose to use a
-            //   routename which is quick). So since these values are not provided and might not be even in ambient
-            //   values, decision tree would fail to find a match. So for this reason decision tree is not used for named
-            //   matches. Instead all named matches are returned as is and the LinkGenerator uses a TemplateBinder to
-            //   decide which of the matches can generate a url.
-            //   For example, for a route defined like below with current ambient values like new { controller = "Home",
-            //   action = "Index" }
-            //     "api/orders/{id}",
-            //     routeName: "OrdersApi",
-            //     defaults: new { controller = "Orders", action = "GetById" },
-            //     requiredValues: new { controller = "Orders", action = "GetById" },
-            //   A call to GetLink("OrdersApi", new { id = "10" }) cannot generate url as neither the supplied values or
-            //   current ambient values do not satisfy the decision tree that is built based on the required values.
             for (var i = 0; i < endpoints.Count; i++)
             {
                 var endpoint = endpoints[i];
@@ -102,8 +127,8 @@ namespace Microsoft.AspNetCore.Routing
                     continue;
                 }
 
-                var metadata = endpoint.Metadata.GetMetadata<IRouteNameMetadata>();
-                if (metadata == null && routeEndpoint.RoutePattern.RequiredValues.Count == 0)
+                var routeName = endpoint.Metadata.GetMetadata<IRouteNameMetadata>()?.RouteName;
+                if (routeName == null && routeEndpoint.RoutePattern.RequiredValues.Count == 0)
                 {
                     continue;
                 }
@@ -113,50 +138,27 @@ namespace Microsoft.AspNetCore.Routing
                     continue;
                 }
 
-                var entry = CreateOutboundRouteEntry(
-                    routeEndpoint,
-                    routeEndpoint.RoutePattern.RequiredValues,
-                    metadata?.RouteName);
+                endpointsThatCanGenerate.Add(routeEndpoint);
 
-                var outboundMatch = new OutboundMatch() { Entry = entry };
-                allOutboundMatches.Add(outboundMatch);
-
-                if (string.IsNullOrEmpty(entry.RouteName))
+                if (!string.IsNullOrEmpty(routeName))
                 {
-                    continue;
-                }
+                    if (!endpointsByRouteName.TryGetValue(routeName, out var list))
+                    {
+                        list = new List<RouteEndpoint>();
+                        endpointsByRouteName.Add(routeName, list);
+                    }
 
-                if (!namedOutboundMatchResults.TryGetValue(entry.RouteName, out var matchResults))
-                {
-                    matchResults = new List<OutboundMatchResult>();
-                    namedOutboundMatchResults.Add(entry.RouteName, matchResults);
+                    list.Add(routeEndpoint);
                 }
-                matchResults.Add(new OutboundMatchResult(outboundMatch, isFallbackMatch: false));
             }
 
-            return new StateEntry(
-                allOutboundMatches,
-                new LinkGenerationDecisionTree(allOutboundMatches),
-                namedOutboundMatchResults);
-        }
+            var sets = KeySetClassifier.Partition(endpointsThatCanGenerate);
+            var lookups = sets.Select(s => new KeySetLookup(s.set, s.endpoints)).ToList();
 
-        private OutboundRouteEntry CreateOutboundRouteEntry(
-            RouteEndpoint endpoint,
-            IReadOnlyDictionary<string, object> requiredValues,
-            string routeName)
-        {
-            var entry = new OutboundRouteEntry()
-            {
-                Handler = NullRouter.Instance,
-                Order = endpoint.Order,
-                Precedence = RoutePrecedence.ComputeOutbound(endpoint.RoutePattern),
-                RequiredLinkValues = new RouteValueDictionary(requiredValues),
-                RouteTemplate = new RouteTemplate(endpoint.RoutePattern),
-                Data = endpoint,
-                RouteName = routeName,
-            };
-            entry.Defaults = new RouteValueDictionary(endpoint.RoutePattern.Defaults);
-            return entry;
+            return new StateEntry(
+                endpointsThatCanGenerate,
+                lookups,
+                endpointsByRouteName);
         }
 
         public void Dispose()
@@ -167,18 +169,18 @@ namespace Microsoft.AspNetCore.Routing
         internal class StateEntry
         {
             // For testing
-            public readonly List<OutboundMatch> AllMatches;
-            public readonly LinkGenerationDecisionTree AllMatchesLinkGenerationTree;
-            public readonly Dictionary<string, List<OutboundMatchResult>> NamedMatches;
+            public readonly IReadOnlyList<RouteEndpoint> Endpoints;
+            public readonly List<KeySetLookup> Lookups;
+            public readonly Dictionary<string, List<RouteEndpoint>> RouteNameMatches;
 
             public StateEntry(
-                List<OutboundMatch> allMatches,
-                LinkGenerationDecisionTree allMatchesLinkGenerationTree,
-                Dictionary<string, List<OutboundMatchResult>> namedMatches)
+                IReadOnlyList<RouteEndpoint> endpoints,
+                List<KeySetLookup> lookups,
+                Dictionary<string, List<RouteEndpoint>> routeNameMatches)
             {
-                AllMatches = allMatches;
-                AllMatchesLinkGenerationTree = allMatchesLinkGenerationTree;
-                NamedMatches = namedMatches;
+                Endpoints = endpoints;
+                Lookups = lookups;
+                RouteNameMatches = routeNameMatches;
             }
         }
     }

@@ -1,10 +1,9 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Features;
-using Microsoft.AspNetCore.Routing.Patterns;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing.Patterns;
 using Xunit;
 
 namespace Microsoft.AspNetCore.Routing
@@ -91,7 +90,7 @@ namespace Microsoft.AspNetCore.Routing
                         "{controller=Home}/{action=Index}/{id?}",
                         defaults: null,
                         parameterPolicies: null,
-                        requiredValues: new { controller = RoutePattern.RequiredValueAny, action = RoutePattern.RequiredValueAny, area = (string)null, page = (string)null,}),
+                        requiredValues: new { controller = RoutePattern.RequiredValueMatchAny, action = RoutePattern.RequiredValueMatchAny, area = (string)null, page = (string)null,}),
                     order: 2000,
                     metadata: new object[] { new SuppressMatchingMetadata(), }),
 
@@ -121,7 +120,7 @@ namespace Microsoft.AspNetCore.Routing
                         "Admin/{controller=Home}/{action=Index}/{id?}",
                         defaults: new { area = "Admin", },
                         parameterPolicies: new { area = "Admin", },
-                        requiredValues: new { controller = RoutePattern.RequiredValueAny, action = RoutePattern.RequiredValueAny, area = "Admin", page = (string)null,}),
+                        requiredValues: new { controller = RoutePattern.RequiredValueMatchAny, action = RoutePattern.RequiredValueMatchAny, area = "Admin", page = (string)null,}),
                     order: 1000,
                     metadata: new object[] { new SuppressMatchingMetadata(), }),
 

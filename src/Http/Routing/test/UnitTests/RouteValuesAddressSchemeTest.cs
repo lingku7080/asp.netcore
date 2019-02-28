@@ -15,7 +15,7 @@ namespace Microsoft.AspNetCore.Routing
     public class RouteValuesAddressSchemeTest
     {
         [Fact]
-        public void GetOutboundMatches_GetsNamedMatchesFor_EndpointsHaving_IRouteNameMetadata()
+        public void GetOutboundMatches_GetsRouteNameMatchesFor_EndpointsHaving_IRouteNameMetadata()
         {
             // Arrange
             var endpoint1 = CreateEndpoint("/a", routeName: "other");
@@ -25,12 +25,12 @@ namespace Microsoft.AspNetCore.Routing
             var addressScheme = CreateAddressScheme(endpoint1, endpoint2);
 
             // Assert
-            Assert.NotNull(addressScheme.State.AllMatches);
-            Assert.Equal(2, addressScheme.State.AllMatches.Count());
-            Assert.NotNull(addressScheme.State.NamedMatches);
-            Assert.True(addressScheme.State.NamedMatches.TryGetValue("named", out var namedMatches));
-            var namedMatch = Assert.Single(namedMatches);
-            var actual = Assert.IsType<RouteEndpoint>(namedMatch.Match.Entry.Data);
+            Assert.NotNull(addressScheme.State.Endpoints);
+            Assert.Equal(2, addressScheme.State.Endpoints.Count());
+            Assert.NotNull(addressScheme.State.RouteNameMatches);
+            Assert.True(addressScheme.State.RouteNameMatches.TryGetValue("named", out var RouteNameMatches));
+            var namedMatch = Assert.Single(RouteNameMatches);
+            var actual = Assert.IsType<RouteEndpoint>(namedMatch);
             Assert.Same(endpoint2, actual);
         }
 
@@ -46,13 +46,13 @@ namespace Microsoft.AspNetCore.Routing
             var addressScheme = CreateAddressScheme(endpoint1, endpoint2, endpoint3);
 
             // Assert
-            Assert.NotNull(addressScheme.State.AllMatches);
-            Assert.Equal(3, addressScheme.State.AllMatches.Count());
-            Assert.NotNull(addressScheme.State.NamedMatches);
-            Assert.True(addressScheme.State.NamedMatches.TryGetValue("named", out var namedMatches));
-            Assert.Equal(2, namedMatches.Count);
-            Assert.Same(endpoint2, Assert.IsType<RouteEndpoint>(namedMatches[0].Match.Entry.Data));
-            Assert.Same(endpoint3, Assert.IsType<RouteEndpoint>(namedMatches[1].Match.Entry.Data));
+            Assert.NotNull(addressScheme.State.Endpoints);
+            Assert.Equal(3, addressScheme.State.Endpoints.Count());
+            Assert.NotNull(addressScheme.State.RouteNameMatches);
+            Assert.True(addressScheme.State.RouteNameMatches.TryGetValue("named", out var RouteNameMatches));
+            Assert.Equal(2, RouteNameMatches.Count);
+            Assert.Same(endpoint2, Assert.IsType<RouteEndpoint>(RouteNameMatches[0]));
+            Assert.Same(endpoint3, Assert.IsType<RouteEndpoint>(RouteNameMatches[1]));
         }
 
         [Fact]
@@ -67,13 +67,13 @@ namespace Microsoft.AspNetCore.Routing
             var addressScheme = CreateAddressScheme(endpoint1, endpoint2, endpoint3);
 
             // Assert
-            Assert.NotNull(addressScheme.State.AllMatches);
-            Assert.Equal(3, addressScheme.State.AllMatches.Count());
-            Assert.NotNull(addressScheme.State.NamedMatches);
-            Assert.True(addressScheme.State.NamedMatches.TryGetValue("named", out var namedMatches));
-            Assert.Equal(2, namedMatches.Count);
-            Assert.Same(endpoint2, Assert.IsType<RouteEndpoint>(namedMatches[0].Match.Entry.Data));
-            Assert.Same(endpoint3, Assert.IsType<RouteEndpoint>(namedMatches[1].Match.Entry.Data));
+            Assert.NotNull(addressScheme.State.Endpoints);
+            Assert.Equal(3, addressScheme.State.Endpoints.Count());
+            Assert.NotNull(addressScheme.State.RouteNameMatches);
+            Assert.True(addressScheme.State.RouteNameMatches.TryGetValue("named", out var RouteNameMatches));
+            Assert.Equal(2, RouteNameMatches.Count);
+            Assert.Same(endpoint2, Assert.IsType<RouteEndpoint>(RouteNameMatches[0]));
+            Assert.Same(endpoint3, Assert.IsType<RouteEndpoint>(RouteNameMatches[1]));
         }
 
         [Fact]
@@ -88,9 +88,9 @@ namespace Microsoft.AspNetCore.Routing
 
             // Assert 1
             var state = addressScheme.State;
-            Assert.NotNull(state.AllMatches);
-            var match = Assert.Single(state.AllMatches);
-            var actual = Assert.IsType<RouteEndpoint>(match.Entry.Data);
+            Assert.NotNull(state.Endpoints);
+            var match = Assert.Single(state.Endpoints);
+            var actual = Assert.IsType<RouteEndpoint>(match);
             Assert.Same(endpoint1, actual);
 
             // Arrange 2
@@ -126,27 +126,27 @@ namespace Microsoft.AspNetCore.Routing
             Assert.NotSame(state, addressScheme.State);
             state = addressScheme.State;
 
-            Assert.NotNull(state.AllMatches);
+            Assert.NotNull(state.Endpoints);
             Assert.Collection(
-                state.AllMatches,
+                state.Endpoints,
                 (m) =>
                 {
-                    actual = Assert.IsType<RouteEndpoint>(m.Entry.Data);
+                    actual = Assert.IsType<RouteEndpoint>(m);
                     Assert.Same(endpoint1, actual);
                 },
                 (m) =>
                 {
-                    actual = Assert.IsType<RouteEndpoint>(m.Entry.Data);
+                    actual = Assert.IsType<RouteEndpoint>(m);
                     Assert.Same(endpoint2, actual);
                 },
                 (m) =>
                 {
-                    actual = Assert.IsType<RouteEndpoint>(m.Entry.Data);
+                    actual = Assert.IsType<RouteEndpoint>(m);
                     Assert.Same(endpoint3, actual);
                 },
                 (m) =>
                 {
-                    actual = Assert.IsType<RouteEndpoint>(m.Entry.Data);
+                    actual = Assert.IsType<RouteEndpoint>(m);
                     Assert.Same(endpoint4, actual);
                 });
         }
@@ -349,7 +349,7 @@ namespace Microsoft.AspNetCore.Routing
             var addressScheme = CreateAddressScheme(endpoint);
 
             // Assert
-            Assert.Empty(addressScheme.State.AllMatches);
+            Assert.Empty(addressScheme.State.Endpoints);
         }
 
         [Fact]
@@ -364,7 +364,7 @@ namespace Microsoft.AspNetCore.Routing
             var addressScheme = CreateAddressScheme(endpoint);
 
             // Assert
-            Assert.Same(endpoint, Assert.Single(addressScheme.State.AllMatches).Entry.Data);
+            Assert.Same(endpoint, Assert.Single(addressScheme.State.Endpoints));
         }
 
         private RouteValuesAddressScheme CreateAddressScheme(params Endpoint[] endpoints)
