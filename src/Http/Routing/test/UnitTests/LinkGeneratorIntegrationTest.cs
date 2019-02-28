@@ -24,7 +24,7 @@ namespace Microsoft.AspNetCore.Routing
                         "api/Pets/{id}",
                         defaults: new { controller = "Pets", action = "GetById", },
                         parameterPolicies: null,
-                        requiredValues: new { controller = "Pets", action = "GetById", area = (string)null, page = (string)null, }),
+                        requiredValues: new { controller = "Pets", action = "GetById", area = (string)null, }),
                     order: 0),
 
                 // Attribute routed endpoint 2
@@ -33,7 +33,7 @@ namespace Microsoft.AspNetCore.Routing
                         "api/Pets",
                         defaults: new { controller = "Pets", action = "GetAll", },
                         parameterPolicies: null,
-                        requiredValues: new { controller = "Pets", action = "GetAll", area = (string)null, page = (string)null, }),
+                        requiredValues: new { controller = "Pets", action = "GetAll", area = (string)null, }),
                     order: 0),
 
                 // Attribute routed endpoint 2
@@ -42,7 +42,7 @@ namespace Microsoft.AspNetCore.Routing
                         "api/Pets/{id}",
                         defaults: new { controller = "Pets", action = "Update", },
                         parameterPolicies: null,
-                        requiredValues: new { controller = "Pets", action = "Update", area = (string)null, page = (string)null, }),
+                        requiredValues: new { controller = "Pets", action = "Update", area = (string)null, }),
                     order: 0),
 
                 // Attribute routed endpoint 4
@@ -51,7 +51,7 @@ namespace Microsoft.AspNetCore.Routing
                         "api/Inventory/{searchTerm}/{page}",
                         defaults: new { controller = "Inventory", action = "Search", },
                         parameterPolicies: null,
-                        requiredValues: new { controller = "Inventory", action = "Search", area = (string)null, page = (string)null, }),
+                        requiredValues: new { controller = "Inventory", action = "Search", area = (string)null, }),
                     order: 0),
 
                 // Conventional routed endpoint 1
@@ -60,7 +60,7 @@ namespace Microsoft.AspNetCore.Routing
                         "{controller=Home}/{action=Index}/{id?}",
                         defaults: null,
                         parameterPolicies: null,
-                        requiredValues: new { controller = "Home", action = "Index", area = (string)null, page = (string)null, }),
+                        requiredValues: new { controller = "Home", action = "Index", area = (string)null, }),
                     order: 2000,
                     metadata: new object[] { new SuppressLinkGenerationMetadata(), }),
 
@@ -70,7 +70,7 @@ namespace Microsoft.AspNetCore.Routing
                         "{controller=Home}/{action=Index}/{id?}",
                         defaults: null,
                         parameterPolicies: null,
-                        requiredValues: new { controller = "Home", action = "About", area = (string)null, page = (string)null, }),
+                        requiredValues: new { controller = "Home", action = "About", area = (string)null, }),
                     order: 2000,
                     metadata: new object[] { new SuppressLinkGenerationMetadata(), }),
 
@@ -80,7 +80,7 @@ namespace Microsoft.AspNetCore.Routing
                         "{controller=Home}/{action=Index}/{id?}",
                         defaults: null,
                         parameterPolicies: null,
-                        requiredValues: new { controller = "Store", action = "Browse", area = (string)null, page = (string)null, }),
+                        requiredValues: new { controller = "Store", action = "Browse", area = (string)null, }),
                     order: 2000,
                     metadata: new object[] { new SuppressLinkGenerationMetadata(), }),
 
@@ -90,7 +90,7 @@ namespace Microsoft.AspNetCore.Routing
                         "{controller=Home}/{action=Index}/{id?}",
                         defaults: null,
                         parameterPolicies: null,
-                        requiredValues: new { controller = RoutePattern.RequiredValueMatchAny, action = RoutePattern.RequiredValueMatchAny, area = (string)null, page = (string)null,}),
+                        requiredValues: new { controller = RoutePattern.RequiredValueMatchAny, action = RoutePattern.RequiredValueMatchAny, area = (string)null, }),
                     order: 2000,
                     metadata: new object[] { new SuppressMatchingMetadata(), }),
 
@@ -100,7 +100,7 @@ namespace Microsoft.AspNetCore.Routing
                         "Admin/{controller=Home}/{action=Index}/{id?}",
                         defaults: new { area = "Admin", },
                         parameterPolicies: new { controller = "Admin", },
-                        requiredValues: new { area = "Admin", controller = "Users", action = "Add", page = (string)null, }),
+                        requiredValues: new { area = "Admin", controller = "Users", action = "Add", }),
                     order: 1000,
                     metadata: new object[] { new SuppressLinkGenerationMetadata(), }),
 
@@ -110,7 +110,7 @@ namespace Microsoft.AspNetCore.Routing
                         "Admin/{controller=Home}/{action=Index}/{id?}",
                         defaults: new { area = "Admin", },
                         parameterPolicies: new { controller = "Admin", },
-                        requiredValues: new { area = "Admin", controller = "Users", action = "Remove", page = (string)null, }),
+                        requiredValues: new { area = "Admin", controller = "Users", action = "Remove", }),
                     order: 1000,
                     metadata: new object[] { new SuppressLinkGenerationMetadata(), }),
 
@@ -120,7 +120,7 @@ namespace Microsoft.AspNetCore.Routing
                         "Admin/{controller=Home}/{action=Index}/{id?}",
                         defaults: new { area = "Admin", },
                         parameterPolicies: new { area = "Admin", },
-                        requiredValues: new { controller = RoutePattern.RequiredValueMatchAny, action = RoutePattern.RequiredValueMatchAny, area = "Admin", page = (string)null,}),
+                        requiredValues: new { controller = RoutePattern.RequiredValueMatchAny, action = RoutePattern.RequiredValueMatchAny, area = "Admin", }),
                     order: 1000,
                     metadata: new object[] { new SuppressMatchingMetadata(), }),
 
@@ -130,7 +130,7 @@ namespace Microsoft.AspNetCore.Routing
                         "Pages",
                         defaults: new { page = "/Pages/Index", },
                         parameterPolicies: null,
-                        requiredValues: new { controller = (string)null, action = (string)null, area = (string)null, page = "/Pages/Index", }),
+                        requiredValues: new { area = (string)null, page = "/Pages/Index", }),
                     order: 0),
 
                 // Razor Page 1 secondary endpoint
@@ -139,7 +139,7 @@ namespace Microsoft.AspNetCore.Routing
                         "Pages/Index",
                         defaults: new { page = "/Pages/Index", },
                         parameterPolicies: null,
-                        requiredValues: new { controller = (string)null, action = (string)null, area = (string)null, page = "/Pages/Index", }),
+                        requiredValues: new { area = (string)null, page = "/Pages/Index", }),
                     order: 0,
                     metadata: new object[] { new SuppressLinkGenerationMetadata(), }),
 
@@ -149,7 +149,7 @@ namespace Microsoft.AspNetCore.Routing
                         "Pages/Help/{id?}",
                         defaults: new { page = "/Pages/Help", },
                         parameterPolicies: null,
-                        requiredValues: new { controller = (string)null, action = (string)null, area = (string)null, page = "/Pages/Help", }),
+                        requiredValues: new { area = (string)null, page = "/Pages/Help", }),
                     order: 0),
 
                 // Razor Page 3 primary endpoint
@@ -158,7 +158,7 @@ namespace Microsoft.AspNetCore.Routing
                         "Pages/About/{id?}",
                         defaults: new { page = "/Pages/About", },
                         parameterPolicies: null,
-                        requiredValues: new { controller = (string)null, action = (string)null, area = (string)null, page = "/Pages/About", }),
+                        requiredValues: new { area = (string)null, page = "/Pages/About", }),
                     order: 0),
 
                 // Razor Page 4 with area primary endpoint
@@ -167,7 +167,7 @@ namespace Microsoft.AspNetCore.Routing
                         "Admin/Pages",
                         defaults: new { page = "/Pages/Index", area = "Admin", },
                         parameterPolicies: null,
-                        requiredValues: new { controller = (string)null, action = (string)null, area = "Admin", page = "/Pages/Index", }),
+                        requiredValues: new { area = "Admin", page = "/Pages/Index", }),
                     order: 0),
 
                 // Razor Page 4 with area secondary endpoint
@@ -176,7 +176,7 @@ namespace Microsoft.AspNetCore.Routing
                         "Admin/Pages/Index",
                         defaults: new { page = "/Pages/Index", area = "Admin", },
                         parameterPolicies: null,
-                        requiredValues: new { controller = (string)null, action = (string)null, area = "Admin", page = "/Pages/Index", }),
+                        requiredValues: new { area = "Admin", page = "/Pages/Index", }),
                     order: 0,
                     metadata: new object[] { new SuppressLinkGenerationMetadata(), }),
             };

@@ -65,7 +65,7 @@ namespace Microsoft.AspNetCore.Routing
                     lookup.AddMatches(outboundEndpointMatches2, address.ExplicitValues, address.AmbientValues);
 
                     OutboundEndpointMatch.QualityKind? quality2 = null;
-                    for (var j = 0; j < outboundEndpointMatches1.Count; j++)
+                    for (var j = 0; j < outboundEndpointMatches2.Count; j++)
                     {
                         var match = outboundEndpointMatches2[j];
                         if (quality2 == null)

@@ -113,15 +113,14 @@ namespace Microsoft.AspNetCore.Routing
                         {
                             values[j] = value;
                         }
-                        else if (!(permutation[0x00000000 << j]) && ambientValues.TryGetValue(key, out value))
+                        else if (permutation[0x00000000 << j])
+                        {
+                            values[j] = string.Empty;
+                        }
+                        else if (ambientValues.TryGetValue(key, out value))
                         {
                             quality = OutboundEndpointMatch.QualityKind.Ambient;
                             values[j] = value;
-                        }
-                        else if (permutation[0x00000000 << j])
-                        {
-                            quality = OutboundEndpointMatch.QualityKind.Ambient;
-                            values[j] = string.Empty;
                         }
                         else
                         {
