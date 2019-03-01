@@ -429,7 +429,6 @@ namespace Microsoft.AspNetCore.Server.Kestrel.InMemory.FunctionalTests
             using (var server = new TestServer(async httpContext =>
             {
                 var response = httpContext.Response;
-                await response.StartAsync();
                 var memory = response.BodyPipe.GetMemory();
                 var fisrtPartOfResponse = Encoding.ASCII.GetBytes("Hello ");
                 fisrtPartOfResponse.CopyTo(memory);
@@ -476,7 +475,6 @@ namespace Microsoft.AspNetCore.Server.Kestrel.InMemory.FunctionalTests
             using (var server = new TestServer(async httpContext =>
             {
                 var response = httpContext.Response;
-                await response.StartAsync();
 
                 var memory = response.BodyPipe.GetMemory();
                 length.Value = memory.Length;
@@ -590,7 +588,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.InMemory.FunctionalTests
             {
                 var response = httpContext.Response;
 
-                await response.StartAsync();
+                await Task.CompletedTask;
 
                 var memory = response.BodyPipe.GetMemory(4096);
                 var fisrtPartOfResponse = Encoding.ASCII.GetBytes("Hello ");
@@ -633,6 +631,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.InMemory.FunctionalTests
             using (var server = new TestServer(async httpContext =>
             {
                 var response = httpContext.Response;
+                await Task.CompletedTask;
 
                 // To avoid using span in an async method
                 void NonAsyncMethod()
@@ -646,8 +645,6 @@ namespace Microsoft.AspNetCore.Server.Kestrel.InMemory.FunctionalTests
                     secondPartOfResponse.CopyTo(span.Slice(6));
                     response.BodyPipe.Advance(6);
                 }
-
-                await response.StartAsync();
 
                 NonAsyncMethod();
             }, testContext))
@@ -683,8 +680,6 @@ namespace Microsoft.AspNetCore.Server.Kestrel.InMemory.FunctionalTests
             using (var server = new TestServer(async httpContext =>
             {
                 var response = httpContext.Response;
-
-                await response.StartAsync();
 
                 var memory = response.BodyPipe.GetMemory(4096);
                 var fisrtPartOfResponse = Encoding.ASCII.GetBytes("Hello ");
@@ -725,8 +720,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.InMemory.FunctionalTests
             using (var server = new TestServer(async httpContext =>
             {
                 var response = httpContext.Response;
-
-                await response.StartAsync();
+                await Task.CompletedTask;
 
                 var memory = response.BodyPipe.GetMemory(0);
 
@@ -768,8 +762,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.InMemory.FunctionalTests
             using (var server = new TestServer(async httpContext =>
             {
                 var response = httpContext.Response;
-
-                await response.StartAsync();
+                await Task.CompletedTask;
 
                 var memory = response.BodyPipe.GetMemory(4096);
                 var fisrtPartOfResponse = Encoding.ASCII.GetBytes(new string('a', writeSize));
@@ -806,7 +799,6 @@ namespace Microsoft.AspNetCore.Server.Kestrel.InMemory.FunctionalTests
             using (var server = new TestServer(async httpContext =>
             {
                 var response = httpContext.Response;
-                await response.StartAsync();
                 var memory = response.BodyPipe.GetMemory(4096);
                 var fisrtPartOfResponse = Encoding.ASCII.GetBytes("hello,");
                 fisrtPartOfResponse.CopyTo(memory);
