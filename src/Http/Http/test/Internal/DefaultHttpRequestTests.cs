@@ -252,6 +252,14 @@ namespace Microsoft.AspNetCore.Http.Internal
         }
 
         [Fact]
+        public void Body_CanGet()
+        {
+            var context = new DefaultHttpContext();
+            var body = context.Request.Body;
+            Assert.NotNull(body);
+        }
+
+        [Fact]
         public void BodyPipe_CanSet()
         {
             var pipeReader = new Pipe().Reader;
@@ -272,13 +280,6 @@ namespace Microsoft.AspNetCore.Http.Internal
             var bodyPipe = context.Request.BodyPipe as StreamPipeReader;
 
             Assert.Equal(expectedStream, bodyPipe.InnerStream);
-        }
-
-        [Fact]
-        public void BodyPipe_ThrowsWhenSettingNull()
-        {
-            var context = new DefaultHttpContext();
-            Assert.Throws<ArgumentNullException>(() => context.Request.BodyPipe = null);
         }
 
         private class CustomRouteValuesFeature : IRouteValuesFeature

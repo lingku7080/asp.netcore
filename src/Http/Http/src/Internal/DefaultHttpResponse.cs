@@ -17,7 +17,7 @@ namespace Microsoft.AspNetCore.Http.Internal
         private readonly static Func<IFeatureCollection, IHttpResponseFeature> _nullResponseFeature = f => null;
         private readonly static Func<IFeatureCollection, IHttpResponseStartFeature> _nullResponseStartFeature = f => null;
         private readonly static Func<IFeatureCollection, IResponseCookiesFeature> _newResponseCookiesFeature = f => new ResponseCookiesFeature(f);
-        private readonly static Func<HttpContext, IResponseBodyPipeFeature> _newResponseBodyPipeFeature = context => new ResponseBodyPipeFeature(context);
+        private readonly static Func<IFeatureCollection, IResponseBodyPipeFeature> _nullResponseBodyPipeFeature = f => null;
 
         private readonly DefaultHttpContext _context;
         private FeatureReferences<FeatureInterfaces> _features;
@@ -53,7 +53,7 @@ namespace Microsoft.AspNetCore.Http.Internal
             _features.Fetch(ref _features.Cache.Cookies, _newResponseCookiesFeature);
 
         private IResponseBodyPipeFeature ResponseBodyPipeFeature =>
-            _features.Fetch(ref _features.Cache.BodyPipe, this.HttpContext, _newResponseBodyPipeFeature);
+            _features.Fetch(ref _features.Cache.BodyPipe, _nullResponseBodyPipeFeature);
 
         public override HttpContext HttpContext { get { return _context; } }
 
@@ -111,8 +111,8 @@ namespace Microsoft.AspNetCore.Http.Internal
 
         public override PipeWriter BodyPipe
         {
-            get { return ResponseBodyPipeFeature.ResponseBodyPipe; }
-            set { ResponseBodyPipeFeature.ResponseBodyPipe = value; }
+            get { return ResponseBodyPipeFeature.BodyPipe; }
+            set { ResponseBodyPipeFeature.BodyPipe = value; }
         }
 
         public override void OnStarting(Func<object, Task> callback, object state)

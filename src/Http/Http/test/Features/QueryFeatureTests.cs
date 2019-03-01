@@ -12,7 +12,8 @@ namespace Microsoft.AspNetCore.Http.Features
         {
             // Arrange
             var features = new FeatureCollection();
-            var request = new HttpRequestFeature();
+            var context = new DefaultHttpContext(features);
+            var request = new HttpRequestFeature(context);
             request.QueryString = "foo=bar";
             features[typeof(IHttpRequestFeature)] = request;
 
@@ -34,7 +35,8 @@ namespace Microsoft.AspNetCore.Http.Features
         public void KeyWithoutValuesAddedToQueryCollection(string queryString, string emptyParam)
         {
             var features = new FeatureCollection();
-            var request = new HttpRequestFeature();
+            var context = new DefaultHttpContext(features);
+            var request = new HttpRequestFeature(context);
             request.QueryString = queryString;
             features[typeof(IHttpRequestFeature)] = request;
 
@@ -53,7 +55,8 @@ namespace Microsoft.AspNetCore.Http.Features
         public void EmptyKeysNotAddedToQueryCollection(string queryString)
         {
             var features = new FeatureCollection();
-            var request = new HttpRequestFeature();
+            var context = new DefaultHttpContext(features);
+            var request = new HttpRequestFeature(context);
             request.QueryString = queryString;
             features[typeof(IHttpRequestFeature)] = request;
 

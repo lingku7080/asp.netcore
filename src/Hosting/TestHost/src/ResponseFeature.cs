@@ -3,13 +3,14 @@
 
 using System;
 using System.IO;
+using System.IO.Pipelines;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 
 namespace Microsoft.AspNetCore.TestHost
 {
-    internal class ResponseFeature : IHttpResponseFeature
+    internal class ResponseFeature : IHttpResponseFeature, IResponseBodyPipeFeature
     {
         private Func<Task> _responseStartingAsync = () => Task.FromResult(true);
         private Func<Task> _responseCompletedAsync = () => Task.FromResult(true);
@@ -17,11 +18,21 @@ namespace Microsoft.AspNetCore.TestHost
         private int _statusCode;
         private string _reasonPhrase;
 
-        public ResponseFeature()
-        {
-            Headers = _headers;
-            Body = new MemoryStream();
+        private Stream _internalStream;
+        private HttpContext _context;
+        private PipeWriter _internalPipeWriter;
 
+        public ResponseFeature() : this(null)
+        {
+        }
+
+        public ResponseFeature(HttpContext context)
+        {
+            _context = context;
+
+            Headers = _headers;
+            _internalStream = new MemoryStream();
+            _internalPipeWriter = new NullPipeWriter();
             // 200 is the default status code all the way down to the host, so we set it
             // here to be consistent with the rest of the hosts when writing tests.
             StatusCode = 200;
@@ -61,7 +72,36 @@ namespace Microsoft.AspNetCore.TestHost
 
         public IHeaderDictionary Headers { get; set; }
 
-        public Stream Body { get; set; }
+        public Stream Body
+        {
+            get
+            {
+                return _internalStream;
+            }
+            set
+            {
+                _internalStream = value;
+                var streamPipeWriter = new StreamPipeWriter(_internalStream);
+                _internalPipeWriter = streamPipeWriter;
+                if (_context != null)
+                {
+                    _context.Response.RegisterForDispose(streamPipeWriter);
+                }
+            }
+        }
+
+        public PipeWriter BodyPipe
+        {
+            get
+            {
+                return _internalPipeWriter;
+            }
+            set
+            {
+                _internalPipeWriter = value;
+                _internalStream = new WriteOnlyPipeStream(_internalPipeWriter);
+            }
+        }
 
         public bool HasStarted { get; set; }
 
