@@ -1067,7 +1067,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http
                 {
                     _keepAlive = false;
                 }
-                else if ((appCompleted || !_canWriteResponseBody) && !_hasWritten)
+                else if (!_canWriteResponseBody || (appCompleted && !_hasWritten))
                 {
                     // Don't set the Content-Length header automatically for HEAD requests, 204 responses, or 304 responses.
                     if (CanAutoSetContentLengthZeroResponseHeader())
@@ -1269,7 +1269,6 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http
 
         public void Advance(int bytes)
         {
-            // EW, fix this asap TODO
             if (bytes < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(bytes));

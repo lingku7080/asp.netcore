@@ -503,12 +503,71 @@ namespace Microsoft.AspNetCore.Server.Kestrel.InMemory.FunctionalTests
             }
         }
 
+        [Theory]
+        [InlineData(StatusCodes.Status204NoContent)]
+        [InlineData(StatusCodes.Status304NotModified)]
+        public async Task TransferEncodingChunkedNotSetOnNonBodyResponseAfterWritingContentWithGetMemory(int statusCode)
+        {
+            using (var server = new TestServer(httpContext =>
+            {
+                httpContext.Response.StatusCode = statusCode;
+                var memory = httpContext.Response.BodyPipe.GetMemory();
+                httpContext.Response.BodyPipe.Advance(memory.Length);
+                return Task.CompletedTask;
+            }, new TestServiceContext(LoggerFactory)))
+            {
+                using (var connection = server.CreateConnection())
+                {
+                    await connection.Send(
+                        "GET / HTTP/1.1",
+                        "Host:",
+                        "",
+                        "");
+                    await connection.Receive(
+                        $"HTTP/1.1 {Encoding.ASCII.GetString(ReasonPhrases.ToStatusBytes(statusCode))}",
+                        $"Date: {server.Context.DateHeaderValue}",
+                        "",
+                        "");
+                }
+                await server.StopAsync();
+            }
+        }
+
         [Fact]
         public async Task ContentLengthZeroSetOn205Response()
         {
             using (var server = new TestServer(httpContext =>
             {
                 httpContext.Response.StatusCode = 205;
+                return Task.CompletedTask;
+            }, new TestServiceContext(LoggerFactory)))
+            {
+                using (var connection = server.CreateConnection())
+                {
+                    await connection.Send(
+                        "GET / HTTP/1.1",
+                        "Host:",
+                        "",
+                        "");
+                    await connection.Receive(
+                        $"HTTP/1.1 205 Reset Content",
+                        $"Date: {server.Context.DateHeaderValue}",
+                        "Content-Length: 0",
+                        "",
+                        "");
+                }
+                await server.StopAsync();
+            }
+        }
+
+        [Fact]
+        public async Task ContentLengthZeroSetOn205ResponseWithGetMemory()
+        {
+            using (var server = new TestServer(httpContext =>
+            {
+                httpContext.Response.StatusCode = 205;
+                var memory = httpContext.Response.BodyPipe.GetMemory();
+                httpContext.Response.BodyPipe.Advance(memory.Length);
                 return Task.CompletedTask;
             }, new TestServiceContext(LoggerFactory)))
             {
@@ -766,6 +825,45 @@ namespace Microsoft.AspNetCore.Server.Kestrel.InMemory.FunctionalTests
         }
 
         [Fact]
+        public async Task ThrowsAndClosesConnectionWhenAppWritesMoreThanContentLengthWithGetMemory()
+        {
+            var serviceContext = new TestServiceContext(LoggerFactory);
+
+            using (var server = new TestServer(async httpContext =>
+            {
+                httpContext.Response.ContentLength = 11;
+
+                var memory = httpContext.Response.BodyPipe.GetMemory();
+                Encoding.ASCII.GetBytes("Hello World!").CopyTo(memory);
+                httpContext.Response.BodyPipe.Advance(12);
+                await Task.CompletedTask;
+            }, serviceContext))
+            {
+                using (var connection = server.CreateConnection())
+                {
+                    await connection.Send(
+                        "GET / HTTP/1.1",
+                        "Host:",
+                        "",
+                        "");
+                    await connection.ReceiveEnd(
+                        $"HTTP/1.1 500 Internal Server Error",
+                        "Connection: close",
+                        $"Date: {server.Context.DateHeaderValue}",
+                        "Content-Length: 0",
+                        "",
+                        "");
+                }
+                await server.StopAsync();
+            }
+
+            var logMessage = Assert.Single(TestApplicationErrorLogger.Messages, message => message.LogLevel == LogLevel.Error);
+            Assert.Equal(
+                $"Response Content-Length mismatch: too many bytes written (12 of 11).",
+                logMessage.Exception.Message);
+        }
+
+        [Fact]
         public async Task InternalServerErrorAndConnectionClosedOnWriteWithMoreThanContentLengthAndResponseNotStarted()
         {
             var serviceContext = new TestServiceContext(LoggerFactory)
@@ -876,6 +974,65 @@ namespace Microsoft.AspNetCore.Server.Kestrel.InMemory.FunctionalTests
                         "Content-Length: 13",
                         "",
                         "hello, world");
+
+                    // Wait for error message to be logged.
+                    await logTcs.Task.DefaultTimeout();
+
+                    // The server should close the connection in this situation.
+                    await connection.WaitForConnectionClose();
+                }
+                await server.StopAsync();
+            }
+
+            mockTrace.Verify(trace =>
+                trace.ApplicationError(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.Is<InvalidOperationException>(ex =>
+                        ex.Message.Equals($"Response Content-Length mismatch: too few bytes written (12 of 13).", StringComparison.Ordinal))));
+        }
+
+        [Fact]
+        public async Task WhenAppWritesLessThanContentLengthErrorLoggedWithGetMemory()
+        {
+            var logTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var mockTrace = new Mock<IKestrelTrace>();
+            mockTrace
+                .Setup(trace => trace.ApplicationError(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<InvalidOperationException>()))
+                .Callback<string, string, Exception>((connectionId, requestId, ex) =>
+                {
+                    logTcs.SetResult(null);
+                });
+
+            using (var server = new TestServer(async httpContext =>
+            {
+                httpContext.Response.ContentLength = 13;
+                var memory = httpContext.Response.BodyPipe.GetMemory();
+                Encoding.ASCII.GetBytes("Hello World!").CopyTo(memory);
+                httpContext.Response.BodyPipe.Advance(12);
+                await Task.CompletedTask;
+
+            }, new TestServiceContext(LoggerFactory, mockTrace.Object)))
+            {
+                using (var connection = server.CreateConnection())
+                {
+                    await connection.Send(
+                        "GET / HTTP/1.1",
+                        "Host:",
+                        "",
+                        "");
+
+                    // Don't use ReceiveEnd here, otherwise the FIN might
+                    // abort the request before the server checks the
+                    // response content length, in which case the check
+                    // will be skipped.
+                    await connection.ReceiveEnd(
+                        $"HTTP/1.1 500 Internal Server Error",
+                        "Connection: close",
+                        $"Date: {server.Context.DateHeaderValue}",
+                        "Content-Length: 0",
+                        "",
+                        "");
 
                     // Wait for error message to be logged.
                     await logTcs.Task.DefaultTimeout();
