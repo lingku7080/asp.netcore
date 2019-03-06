@@ -61,6 +61,7 @@
     <ClInclude Include="..\..\logger.h" />
     <ClInclude Include="..\..\negotiation_response.h" />
     <ClInclude Include="..\..\request_sender.h" />
+    <ClInclude Include="..\..\signalr_event_loop.h" />
     <ClInclude Include="..\..\stdafx.h" />
     <ClInclude Include="..\..\trace_log_writer.h" />
     <ClInclude Include="..\..\transport.h" />
@@ -82,6 +83,7 @@
     <ClCompile Include="..\..\logger.cpp" />
     <ClCompile Include="..\..\request_sender.cpp" />
     <ClCompile Include="..\..\signalr_client_config.cpp" />
+    <ClCompile Include="..\..\signalr_event_loop.cpp" />
     <ClCompile Include="..\..\stdafx.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>

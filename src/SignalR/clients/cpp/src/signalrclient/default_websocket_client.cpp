@@ -33,13 +33,21 @@ namespace signalr
         return m_underlying_client.send(msg);
     }
 
-    pplx::task<std::string> default_websocket_client::receive()
+    void default_websocket_client::receive(signalr_message_cb callback)
     {
         // the caller is responsible for observing exceptions
-        return m_underlying_client.receive()
-            .then([](web::websockets::client::websocket_incoming_message msg)
+        m_underlying_client.receive()
+            .then([callback](pplx::task<web::websockets::client::websocket_incoming_message> task) mutable
             {
-                return msg.extract_string();
+                try
+                {
+                    auto message = task.get();
+                    callback(message.extract_string().get(), nullptr);
+                }
+                catch (...)
+                {
+                    callback("", std::current_exception());
+                }
             });
     }
 

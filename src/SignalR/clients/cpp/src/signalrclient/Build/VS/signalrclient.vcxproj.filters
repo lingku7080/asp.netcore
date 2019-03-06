@@ -111,6 +111,9 @@
     <ClInclude Include="..\..\..\..\include\signalrclient\signalr_client_config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\signalr_event_loop.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\stdafx.cpp">
@@ -165,6 +168,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\request_sender.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\signalr_event_loop.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

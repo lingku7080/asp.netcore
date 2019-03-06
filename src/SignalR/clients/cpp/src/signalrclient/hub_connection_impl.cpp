@@ -43,7 +43,7 @@ namespace signalr
         const std::shared_ptr<log_writer>& log_writer, std::unique_ptr<web_request_factory> web_request_factory,
         std::unique_ptr<transport_factory> transport_factory)
         : m_connection(connection_impl::create(url, trace_level, log_writer,
-        std::move(web_request_factory), std::move(transport_factory))), m_logger(log_writer, trace_level),
+        std::move(web_request_factory), std::move(transport_factory), m_event_loop)), m_logger(log_writer, trace_level),
         m_callback_manager(json::value::parse(_XPLATSTR("{ \"error\" : \"connection went out of scope before invocation result was received\"}"))),
         m_disconnected([]() noexcept {}), m_handshakeReceived(false)
     { }
@@ -73,6 +73,8 @@ namespace signalr
                 connection->m_disconnected();
             }
         });
+
+        m_event_loop.run();
     }
 
     void hub_connection_impl::on(const std::string& event_name, const std::function<void(const json::value &)>& handler)

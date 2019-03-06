@@ -16,7 +16,8 @@ namespace signalr
         virtual std::shared_ptr<transport> create_transport(transport_type transport_type, const logger& logger,
             const signalr_client_config& signalr_client_config,
             std::function<void(const std::string&)> process_response_callback,
-            std::function<void(const std::exception&)> error_callback);
+            std::function<void(const std::exception&)> error_callback,
+            signalr_event_loop& event_loop);
 
         virtual ~transport_factory();
     };

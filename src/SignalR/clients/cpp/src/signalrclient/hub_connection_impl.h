@@ -7,6 +7,7 @@
 #include "connection_impl.h"
 #include "callback_manager.h"
 #include "case_insensitive_comparison_utils.h"
+#include "signalr_event_loop.h"
 
 using namespace web;
 
@@ -56,6 +57,7 @@ namespace signalr
         pplx::task_completion_event<void> m_handshakeTask;
         std::function<void()> m_disconnected;
         signalr_client_config m_signalr_client_config;
+        signalr_event_loop m_event_loop;
 
         void initialize();
 

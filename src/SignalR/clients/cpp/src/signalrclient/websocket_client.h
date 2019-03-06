@@ -4,6 +4,7 @@
 #pragma once
 
 #include "pplx/pplxtasks.h"
+#include "signalr_event_loop.h"
 
 namespace signalr
 {
@@ -14,7 +15,7 @@ namespace signalr
 
         virtual pplx::task<void> send(const std::string& message) = 0;
 
-        virtual pplx::task<std::string> receive() = 0;
+        virtual void receive(signalr_message_cb callback) = 0;
 
         virtual pplx::task<void> close() = 0;
 

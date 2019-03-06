@@ -18,7 +18,7 @@ namespace signalr
 
         pplx::task<void> send(const std::string& message) override;
 
-        pplx::task<std::string> receive() override;
+        void receive(signalr_message_cb callback) override;
 
         pplx::task<void> close() override;
 

@@ -6,13 +6,14 @@
 #include "pplx/pplxtasks.h"
 #include "signalrclient/transport_type.h"
 #include "logger.h"
+#include "signalr_event_loop.h"
 
 namespace signalr
 {
     class transport
     {
     public:
-        virtual pplx::task<void> connect(const std::string &url) = 0;
+        virtual void connect(const std::string &url, signalr_cb callback) = 0;
 
         virtual pplx::task<void> send(const std::string &data) = 0;
 

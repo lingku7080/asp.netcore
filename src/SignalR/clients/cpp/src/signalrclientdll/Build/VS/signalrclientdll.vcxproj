@@ -61,6 +61,7 @@
     <ClInclude Include="..\..\..\signalrclient\logger.h" />
     <ClInclude Include="..\..\..\signalrclient\negotiation_response.h" />
     <ClInclude Include="..\..\..\signalrclient\request_sender.h" />
+    <ClInclude Include="..\..\..\signalrclient\signalr_event_loop.h" />
     <ClInclude Include="..\..\..\signalrclient\stdafx.h" />
     <ClInclude Include="..\..\..\signalrclient\trace_log_writer.h" />
     <ClInclude Include="..\..\..\signalrclient\transport.h" />
@@ -84,6 +85,7 @@
     <ClCompile Include="..\..\..\signalrclient\logger.cpp" />
     <ClCompile Include="..\..\..\signalrclient\request_sender.cpp" />
     <ClCompile Include="..\..\..\signalrclient\signalr_client_config.cpp" />
+    <ClCompile Include="..\..\..\signalrclient\signalr_event_loop.cpp" />
     <ClCompile Include="..\..\..\signalrclient\stdafx.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>

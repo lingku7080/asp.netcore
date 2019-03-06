@@ -14,6 +14,7 @@
 #include "logger.h"
 #include "negotiation_response.h"
 #include "event.h"
+#include "signalr_event_loop.h"
 
 namespace signalr
 {
@@ -25,10 +26,11 @@ namespace signalr
     class connection_impl : public std::enable_shared_from_this<connection_impl>
     {
     public:
-        static std::shared_ptr<connection_impl> create(const std::string& url, trace_level trace_level, const std::shared_ptr<log_writer>& log_writer);
+        static std::shared_ptr<connection_impl> create(const std::string& url, trace_level trace_level, const std::shared_ptr<log_writer>& log_writer,
+            signalr_event_loop& event_loop);
 
         static std::shared_ptr<connection_impl> create(const std::string& url, trace_level trace_level, const std::shared_ptr<log_writer>& log_writer,
-            std::unique_ptr<web_request_factory> web_request_factory, std::unique_ptr<transport_factory> transport_factory);
+            std::unique_ptr<web_request_factory> web_request_factory, std::unique_ptr<transport_factory> transport_factory, signalr_event_loop& event_loop);
 
         connection_impl(const connection_impl&) = delete;
 
@@ -58,6 +60,7 @@ namespace signalr
         std::function<void(const std::string&)> m_message_received;
         std::function<void()> m_disconnected;
         signalr_client_config m_signalr_client_config;
+        signalr_event_loop& m_event_loop;
 
         pplx::cancellation_token_source m_disconnect_cts;
         std::mutex m_stop_lock;
@@ -65,7 +68,8 @@ namespace signalr
         std::string m_connection_id;
 
         connection_impl(const std::string& url, trace_level trace_level, const std::shared_ptr<log_writer>& log_writer,
-            std::unique_ptr<web_request_factory> web_request_factory, std::unique_ptr<transport_factory> transport_factory);
+            std::unique_ptr<web_request_factory> web_request_factory, std::unique_ptr<transport_factory> transport_factory,
+            signalr_event_loop& event_loop);
 
         pplx::task<std::shared_ptr<transport>> start_transport(const std::string& url);
         pplx::task<void> send_connect_request(const std::shared_ptr<transport>& transport,

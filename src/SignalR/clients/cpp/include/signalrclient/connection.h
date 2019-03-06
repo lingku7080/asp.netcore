@@ -11,6 +11,7 @@
 #include "trace_level.h"
 #include "log_writer.h"
 #include "signalr_client_config.h"
+#include "signalr_event_loop.h"
 
 namespace signalr
 {
@@ -21,7 +22,8 @@ namespace signalr
     public:
         typedef std::function<void __cdecl(const std::string&)> message_received_handler;
 
-        SIGNALRCLIENT_API explicit connection(const std::string& url, trace_level trace_level = trace_level::all, std::shared_ptr<log_writer> log_writer = nullptr);
+        SIGNALRCLIENT_API explicit connection(const std::string& url, signalr_event_loop& event_loop, trace_level trace_level = trace_level::all,
+            std::shared_ptr<log_writer> log_writer = nullptr);
 
         SIGNALRCLIENT_API ~connection();
 
