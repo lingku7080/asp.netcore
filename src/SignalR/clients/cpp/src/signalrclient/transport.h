@@ -17,7 +17,7 @@ namespace signalr
 
         virtual pplx::task<void> send(const std::string &data) = 0;
 
-        virtual pplx::task<void> disconnect() = 0;
+        virtual void disconnect(signalr_cb callback) = 0;
 
         virtual transport_type get_transport_type() const = 0;
 

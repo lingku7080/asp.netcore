@@ -22,23 +22,23 @@ namespace signalr
     }
 
     std::shared_ptr<connection_impl> connection_impl::create(const std::string& url, trace_level trace_level, const std::shared_ptr<log_writer>& log_writer,
-        signalr_event_loop& event_loop)
+        scheduler& scheduler)
     {
-        return connection_impl::create(url, trace_level, log_writer, std::make_unique<web_request_factory>(), std::make_unique<transport_factory>(), event_loop);
+        return connection_impl::create(url, trace_level, log_writer, std::make_unique<web_request_factory>(), std::make_unique<transport_factory>(), scheduler);
     }
 
     std::shared_ptr<connection_impl> connection_impl::create(const std::string& url, trace_level trace_level, const std::shared_ptr<log_writer>& log_writer,
-        std::unique_ptr<web_request_factory> web_request_factory, std::unique_ptr<transport_factory> transport_factory, signalr_event_loop& event_loop)
+        std::unique_ptr<web_request_factory> web_request_factory, std::unique_ptr<transport_factory> transport_factory, scheduler& scheduler)
     {
         return std::shared_ptr<connection_impl>(new connection_impl(url, trace_level,
-            log_writer ? log_writer : std::make_shared<trace_log_writer>(), std::move(web_request_factory), std::move(transport_factory), event_loop));
+            log_writer ? log_writer : std::make_shared<trace_log_writer>(), std::move(web_request_factory), std::move(transport_factory), scheduler));
     }
 
     connection_impl::connection_impl(const std::string& url, trace_level trace_level, const std::shared_ptr<log_writer>& log_writer,
-        std::unique_ptr<web_request_factory> web_request_factory, std::unique_ptr<transport_factory> transport_factory, signalr_event_loop& event_loop)
+        std::unique_ptr<web_request_factory> web_request_factory, std::unique_ptr<transport_factory> transport_factory, scheduler& scheduler)
         : m_base_url(url), m_connection_state(connection_state::disconnected), m_logger(log_writer, trace_level),
         m_transport(nullptr), m_web_request_factory(std::move(web_request_factory)), m_transport_factory(std::move(transport_factory)),
-        m_message_received([](const std::string&) noexcept {}), m_disconnected([]() noexcept {}), m_event_loop(event_loop)
+        m_message_received([](const std::string&) noexcept {}), m_disconnected([]() noexcept {}), m_scheduler(scheduler)
     { }
 
     connection_impl::~connection_impl()
@@ -270,7 +270,7 @@ namespace signalr
 
         auto transport = connection->m_transport_factory->create_transport(
             transport_type::websockets, connection->m_logger, connection->m_signalr_client_config,
-            process_response_callback, error_callback, m_event_loop);
+            process_response_callback, error_callback, m_scheduler);
 
         pplx::create_task([connect_request_tce, disconnect_cts, weak_connection]()
         {
@@ -301,7 +301,7 @@ namespace signalr
         auto query_string = "id=" + m_connection_id;
         auto connect_url = url_builder::build_connect(url, transport->get_transport_type(), query_string);
 
-        transport->connect(connect_url, signalr_cb(m_event_loop, [transport, connect_request_tce, logger](const std::exception_ptr& exception)
+        transport->connect(connect_url, [transport, connect_request_tce, logger](const std::exception_ptr& exception)
             mutable {
                 try
                 {
@@ -320,7 +320,7 @@ namespace signalr
 
                     connect_request_tce.set_exception(std::current_exception());
                 }
-            }));
+            });
 
         return pplx::create_task(connect_request_tce);
     }
@@ -474,7 +474,20 @@ namespace signalr
             change_state(connection_state::disconnecting);
         }
 
-        return m_transport->disconnect();
+        pplx::task_completion_event<void> event;
+        m_transport->disconnect([event](std::exception_ptr exception)
+        {
+            if (exception != nullptr)
+            {
+                event.set_exception(exception);
+            }
+            else
+            {
+                event.set();
+            }
+        });
+
+        return pplx::create_task(event);
     }
 
     connection_state connection_impl::get_connection_state() const noexcept

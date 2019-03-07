@@ -17,7 +17,7 @@ namespace signalr
             const signalr_client_config& signalr_client_config,
             std::function<void(const std::string&)> process_response_callback,
             std::function<void(const std::exception&)> error_callback,
-            signalr_event_loop& event_loop);
+            scheduler& scheduler);
 
         virtual ~transport_factory();
     };

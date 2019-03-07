@@ -57,7 +57,7 @@ namespace signalr
         pplx::task_completion_event<void> m_handshakeTask;
         std::function<void()> m_disconnected;
         signalr_client_config m_signalr_client_config;
-        signalr_event_loop m_event_loop;
+        signalr_default_scheduler m_scheduler;
 
         void initialize();
 

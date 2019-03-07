@@ -17,7 +17,7 @@ namespace signalr
     public:
         static std::shared_ptr<transport> create(const std::function<std::shared_ptr<websocket_client>()>& websocket_client_factory,
             const logger& logger, const std::function<void(const std::string&)>& process_response_callback,
-            std::function<void(const std::exception&)> error_callback, signalr_event_loop& event_loop);
+            std::function<void(const std::exception&)> error_callback, scheduler& scheduler);
 
         ~websocket_transport();
 
@@ -29,20 +29,20 @@ namespace signalr
 
         pplx::task<void> send(const std::string &data) override;
 
-        pplx::task<void> disconnect() override;
+        void disconnect(signalr_cb callback) override;
 
         transport_type get_transport_type() const noexcept override;
 
     private:
         websocket_transport(const std::function<std::shared_ptr<websocket_client>()>& websocket_client_factory,
             const logger& logger, const std::function<void(const std::string &)>& process_response_callback,
-            std::function<void(const std::exception&)> error_callback, signalr_event_loop& event_loop);
+            std::function<void(const std::exception&)> error_callback, scheduler& scheduler);
 
         std::function<std::shared_ptr<websocket_client>()> m_websocket_client_factory;
         std::shared_ptr<websocket_client> m_websocket_client;
         std::mutex m_websocket_client_lock;
         std::mutex m_start_stop_lock;
-        signalr_event_loop& m_event_loop;
+        scheduler& m_scheduler;
 
         pplx::cancellation_token_source m_receive_loop_cts;
 

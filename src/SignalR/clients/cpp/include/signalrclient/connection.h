@@ -22,7 +22,7 @@ namespace signalr
     public:
         typedef std::function<void __cdecl(const std::string&)> message_received_handler;
 
-        SIGNALRCLIENT_API explicit connection(const std::string& url, signalr_event_loop& event_loop, trace_level trace_level = trace_level::all,
+        SIGNALRCLIENT_API explicit connection(const std::string& url, scheduler& scheduler, trace_level trace_level = trace_level::all,
             std::shared_ptr<log_writer> log_writer = nullptr);
 
         SIGNALRCLIENT_API ~connection();

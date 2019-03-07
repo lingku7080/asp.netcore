@@ -8,8 +8,8 @@
 
 namespace signalr
 {
-    connection::connection(const std::string& url, signalr_event_loop& event_loop, trace_level trace_level, std::shared_ptr<log_writer> log_writer)
-        : m_pImpl(connection_impl::create(url, trace_level, std::move(log_writer), event_loop))
+    connection::connection(const std::string& url, scheduler& scheduler, trace_level trace_level, std::shared_ptr<log_writer> log_writer)
+        : m_pImpl(connection_impl::create(url, trace_level, std::move(log_writer), scheduler))
     {}
 
     // Do NOT remove this destructor. Letting the compiler generate and inline the default dtor may lead to

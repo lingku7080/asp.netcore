@@ -27,10 +27,10 @@ namespace signalr
     {
     public:
         static std::shared_ptr<connection_impl> create(const std::string& url, trace_level trace_level, const std::shared_ptr<log_writer>& log_writer,
-            signalr_event_loop& event_loop);
+            scheduler& scheduler);
 
         static std::shared_ptr<connection_impl> create(const std::string& url, trace_level trace_level, const std::shared_ptr<log_writer>& log_writer,
-            std::unique_ptr<web_request_factory> web_request_factory, std::unique_ptr<transport_factory> transport_factory, signalr_event_loop& event_loop);
+            std::unique_ptr<web_request_factory> web_request_factory, std::unique_ptr<transport_factory> transport_factory, scheduler& scheduler);
 
         connection_impl(const connection_impl&) = delete;
 
@@ -60,7 +60,7 @@ namespace signalr
         std::function<void(const std::string&)> m_message_received;
         std::function<void()> m_disconnected;
         signalr_client_config m_signalr_client_config;
-        signalr_event_loop& m_event_loop;
+        scheduler& m_scheduler;
 
         pplx::cancellation_token_source m_disconnect_cts;
         std::mutex m_stop_lock;
@@ -69,7 +69,7 @@ namespace signalr
 
         connection_impl(const std::string& url, trace_level trace_level, const std::shared_ptr<log_writer>& log_writer,
             std::unique_ptr<web_request_factory> web_request_factory, std::unique_ptr<transport_factory> transport_factory,
-            signalr_event_loop& event_loop);
+            scheduler& scheduler);
 
         pplx::task<std::shared_ptr<transport>> start_transport(const std::string& url);
         pplx::task<void> send_connect_request(const std::shared_ptr<transport>& transport,

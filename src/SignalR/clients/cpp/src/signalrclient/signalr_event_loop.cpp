@@ -6,31 +6,42 @@
 
 namespace signalr
 {
-    void signalr_event_loop::post(signalr_cb& cb)
+    void signalr_default_scheduler::schedule(signalr_cb& cb)
+    {
+        schedule([cb]() { cb(nullptr); });
+    }
+
+    void signalr_default_scheduler::schedule(signalr_cb& cb, std::exception_ptr exception)
+    {
+        schedule([cb, exception]() { cb(exception); });
+    }
+
+    void signalr_default_scheduler::schedule(signalr_message_cb& cb, std::string message)
+    {
+        schedule([cb, message]() { cb(message, nullptr); });
+    }
+
+    void signalr_default_scheduler::schedule(signalr_message_cb& cb, std::exception_ptr exception)
+    {
+        schedule([cb, exception]() { cb("", exception); });
+    }
+
+    void signalr_default_scheduler::schedule(signalr_base_cb cb)
     {
         {
             std::lock_guard<std::mutex> lock(m_lock);
-            m_callbacks.push_back(std::shared_ptr<signalr_base_cb>(new signalr_cb(cb)));
+            m_callbacks.push_back(cb);
         } // unlock
         m_cv.notify_one();
     }
 
-    void signalr_event_loop::post(signalr_message_cb& cb)
-    {
-        {
-            std::lock_guard<std::mutex> lock(m_lock);
-            m_callbacks.push_back(std::shared_ptr<signalr_base_cb>(new signalr_message_cb(cb)));
-        } // unlock
-        m_cv.notify_one();
-    }
-
-    void signalr_event_loop::run()
+    void signalr_default_scheduler::run()
     {
         m_event_loop_thread = std::thread([this]()
             {
                 auto& callbacks = m_callbacks;
                 auto& closed = m_closed;
-                std::vector<std::shared_ptr<signalr_base_cb>> tmp;
+                std::vector<signalr_base_cb> tmp;
                 while (m_closed == false)
                 {
                     {
@@ -43,7 +54,7 @@ namespace signalr
                     {
                         try
                         {
-                            cb->invoke();
+                            cb();
                         }
                         catch (...)
                         {
@@ -56,7 +67,7 @@ namespace signalr
             });
     }
 
-    void signalr_event_loop::close()
+    void signalr_default_scheduler::close()
     {
         m_closed = true;
         m_cv.notify_one();
@@ -66,7 +77,7 @@ namespace signalr
         }
     }
 
-    signalr_event_loop::~signalr_event_loop()
+    signalr_default_scheduler::~signalr_default_scheduler()
     {
         close();
     }
