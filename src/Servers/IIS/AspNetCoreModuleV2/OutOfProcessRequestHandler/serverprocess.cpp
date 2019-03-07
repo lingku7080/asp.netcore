@@ -849,7 +849,8 @@ SERVER_PROCESS::StartProcess(
         dwCreationFlags = CREATE_NO_WINDOW |
             CREATE_UNICODE_ENVIRONMENT |
             CREATE_SUSPENDED |
-            CREATE_NEW_PROCESS_GROUP;
+            CREATE_NEW_PROCESS_GROUP |
+            CREATE_BREAKAWAY_FROM_JOB;
 
         if (!CreateProcessW(
             NULL,                   // applicationName
