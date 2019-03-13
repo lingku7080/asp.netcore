@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core.Internal;
 
 namespace Microsoft.AspNetCore.Testing
 {
-    public class TestKestrelTrace : KestrelTrace
+    internal class TestKestrelTrace : KestrelTrace
     {
         public TestKestrelTrace() : this(new TestApplicationErrorLogger())
         {

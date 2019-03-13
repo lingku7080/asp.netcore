@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.AspNetCore.Testing
 {
-    public class CompositeKestrelTrace: IKestrelTrace
+    internal class CompositeKestrelTrace: IKestrelTrace
     {
         private readonly IKestrelTrace _trace1;
         private readonly IKestrelTrace _trace2;

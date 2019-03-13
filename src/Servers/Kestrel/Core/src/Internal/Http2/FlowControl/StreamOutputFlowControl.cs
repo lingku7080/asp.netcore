@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http2.FlowControl
 {
-    public class StreamOutputFlowControl
+    internal class StreamOutputFlowControl
     {
         private readonly OutputFlowControl _connectionLevelFlowControl;
         private readonly OutputFlowControl _streamLevelFlowControl;

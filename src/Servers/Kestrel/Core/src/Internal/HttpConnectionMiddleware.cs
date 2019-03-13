@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core.Adapter.Internal;
 
 namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal
 {
-    public class HttpConnectionMiddleware<TContext>
+    internal class HttpConnectionMiddleware<TContext>
     {
         private readonly IList<IConnectionAdapter> _connectionAdapters;
         private readonly ServiceContext _serviceContext;

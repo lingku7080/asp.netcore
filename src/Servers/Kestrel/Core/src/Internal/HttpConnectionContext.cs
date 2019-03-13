@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure;
 
 namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal
 {
-    public class HttpConnectionContext
+    internal class HttpConnectionContext
     {
         public string ConnectionId { get; set; }
         public HttpProtocols Protocols { get; set; }

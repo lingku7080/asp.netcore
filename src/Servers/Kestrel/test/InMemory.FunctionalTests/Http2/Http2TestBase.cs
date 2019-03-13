@@ -116,15 +116,15 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Tests
 
         private readonly MemoryPool<byte> _memoryPool = KestrelMemoryPool.Create();
 
-        protected readonly Http2PeerSettings _clientSettings = new Http2PeerSettings();
-        protected readonly HPackEncoder _hpackEncoder = new HPackEncoder();
-        protected readonly HPackDecoder _hpackDecoder;
+        internal readonly Http2PeerSettings _clientSettings = new Http2PeerSettings();
+        internal readonly HPackEncoder _hpackEncoder = new HPackEncoder();
+        internal readonly HPackDecoder _hpackDecoder;
         private readonly byte[] _headerEncodingBuffer = new byte[Http2PeerSettings.MinAllowedMaxFrameSize];
 
-        protected readonly TimeoutControl _timeoutControl;
-        protected readonly Mock<IKestrelTrace> _mockKestrelTrace = new Mock<IKestrelTrace>();
+        internal readonly TimeoutControl _timeoutControl;
+        internal readonly Mock<IKestrelTrace> _mockKestrelTrace = new Mock<IKestrelTrace>();
         protected readonly Mock<ConnectionContext> _mockConnectionContext = new Mock<ConnectionContext>();
-        protected readonly Mock<ITimeoutHandler> _mockTimeoutHandler = new Mock<ITimeoutHandler>();
+        internal readonly Mock<ITimeoutHandler> _mockTimeoutHandler = new Mock<ITimeoutHandler>();
         protected readonly Mock<MockTimeoutControlBase> _mockTimeoutControl;
 
         protected readonly ConcurrentDictionary<int, TaskCompletionSource<object>> _runningStreams = new ConcurrentDictionary<int, TaskCompletionSource<object>>();
@@ -151,11 +151,11 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Tests
         protected readonly RequestDelegate _echoPath;
         protected readonly RequestDelegate _appAbort;
 
-        protected TestServiceContext _serviceContext;
+        internal TestServiceContext _serviceContext;
         private Timer _timer;
 
         internal DuplexPipe.DuplexPipePair _pair;
-        protected Http2Connection _connection;
+        internal Http2Connection _connection;
         protected Task _connectionTask;
         protected long _bytesReceived;
 
@@ -1144,7 +1144,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Tests
             return WaitForConnectionErrorAsync<Exception>(ignoreNonGoAwayFrames, expectedLastStreamId, Http2ErrorCode.NO_ERROR, expectedErrorMessage: null);
         }
 
-        protected void VerifyGoAway(Http2Frame frame, int expectedLastStreamId, Http2ErrorCode expectedErrorCode)
+        internal void VerifyGoAway(Http2Frame frame, int expectedLastStreamId, Http2ErrorCode expectedErrorCode)
         {
             Assert.Equal(Http2FrameType.GOAWAY, frame.Type);
             Assert.Equal(8, frame.PayloadLength);
@@ -1220,7 +1220,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Tests
             _timeoutControl.Tick(clock.UtcNow);
         }
 
-        public class Http2FrameWithPayload : Http2Frame
+        internal class Http2FrameWithPayload : Http2Frame
         {
             public Http2FrameWithPayload() : base()
             {
@@ -1232,7 +1232,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Tests
             public ReadOnlySequence<byte> PayloadSequence => new ReadOnlySequence<byte>(Payload);
         }
 
-        public class MockTimeoutControlBase : ITimeoutControl
+        internal class MockTimeoutControlBase : ITimeoutControl
         {
             private readonly ITimeoutControl _realTimeoutControl;
 

@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Transport.Abstractions.Internal;
 namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure
 {
     [EventSource(Name = "Microsoft-AspNetCore-Server-Kestrel")]
-    public sealed class KestrelEventSource : EventSource
+    internal sealed class KestrelEventSource : EventSource
     {
         public static readonly KestrelEventSource Log = new KestrelEventSource();
 

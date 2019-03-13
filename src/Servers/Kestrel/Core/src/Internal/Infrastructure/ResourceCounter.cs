@@ -7,7 +7,7 @@ using System.Threading;
 
 namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure
 {
-    public abstract class ResourceCounter
+    internal abstract class ResourceCounter
     {
         public abstract bool TryLockOne();
         public abstract void ReleaseOne();

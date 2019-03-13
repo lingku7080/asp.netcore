@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal
 {
-    public class ConnectionDispatcher : IConnectionDispatcher
+    internal class ConnectionDispatcher : IConnectionDispatcher
     {
         private static long _lastConnectionId = long.MinValue;
 

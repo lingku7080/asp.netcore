@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http2.HPack
 {
-    public class HuffmanDecodingException : Exception
+    internal class HuffmanDecodingException : Exception
     {
         public HuffmanDecodingException(string message)
             : base(message)

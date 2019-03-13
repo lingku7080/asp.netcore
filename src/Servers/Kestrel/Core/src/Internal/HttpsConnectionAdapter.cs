@@ -19,7 +19,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.AspNetCore.Server.Kestrel.Https.Internal
 {
-    public class HttpsConnectionAdapter : IConnectionAdapter
+    internal class HttpsConnectionAdapter : IConnectionAdapter
     {
         private static readonly ClosedAdaptedConnection _closedAdaptedConnection = new ClosedAdaptedConnection();
 
