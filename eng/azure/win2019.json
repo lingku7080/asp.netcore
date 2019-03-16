@@ -107,7 +107,7 @@
       "apiVersion": "2018-06-01",
       "location": "[parameters('location')]",
       "dependsOn": [
-        "networkResources"
+        "[concat('Microsoft.Resources/deployments/', 'networkResources')]"
       ],
       "properties": {
         "hardwareProfile": {

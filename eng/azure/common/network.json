@@ -37,7 +37,7 @@
   "outputs": {
     "nicId": {
       "type": "string",
-      "value": "[resourceId(resourceGroup().name, 'Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]"
+      "value": "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]"
     }
   },
   "resources": [
