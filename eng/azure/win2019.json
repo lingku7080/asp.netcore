@@ -130,7 +130,7 @@
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[reference('networkResources').outputs.nicId]"
+              "id": "[reference('networkResources').outputs.nicId.value]"
             }
           ]
         },
