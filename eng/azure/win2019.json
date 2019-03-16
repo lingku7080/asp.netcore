@@ -180,7 +180,7 @@
         "autoUpgradeMinorVersion": true
       },
       "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName')]"
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]"
       ]
     }
   ],
