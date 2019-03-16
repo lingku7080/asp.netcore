@@ -89,9 +89,15 @@
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
-          "baseName": "[parameters('vmName')]",
-          "dnsName": "[parameters('dnsName')]",
-          "location": "[parameters('location')]"
+          "baseName": {
+            "value": "[parameters('vmName')]"
+          },
+          "dnsName": {
+            "value": "[parameters('dnsName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
         }
       }
     },
