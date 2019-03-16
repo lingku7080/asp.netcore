@@ -16,6 +16,19 @@
         "description": "The DNS name for the VM. Defaults to the VM name."
       }
     },
+    "adminUsername": {
+      "type": "string",
+      "minLength": 1,
+      "metadata": {
+        "description": "The admin username."
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The admin password."
+      }
+    },
     "vmSize": {
       "type": "string",
       "defaultValue": "Standard_DS1_v2",
@@ -123,6 +136,8 @@
         },
         "osProfile": {
           "computerName": "[parameters('vmName')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]",
           "windowsConfiguration": {
             "enableAutomaticUpdates": true,
             "provisionVmAgent": true
@@ -158,21 +173,6 @@
         }
       },
       "tags": {}
-    },
-    {
-      "name": "[concat(parameters('vmName'),'/', variables('aadLoginExtensionName'))]",
-      "type": "Microsoft.Compute/virtualMachines/extensions",
-      "apiVersion": "2017-12-01",
-      "location": "[parameters('location')]",
-      "properties": {
-        "publisher": "Microsoft.Azure.ActiveDirectory",
-        "type": "AADLoginForWindows",
-        "typeHandlerVersion": "0.3",
-        "autoUpgradeMinorVersion": true
-      },
-      "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]"
-      ]
     }
   ],
   "outputs": {
