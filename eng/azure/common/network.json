@@ -42,7 +42,7 @@
   },
   "resources": [
     {
-      "name": "[variables('networkSecurityGroupName')]",
+      "name": "[variables('networkInterfaceName')]",
       "type": "Microsoft.Network/networkInterfaces",
       "apiVersion": "2018-10-01",
       "location": "[parameters('location')]",
