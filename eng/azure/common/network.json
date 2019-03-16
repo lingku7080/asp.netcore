@@ -1,0 +1,177 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "baseName": {
+      "type": "string",
+      "metadata": {
+        "description": "The base name for resources created by this template. Resources will have a name like '[basename]-nsg' or '[basename]-vnet'"
+      }
+    },
+    "dnsName": {
+      "type": "string",
+      "metadata": {
+        "description": "The DNS name for the public IP created by this template."
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "The location in which to create the resources. Defaults to the default location for the resource group."
+      }
+    }
+  },
+  "variables": {
+    "publicIpAddressType": "Dynamic",
+    "publicIpAddressSku": "Basic",
+    "subnetName": "default",
+    "networkInterfaceName": "[concat(parameters('baseName'), '-nic')]",
+    "networkSecurityGroupName": "[concat(parameters('baseName'), '-nsg')]",
+    "virtualNetworkName": "[concat(parameters('baseName'), '-vnet')]",
+    "publicIpAddressName": "[concat(parameters('baseName'), '-ip')]",
+    "nsgId": "[resourceId(resourceGroup().name, 'Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]",
+    "vnetId": "[resourceId(resourceGroup().name,'Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
+    "subnetRef": "[concat(variables('vnetId'), '/subnets/', variables('subnetName'))]"
+  },
+  "outputs": {
+    "nicId": {
+      "type": "string",
+      "value": "[resourceId(resourceGroup().name, 'Microsoft.Network/networkInterfaces', parameters('networkInterfaceName'))]"
+    }
+  },
+  "resources": [
+    {
+      "name": "[variables('networkSecurityGroupName')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2018-10-01",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroupName'))]",
+        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
+        "[concat('Microsoft.Network/publicIpAddresses/', variables('publicIpAddressName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              },
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIpAddress": {
+                "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', variables('publicIpAddressName'))]"
+              }
+            }
+          }
+        ],
+        "networkSecurityGroup": {
+          "id": "[variables('nsgId')]"
+        }
+      },
+      "tags": {}
+    },
+    {
+      "name": "[variables('networkSecurityGroupName')]",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2018-08-01",
+      "location": "[parameters('location')]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "HTTP",
+            "properties": {
+              "priority": 300,
+              "protocol": "Tcp",
+              "access": "Allow",
+              "direction": "Inbound",
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "80"
+            }
+          },
+          {
+            "name": "HTTPS",
+            "properties": {
+              "priority": 320,
+              "protocol": "Tcp",
+              "access": "Allow",
+              "direction": "Inbound",
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "443"
+            }
+          },
+          {
+            "name": "SSH",
+            "properties": {
+              "priority": 340,
+              "protocol": "Tcp",
+              "access": "Allow",
+              "direction": "Inbound",
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "22"
+            }
+          },
+          {
+            "name": "RDP",
+            "properties": {
+              "priority": 360,
+              "protocol": "Tcp",
+              "access": "Allow",
+              "direction": "Inbound",
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "3389"
+            }
+          }
+        ]
+      },
+      "tags": {}
+    },
+    {
+      "name": "[variables('virtualNetworkName')]",
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2018-08-01",
+      "location": "[parameters('location')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "10.1.3.0/24"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('subnetName')]",
+            "properties": {
+              "addressPrefix": "10.1.3.0/24"
+            }
+          }
+        ]
+      },
+      "tags": {}
+    },
+    {
+      "name": "[variables('publicIpAddressName')]",
+      "type": "Microsoft.Network/publicIpAddresses",
+      "apiVersion": "2018-08-01",
+      "location": "[parameters('location')]",
+      "properties": {
+        "dnsSettings": {
+          "domainNameLabel": "[parameters('dnsName')]"
+        },
+        "publicIpAllocationMethod": "[variables('publicIpAddressType')]"
+      },
+      "sku": {
+        "name": "[variables('publicIpAddressSku')]"
+      },
+      "tags": {}
+    }
+  ]
+}
