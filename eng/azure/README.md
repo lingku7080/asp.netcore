@@ -12,6 +12,10 @@ This folder contains scripts to deploy test machines to Azure for verifying ASP.
     * If you have the older `Azure`, `AzureRM` or `AzureRM.Netcore` modules installed, you should uninstall them with `Uninstall-Module [modulename]`
     * If you see a warning about trusting the `PSGallery` repository, accept it, and/or run `Set-PSRepository PSGallery -InstallationPolicy Trusted` to trust the gallery
 
+
+$context = Get-AzSubscription -SubscriptionId ...
+Set-AzContext $context
+
 ## Editing
 
 **NOTE**: Because these templates need to be accessible to Azure Resource Manager, when you want to modify one and test it out, you need to push your changes to GitHub and get the GitHub Raw URL (something like `https://raw.githubusercontent.com/aspnet/AspNetCore/[commit hash]/eng/azure/win2019.json`). GitHub caches raw content by branch name so if you use a branch name in `[commit hash]` it may not reflect recent commits you've made. For this reason, you should use the commit hash in these URLs.

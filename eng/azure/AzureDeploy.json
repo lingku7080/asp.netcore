@@ -192,7 +192,7 @@
             "autoUpgradeMinorVersion":true,
             "settings": {
                 "fileUris": [
-                    "https://armtutorials.blob.core.windows.net/usescriptextensions/installWebServer.ps1"
+                    "https://raw.githubusercontent.com/aspnet/AspNetCore/jkotalik/customScript/eng/azure/setupMachine.ps1"
                 ],
                 "commandToExecute": "powershell.exe -ExecutionPolicy Unrestricted -File installWebServer.ps1"
             }
