@@ -17,6 +17,8 @@
 <body>
     <app>@(await Html.RenderComponentAsync<MvcSandbox.Components.App>())</app>
 
+    <div id="component-diagnostics"></div>
     <script src="_framework/components.server.js"></script>
+    <script src="components.developer.js"></script>
 </body>
 </html>

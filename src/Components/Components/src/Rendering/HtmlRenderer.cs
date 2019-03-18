@@ -82,6 +82,11 @@ namespace Microsoft.AspNetCore.Components.Rendering
 
         private int RenderFrames(List<string> result, ArrayRange<RenderTreeFrame> frames, int position, int maxElements)
         {
+            if ((uint)position > (uint)frames.Array.Length)
+            {
+                throw new IndexOutOfRangeException(nameof(position));
+            }
+
             var nextPosition = position;
             var endPosition = position + maxElements;
             while (position < endPosition)
@@ -103,6 +108,11 @@ namespace Microsoft.AspNetCore.Components.Rendering
             int position,
             int length)
         {
+            if ((uint)position > (uint)frames.Array.Length)
+            {
+                throw new IndexOutOfRangeException(nameof(position));
+            }
+
             ref var frame = ref frames.Array[position];
             switch (frame.FrameType)
             {
@@ -133,6 +143,11 @@ namespace Microsoft.AspNetCore.Components.Rendering
             ArrayRange<RenderTreeFrame> frames,
             int position)
         {
+            if ((uint)position > (uint)frames.Array.Length)
+            {
+                throw new IndexOutOfRangeException(nameof(position));
+            }
+
             ref var frame = ref frames.Array[position];
             var childFrames = GetCurrentRenderTreeFrames(frame.ComponentId);
             RenderFrames(result, childFrames, 0, childFrames.Count);
@@ -144,6 +159,11 @@ namespace Microsoft.AspNetCore.Components.Rendering
             ArrayRange<RenderTreeFrame> frames,
             int position)
         {
+            if ((uint)position > (uint)frames.Array.Length)
+            {
+                throw new IndexOutOfRangeException(nameof(position));
+            }
+
             ref var frame = ref frames.Array[position];
             result.Add("<");
             result.Add(frame.ElementName);

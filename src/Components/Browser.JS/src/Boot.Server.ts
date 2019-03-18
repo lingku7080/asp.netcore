@@ -81,7 +81,10 @@ async function initializeConnection(circuitHandlers: CircuitHandler[]): Promise<
 }
 
 function unhandledError(connection: signalR.HubConnection, err: Error) {
-  console.error(err);
+
+  if (window['Blazor'].unhandledError && window['Blazor'].unhandledError(err)) {
+    return;
+  }
 
   // Disconnect on errors.
   //

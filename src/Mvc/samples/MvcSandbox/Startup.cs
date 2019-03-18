@@ -44,16 +44,6 @@ namespace MvcSandbox
                     requestDelegate: WriteEndpoints,
                     pattern: "/endpoints").WithDisplayName("Endpoints");
 
-                builder.MapControllerRoute(
-                    name: "default",
-                    pattern: "{controller=Home}/{action=Index}/{id?}");
-
-                builder.MapControllerRoute(
-                    name: "transform",
-                    pattern: "Transform/{controller:slugify=Home}/{action:slugify=Index}/{id?}",
-                    defaults: null,
-                    constraints: new { controller = "Home" });
-
                 builder.MapGet(
                     "/graph",
                     (httpContext) =>

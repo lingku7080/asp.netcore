@@ -1,2 +1,11 @@
 ﻿@page "/"
 <h3>Hi from components</h3>
+
+<button onclick="@Throw">Click me!</button>
+
+@functions {
+    void Throw()
+    {
+        throw new Exception("Here's a cool message");
+    }
+}

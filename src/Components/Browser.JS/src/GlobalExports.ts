@@ -8,6 +8,11 @@ import { Pointer } from './Platform/Platform';
 window['Blazor'] = {
   navigateTo,
 
+  unhandledException: function(error) {
+    console.log(error);
+    return false;
+  },
+
   _internal: {
     attachRootComponentToElement,
     http: httpInternalFunctions,

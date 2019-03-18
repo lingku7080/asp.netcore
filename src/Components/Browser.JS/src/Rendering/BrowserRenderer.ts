@@ -15,7 +15,10 @@ export class BrowserRenderer {
 
   constructor(private browserRendererId: number) {
     this.eventDelegator = new EventDelegator((event, eventHandlerId, eventArgs) => {
-      raiseEvent(event, this.browserRendererId, eventHandlerId, eventArgs);
+      raiseEvent(event, this.browserRendererId, eventHandlerId, eventArgs).catch((error) =>
+      {
+          window['Blazor'].unhandledException(error);
+      });
     });
   }
 
