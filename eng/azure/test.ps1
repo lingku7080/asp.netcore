@@ -3,12 +3,11 @@ $ErrorActionPreference = "Stop"
 # Make sure resource group is created
 
 Try {
-    $temp = Get-AzResourceGroupDeployment "AspNetCoreVerification"
+    $temp = Get-AzResourceGroupDeployment "AspNetCore1"
 }
 Catch {
     # echo that we didn't find a resource, creating one.
-    New-AzResourceGroup -Name "AspNetCoreVerification"
+    New-AzResourceGroup -Name "AspNetCore1"
 }
 
-#
-New-AzResourceGroupDeployment -ResourceGroupName "AspNetCoreVerification" -Name "test" -TemplateUri "https://raw.githubusercontent.com/aspnet/AspNetCore/jkotalik/customScript/eng/azure/AzureDeploy.json"
+New-AzResourceGroupDeployment -ResourceGroupName "AspNetCore1" -Name "verification" -TemplateUri "https://raw.githubusercontent.com/aspnet/AspNetCore/jkotalik/customScript/eng/azure/AzureDeploy.json"

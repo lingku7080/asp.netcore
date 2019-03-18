@@ -20,6 +20,14 @@
         "description": "Unique DNS Name for the Public IP used to access the Virtual Machine."
       }
     },
+    "vmName":
+    {
+      "type": "string",
+      "defaultValue": "MyVM",
+      "metadata": {
+        "description": "VM name."
+      }
+    },
     "windowsOSVersion": {
       "type": "string",
       "defaultValue": "2016-Datacenter",
@@ -51,7 +59,7 @@
     "subnetName": "Subnet",
     "subnetPrefix": "10.0.0.0/24",
     "publicIPAddressName": "myPublicIP",
-    "vmName": "SimpleWinVM",
+    "vmName": "[parameters('vmName')]",
     "virtualNetworkName": "MyVNET",
     "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]"
   },
@@ -128,7 +136,7 @@
     },
     {
       "type": "Microsoft.Compute/virtualMachines",
-      "name": "[variables('vmName')]",
+      "name": "[parameters('vmName')]",
       "location": "[parameters('location')]",
       "apiVersion": "2018-10-01",
       "dependsOn": [
@@ -140,7 +148,7 @@
           "vmSize": "Standard_A2"
         },
         "osProfile": {
-          "computerName": "[variables('vmName')]",
+          "computerName": "[parameters('vmName')]",
           "adminUsername": "[parameters('adminUsername')]",
           "adminPassword": "[parameters('adminPassword')]"
         },
@@ -180,10 +188,10 @@
     {
         "apiVersion": "2018-06-01",
         "type": "Microsoft.Compute/virtualMachines/extensions",
-        "name": "[concat(variables('vmName'),'/', 'InstallWebServer')]",
+        "name": "[concat(parameters('vmName'),'/', 'InstallWebServer')]",
         "location": "[parameters('location')]",
         "dependsOn": [
-            "[concat('Microsoft.Compute/virtualMachines/',variables('vmName'))]"
+            "[concat('Microsoft.Compute/virtualMachines/',parameters('vmName'))]"
         ],
         "properties": {
             "publisher": "Microsoft.Compute",
