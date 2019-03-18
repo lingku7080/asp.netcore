@@ -10,4 +10,4 @@ Catch {
     New-AzResourceGroup -Name "AspNetCore1"
 }
 
-New-AzResourceGroupDeployment -ResourceGroupName "AspNetCore1" -Name "verification" -TemplateUri "https://raw.githubusercontent.com/aspnet/AspNetCore/jkotalik/customScript/eng/azure/AzureDeploy.json"
+New-AzResourceGroupDeployment -ResourceGroupName "AspNetCore1" -Name "verification" -TemplateFile "AzureDeploy.json"

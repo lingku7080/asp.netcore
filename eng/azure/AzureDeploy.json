@@ -188,7 +188,7 @@
     {
         "apiVersion": "2018-06-01",
         "type": "Microsoft.Compute/virtualMachines/extensions",
-        "name": "[concat(parameters('vmName'),'/', 'InstallWebServer')]",
+        "name": "[concat(parameters('vmName'),'/', 'SetupMachine')]",
         "location": "[parameters('location')]",
         "dependsOn": [
             "[concat('Microsoft.Compute/virtualMachines/',parameters('vmName'))]"
@@ -202,7 +202,7 @@
                 "fileUris": [
                     "https://raw.githubusercontent.com/aspnet/AspNetCore/jkotalik/customScript/eng/azure/setupMachine.ps1"
                 ],
-                "commandToExecute": "powershell.exe -ExecutionPolicy Unrestricted -File installWebServer.ps1"
+                "commandToExecute": "powershell.exe -ExecutionPolicy Unrestricted -File setupMachine.ps1"
             }
         }
     }
