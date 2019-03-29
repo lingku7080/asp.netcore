@@ -308,6 +308,10 @@ namespace Microsoft.AspNetCore.Server.IIS
             }
         }
 
+        public static void HttpSetFrebLog(IntPtr pInProcessHandler, string message)
+        {
+        }
+
         private static void Validate(int hr)
         {
             if (hr != HR_OK)

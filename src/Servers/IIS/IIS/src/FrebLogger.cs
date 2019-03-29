@@ -52,7 +52,9 @@ namespace Microsoft.AspNetCore.Server.IIS
             }
 
             // Todo how to log this?
-            // do we need native methods? 
+            // do we need native methods? I think so
+
+            NativeMethods.SendFrebLog();
         }
     }
 }
