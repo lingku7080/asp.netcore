@@ -1,6 +1,5 @@
 using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Threading;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.AspNetCore.Server.IIS
@@ -11,19 +10,18 @@ namespace Microsoft.AspNetCore.Server.IIS
     public class FrebLogger : ILogger
     {
         private string _name;
-        private IExternalScopeProvider _externalScopeProvider;
+        private AsyncLocal<FrebLoggingScope> ScopeProvider;
 
-        public FrebLogger(string name, IExternalScopeProvider externalScopeProvider)
+        public FrebLogger(string name) 
         {
             _name = name;
-            _externalScopeProvider = externalScopeProvider;
         }
-
 
         public IDisposable BeginScope<TState>(TState state)
         {
-            return _externalScopeProvider?.Push(state);
+            ScopeProvider?.Value.Push(state) ?? NullScope.Instance;
         }
+
 
         public bool IsEnabled(LogLevel logLevel)
         {
@@ -38,6 +36,8 @@ namespace Microsoft.AspNetCore.Server.IIS
             {
                 return;
             }
+            //            _logger = _applicationServices.GetRequiredService<ILogger<WebHost>>();
+
 
             if (formatter == null)
             {
@@ -51,10 +51,21 @@ namespace Microsoft.AspNetCore.Server.IIS
                 return;
             }
 
-            // Todo how to log this?
-            // do we need native methods? I think so
+            // Todo how do we get the inprocess handler
+            NativeMethods.HttpSetFrebLog(_externalScopeProvider.Value, message);
+        }
+        private class NullScope : IDisposable
+        {
+            public static NullScope Instance { get; } = new NullScope();
 
-            NativeMethods.SendFrebLog();
+            private NullScope()
+            {
+            }
+
+            /// <inheritdoc />
+            public void Dispose()
+            {
+            }
         }
     }
 }

@@ -72,6 +72,9 @@ public:
     void
     StaticTerminate();
 
+    void
+    RaiseFrebLog(PCSTR content);
+
 private:
     REQUEST_NOTIFICATION_STATUS
     ServerShutdownMessage() const;

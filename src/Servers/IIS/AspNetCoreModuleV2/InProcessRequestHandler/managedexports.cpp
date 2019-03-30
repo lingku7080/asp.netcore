@@ -509,10 +509,17 @@ set_main_handler(_In_ hostfxr_main_fn main)
 
 EXTERN_C __MIDL_DECLSPEC_DLLEXPORT
 VOID
+<<<<<<< HEAD
 http_set_startup_error_page_content(_In_ byte* errorPageContent, int length)
 {
     g_errorPageContent.resize(length);
     memcpy(&g_errorPageContent[0], errorPageContent, length);
+}
+
+http_set_freb_log(_In_ IN_PROCESS_HANDLER* pInProcessHandler, _In_ PCSTR content)
+{
+    // Allow inprocess application to be recreated as we reuse the same CLR
+    pInProcessHandler->RaiseFrebLog(content);
 }
 
 // End of export

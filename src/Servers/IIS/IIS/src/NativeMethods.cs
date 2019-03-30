@@ -148,7 +148,11 @@ namespace Microsoft.AspNetCore.Server.IIS
         private static extern int http_get_authentication_information(IntPtr pInProcessHandler, [MarshalAs(UnmanagedType.BStr)] out string authType, out IntPtr token);
 
         [DllImport(AspNetCoreModuleDll)]
+<<<<<<< HEAD
         private static extern unsafe int http_set_startup_error_page_content(byte* content, int contentLength);
+=======
+        private static extern int http_set_freb_log(IntPtr pInProcessHandler, [MarshalAs(UnmanagedType.LPStr)] string content);
+>>>>>>> de5f53c6a4... current progress
 
         public static void HttpPostCompletion(IntPtr pInProcessHandler, int cbBytes)
         {
@@ -310,6 +314,7 @@ namespace Microsoft.AspNetCore.Server.IIS
 
         public static void HttpSetFrebLog(IntPtr pInProcessHandler, string message)
         {
+            Validate(http_set_freb_log(pInProcessHandler, message));
         }
 
         private static void Validate(int hr)

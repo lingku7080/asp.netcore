@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Logging.Freb
 
         public ILogger CreateLogger(string name)
         {
-            return new FrebLogger(name: name, _scopeProvider);
+            return new FrebLogger(name: name);
         }
 
         public void Dispose()

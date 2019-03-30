@@ -123,7 +123,7 @@ IN_PROCESS_HANDLER::IndicateManagedRequestComplete(
 {
     m_fManagedRequestComplete = TRUE;
     m_pManagedHttpContext = nullptr;
-    ::RaiseEvent<ANCMEvents::ANCM_INPROC_MANAGED_REQUEST_COMPLETION>(m_pW3Context, nullptr);
+    ::RaiseEvent<ANCMEvents::ANCM_INPROC_MANAGED_REQUEST_COMPLETION>(m_pW3Context, nullptr, "", 0, );
 }
 
 VOID
@@ -148,6 +148,12 @@ IN_PROCESS_HANDLER::SetManagedHttpContext(
     {
         m_pDisconnectHandler(m_pManagedHttpContext);
     }
+}
+
+void
+IN_PROCESS_HANDLER::RaiseFrebLog(PCSTR content)
+{
+    ::RaiseEvent<ANCMEvents::ANCM_EXCEPTION_CAUGHT>(m_pW3Context, nullptr, "", 0, content);
 }
 
 // static
