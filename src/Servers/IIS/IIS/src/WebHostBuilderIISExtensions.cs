@@ -36,6 +36,7 @@ namespace Microsoft.AspNetCore.Hosting
                 // Trim trailing slash to be consistent with other servers
                 var contentRoot = iisConfigData.pwzFullApplicationPath.TrimEnd(Path.DirectorySeparatorChar);
                 hostBuilder.UseContentRoot(contentRoot);
+                //hostBuilder.ConfigureServices(collection => collection.AddLogging(c => { c.Services.Add}));
                 return hostBuilder.ConfigureServices(
                     services => {
                         services.AddSingleton(new IISNativeApplication(iisConfigData.pNativeApplication));

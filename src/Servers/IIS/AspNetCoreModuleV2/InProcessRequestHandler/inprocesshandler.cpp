@@ -123,7 +123,7 @@ IN_PROCESS_HANDLER::IndicateManagedRequestComplete(
 {
     m_fManagedRequestComplete = TRUE;
     m_pManagedHttpContext = nullptr;
-    ::RaiseEvent<ANCMEvents::ANCM_INPROC_MANAGED_REQUEST_COMPLETION>(m_pW3Context, nullptr, "", 0, );
+    ::RaiseEvent<ANCMEvents::ANCM_INPROC_MANAGED_REQUEST_COMPLETION>(m_pW3Context, nullptr);
 }
 
 VOID

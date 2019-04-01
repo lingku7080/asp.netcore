@@ -10,7 +10,9 @@ namespace Microsoft.AspNetCore.Server.IIS
     public class FrebLogger : ILogger
     {
         private string _name;
-        private AsyncLocal<FrebLoggingScope> ScopeProvider;
+        private AsyncLocal<FrebLoggingScope> InternalScopeProvider;
+        internal IExternalScopeProvider ScopeProvider { get; set; }
+
 
         public FrebLogger(string name) 
         {
@@ -19,9 +21,12 @@ namespace Microsoft.AspNetCore.Server.IIS
 
         public IDisposable BeginScope<TState>(TState state)
         {
-            ScopeProvider?.Value.Push(state) ?? NullScope.Instance;
+            if (state is FrebLoggingScope)
+            {
+                //InternalScopeProvider.Value = state;
+            }
+            return ScopeProvider?.Push(state) ?? NullScope.Instance;
         }
-
 
         public bool IsEnabled(LogLevel logLevel)
         {
@@ -50,10 +55,11 @@ namespace Microsoft.AspNetCore.Server.IIS
             {
                 return;
             }
-
+            var scope = InternalScopeProvider.Value;
             // Todo how do we get the inprocess handler
-            NativeMethods.HttpSetFrebLog(_externalScopeProvider.Value, message);
+            //NativeMethods.HttpSetFrebLog(scope., message);
         }
+
         private class NullScope : IDisposable
         {
             public static NullScope Instance { get; } = new NullScope();
