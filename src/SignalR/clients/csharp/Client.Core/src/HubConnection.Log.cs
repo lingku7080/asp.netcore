@@ -198,6 +198,19 @@ namespace Microsoft.AspNetCore.SignalR.Client
             private static readonly Action<ILogger, string, Exception> _completingStream =
                 LoggerMessage.Define<string>(LogLevel.Trace, new EventId(66, "CompletingStream"), "Sending completion message for stream '{StreamId}'.");
 
+            private static readonly Action<ILogger, HubConnectionState, HubConnectionState, HubConnectionState, Exception> _stateTransitionFailed =
+                LoggerMessage.Define<HubConnectionState, HubConnectionState, HubConnectionState>(LogLevel.Error, new EventId(67, "StateTransitionFailed"), "The HubConnection failed to transition from the {expectedState} state to the {newState} state because it was actually in the {actualState} state.");
+
+            private static readonly Action<ILogger, Exception> _errorDuringNextRetryDelay  =
+                LoggerMessage.Define(LogLevel.Error, new EventId(68, "ErrorDuringGetNextRetryDelay"), "An exception was thrown from IRetryPolicy.GetNextRetryDelay().");
+
+            private static readonly Action<ILogger, Exception> _errorDuringReconnectingEvent =
+                LoggerMessage.Define(LogLevel.Error, new EventId(69, "ErrorDuringReconnectingEvent"), "An exception was thrown in the handler for the Reconnecting event.");
+
+            private static readonly Action<ILogger, Exception> _errorDuringReconnectedEvent =
+                LoggerMessage.Define(LogLevel.Error, new EventId(69, "ErrorDuringReconnectedEvent"), "An exception was thrown in the handler for the Reconnected event.");
+
+
             public static void PreparingNonBlockingInvocation(ILogger logger, string target, int count)
             {
                 _preparingNonBlockingInvocation(logger, target, count, null);
@@ -527,6 +540,26 @@ namespace Microsoft.AspNetCore.SignalR.Client
             public static void CompletingStream(ILogger logger, string streamId)
             {
                 _completingStream(logger, streamId, null);
+            }
+
+            public static void StateTransitionFailed(ILogger logger, HubConnectionState expectedState, HubConnectionState newState, HubConnectionState actualState)
+            {
+                _stateTransitionFailed(logger, expectedState, newState, actualState, null);
+            }
+
+            public static void ErrorDuringNextRetryDelay(ILogger logger, Exception exception)
+            {
+                _errorDuringNextRetryDelay(logger, exception);
+            }
+
+            public static void ErrorDuringReconnectingEvent(ILogger logger, Exception exception)
+            {
+                _errorDuringReconnectingEvent(logger, exception);
+            }
+
+            public static void ErrorDuringReconnectedEvent(ILogger logger, Exception exception)
+            {
+                _errorDuringReconnectedEvent(logger, exception);
             }
         }
     }

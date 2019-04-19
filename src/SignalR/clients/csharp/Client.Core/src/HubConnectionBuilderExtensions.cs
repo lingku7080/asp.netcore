@@ -61,7 +61,7 @@ namespace Microsoft.AspNetCore.SignalR.Client
         /// Configures the <see cref="HubConnection"/> to automatically attempt to reconnect if the connection is lost.
         /// </summary>
         /// <param name="hubConnectionBuilder">The <see cref="IHubConnectionBuilder" /> to configure.</param>
-        /// <param name="retryPolicy">An <see cref="IRetryPolicy"/>  that controls the timing and number of reconnect attempts.</param>
+        /// <param name="retryPolicy">An <see cref="IRetryPolicy"/> that controls the timing and number of reconnect attempts.</param>
         /// <returns>The same instance of the <see cref="IHubConnectionBuilder"/> for chaining.</returns>
         public static IHubConnectionBuilder WithAutomaticReconnect(this IHubConnectionBuilder hubConnectionBuilder, IRetryPolicy retryPolicy)
         {

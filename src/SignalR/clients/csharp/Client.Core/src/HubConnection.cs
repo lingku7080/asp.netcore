@@ -51,6 +51,8 @@ namespace Microsoft.AspNetCore.SignalR.Client
         private readonly IHubProtocol _protocol;
         private readonly IServiceProvider _serviceProvider;
         private readonly IConnectionFactory _connectionFactory;
+        private readonly object _stateLock = new object();
+        private readonly IRetryPolicy _reconnectPolicy;
         private readonly ConcurrentDictionary<string, InvocationHandlerList> _handlers = new ConcurrentDictionary<string, InvocationHandlerList>(StringComparer.Ordinal);
 
         private long _nextActivationServerTimeout;
@@ -95,12 +97,48 @@ namespace Microsoft.AspNetCore.SignalR.Client
         ///     }
         ///     else
         ///     {
-        ///         Console.WriteLine($"Connection closed due to an error: {exception.Message}");
+        ///         Console.WriteLine($"Connection closed due to an error: {exception}");
         ///     }
         /// };
         /// </code>
         /// </example>
         public event Func<Exception, Task> Closed;
+
+        /// <summary>
+        /// Occurs when the <see cref="HubConnection"/> starts reconnecting after losing its underlying connection.
+        /// </summary>
+        /// <remarks>
+        /// The <see cref="Exception"/> that occurred will be passed in as the sole argument to this handler.
+        /// </remarks>
+        /// <example>
+        /// The following example attaches a handler to the <see cref="Reconnecting"/> event, and checks the provided argument to log the error.
+        ///
+        /// <code>
+        /// connection.Reconnecting += (exception) =>
+        /// {
+        ///     Console.WriteLine($"Connection started reconnecting due to an error: {exception}");
+        /// };
+        /// </code>
+        /// </example>
+        public event Func<Exception, Task> Reconnecting;
+
+        /// <summary>
+        /// Occurs when the <see cref="HubConnection"/> successfully reconnects after losing its underlying connection.
+        /// </summary>
+        /// <remarks>
+        /// The <see cref="string"/> parameter will be the <see cref="HubConnection"/>'s new ConnectionId or null if negotiation was skipped.
+        /// </remarks>
+        /// <example>
+        /// The following example attaches a handler to the <see cref="Reconnected"/> event, and checks the provided argument to log the ConnectionId.
+        ///
+        /// <code>
+        /// connection.Reconnected += (connectionId) =>
+        /// {
+        ///     Console.WriteLine($"Connection completed reconnecting with ConnectionId: {connectionId}");
+        /// };
+        /// </code>
+        /// </example>
+        public event Func<string, Task> Reconnected;
 
         // internal for testing purposes
         internal TimeSpan TickRate { get; set; } = TimeSpan.FromSeconds(1);
@@ -136,19 +174,27 @@ namespace Microsoft.AspNetCore.SignalR.Client
         /// <summary>
         /// Indicates the state of the <see cref="HubConnection"/> to the server.
         /// </summary>
-        public HubConnectionState State
-        {
-            get
-            {
-                // Copy reference for thread-safety
-                var connectionState = _connectionState;
-                if (connectionState == null || connectionState.Stopped)
-                {
-                    return HubConnectionState.Disconnected;
-                }
+        public HubConnectionState State { get; private set; }
 
-                return HubConnectionState.Connected;
-            }
+        // REVIEW: All other services are required. Do we want to add another constructor or use the service locator pattern?
+        /// <summary>
+        /// Initializes a new instance of the <see cref="HubConnection"/> class.
+        /// </summary>
+        /// <param name="connectionFactory">The <see cref="IConnectionFactory" /> used to create a connection each time <see cref="StartAsync" /> is called.</param>
+        /// <param name="protocol">The <see cref="IHubProtocol" /> used by the connection.</param>
+        /// <param name="serviceProvider">An <see cref="IServiceProvider"/> containing the services provided to this <see cref="HubConnection"/> instance.</param>
+        /// <param name="loggerFactory">The logger factory.</param>
+        /// <param name="reconnectPolicy">
+        /// The <see cref="IRetryPolicy"/> that controls the timing and number of reconnect attempts.
+        /// The <see cref="HubConnection"/> will not reconnect if the <paramref name="reconnectPolicy"/> is null.
+        /// </param>
+        /// <remarks>
+        /// The <see cref="IServiceProvider"/> used to initialize the connection will be disposed when the connection is disposed.
+        /// </remarks>
+        public HubConnection(IConnectionFactory connectionFactory, IHubProtocol protocol, IServiceProvider serviceProvider, ILoggerFactory loggerFactory, IRetryPolicy reconnectPolicy)
+            : this(connectionFactory, protocol, serviceProvider, loggerFactory)
+        {
+            _reconnectPolicy = reconnectPolicy;
         }
 
         /// <summary>
@@ -192,9 +238,20 @@ namespace Microsoft.AspNetCore.SignalR.Client
         public async Task StartAsync(CancellationToken cancellationToken = default)
         {
             CheckDisposed();
+
+            if (!TryChangeState(HubConnectionState.Disconnected, HubConnectionState.Connecting))
+            {
+                throw new InvalidOperationException($"The ${nameof(HubConnection)} cannot be started if it is not in the disconnected state.");
+            }
+
             using (_logger.BeginScope(_logScope))
             {
                 await StartAsyncCore(cancellationToken).ForceAsync();
+            }
+
+            if (!TryChangeState(HubConnectionState.Connecting, HubConnectionState.Connected))
+            {
+                throw new IOException($"The ${nameof(HubConnection)} left the connecting state during start.");
             }
         }
 
@@ -333,6 +390,21 @@ namespace Microsoft.AspNetCore.SignalR.Client
             using (_logger.BeginScope(_logScope))
             {
                 await SendCoreAsyncCore(methodName, args, cancellationToken).ForceAsync();
+            }
+        }
+
+        private bool TryChangeState(HubConnectionState expectedState, HubConnectionState newState)
+        {
+            lock (_stateLock)
+            {
+                if (State != expectedState)
+                {
+                    Log.StateTransitionFailed(_logger, expectedState, newState, State);
+                    return false;
+                }
+
+                State = newState;
+                return true;
             }
         }
 
@@ -1084,43 +1156,7 @@ namespace Microsoft.AspNetCore.SignalR.Client
                 timer.Stop();
                 await timerTask;
                 uploadStreamSource.Cancel();
-            }
-
-            // Clear the connectionState field
-            await WaitConnectionLockAsync();
-            try
-            {
-                SafeAssert(ReferenceEquals(_connectionState, connectionState),
-                    "Someone other than ReceiveLoop cleared the connection state!");
-                _connectionState = null;
-            }
-            finally
-            {
-                ReleaseConnectionLock();
-            }
-
-            // Dispose the connection
-            await CloseAsync(connectionState.Connection);
-
-            // Cancel any outstanding invocations within the connection lock
-            connectionState.CancelOutstandingInvocations(connectionState.CloseException);
-
-            if (connectionState.CloseException != null)
-            {
-                Log.ShutdownWithError(_logger, connectionState.CloseException);
-            }
-            else
-            {
-                Log.ShutdownConnection(_logger);
-            }
-
-            var closed = Closed;
-
-            // There is no need to start a new task if there is no Closed event registered
-            if (closed != null)
-            {
-                // Fire-and-forget the closed event
-                _ = RunClosedEvent(closed, connectionState.CloseException);
+                await HandleConnectionClose(connectionState);
             }
         }
 
@@ -1201,19 +1237,214 @@ namespace Microsoft.AspNetCore.SignalR.Client
             }
         }
 
-        private async Task RunClosedEvent(Func<Exception, Task> closed, Exception closeException)
+        private async Task HandleConnectionClose(ConnectionState connectionState)
         {
-            // Dispatch to the thread pool before we invoke the user callback
-            await AwaitableThreadPool.Yield();
-
+            // Clear the connectionState field
+            await WaitConnectionLockAsync();
             try
             {
-                Log.InvokingClosedEventHandler(_logger);
-                await closed.Invoke(closeException);
+                SafeAssert(ReferenceEquals(_connectionState, connectionState),
+                    "Someone other than ReceiveLoop cleared the connection state!");
+                _connectionState = null;
+            }
+            finally
+            {
+                ReleaseConnectionLock();
+            }
+
+            // Dispose the connection
+            await CloseAsync(connectionState.Connection);
+
+            // Cancel any outstanding invocations within the connection lock
+            connectionState.CancelOutstandingInvocations(connectionState.CloseException);
+
+            if (connectionState.Stopping || _reconnectPolicy != null)
+            {
+                if (connectionState.CloseException != null)
+                {
+                    Log.ShutdownWithError(_logger, connectionState.CloseException);
+                }
+                else
+                {
+                    Log.ShutdownConnection(_logger);
+                }
+
+                if (!TryChangeState(HubConnectionState.Connected, HubConnectionState.Disconnected))
+                {
+                    return;
+                }
+
+                RunCloseEvent(connectionState.CloseException);
+            }
+            else
+            {
+                // Fire-and-forget the reconnect loop
+                _ = Reconnect(connectionState.CloseException);
+            }
+        }
+
+        private void RunCloseEvent(Exception closeException)
+        {
+            var closed = Closed;
+
+            async Task RunClosedEventAsync()
+            {
+                // Dispatch to the thread pool before we invoke the user callback
+                await AwaitableThreadPool.Yield();
+
+                try
+                {
+                    Log.InvokingClosedEventHandler(_logger);
+                    await closed.Invoke(closeException);
+                }
+                catch (Exception ex)
+                {
+                    Log.ErrorDuringClosedEvent(_logger, ex);
+                }
+            }
+
+            // There is no need to start a new task if there is no Closed event registered
+            if (closed != null)
+            {
+                // Fire-and-forget the closed event
+                _ = RunClosedEventAsync();
+            }
+        }
+
+        private async Task Reconnect(Exception closeException)
+        {
+            var reconnectStartTime = DateTime.UtcNow;
+            var previousReconnectAttempts = 0;
+
+            var nextRetryDelay = GetNextRetryDelay(previousReconnectAttempts++, TimeSpan.Zero);
+
+            if (nextRetryDelay == null) {
+                //_logger.log(LogLevel.Debug, "Connection not reconnecting because the IReconnectPolicy returned null on the first reconnect attempt.");
+                RunCloseEvent(closeException);
+                return;
+            }
+
+            if (!TryChangeState(HubConnectionState.Connected, HubConnectionState.Reconnecting))
+            {
+                return;
+            }
+
+            if (closeException != null) {
+                //_logger.log(LogLevel.Information, `Connection reconnecting because of error '${error}'.`);
+            } else {
+                //_logger.log(LogLevel.Information, "Connection reconnecting.");
+            }
+
+            RunReconnectingEvent(closeException);
+
+            while (nextRetryDelay != null) {
+                // _logger.log(LogLevel.Information, `Reconnect attempt number ${previousReconnectAttempts} will start in ${nextRetryDelay} ms.`);
+
+                await Task.Delay(nextRetryDelay.Value);
+
+                if (State != HubConnectionState.Reconnecting) {
+                    //_logger.log(LogLevel.Debug, "Connection left the reconnecting state during reconnect delay. Done reconnecting.");
+                    return;
+                }
+
+                try {
+                    // TODO: Use a token that is canceled in StopAsync.
+                    await StartAsyncCore(CancellationToken.None);
+
+                    if (!TryChangeState(HubConnectionState.Reconnecting, HubConnectionState.Connected))
+                    {
+                        return;
+                    }
+
+                    //_logger.log(LogLevel.Information, "HubConnection reconnected successfully.");
+
+                    RunReconnectedEvent();
+                    return;
+                } catch (Exception) {
+                    //_logger.log(LogLevel.Information, `Reconnect attempt failed because of error '${e}'.`);
+
+                    if (State != HubConnectionState.Reconnecting) {
+                        //_logger.log(LogLevel.Debug, "Connection left the reconnecting state during reconnect attempt. Done reconnecting.");
+                        return;
+                    }
+                }
+
+                nextRetryDelay = GetNextRetryDelay(previousReconnectAttempts++, reconnectStartTime - DateTime.UtcNow);
+            }
+
+            var message = $"Reconnect retries have been exhausted after {DateTime.UtcNow - reconnectStartTime} and ${previousReconnectAttempts} failed attempts. Connection disconnecting.";
+            //_logger.Log(LogLevel.Information, message);
+            RunCloseEvent(new TimeoutException(message));
+        }
+
+        private TimeSpan? GetNextRetryDelay(long previousRetryCount, TimeSpan elapsedTime)
+        {
+            try
+            {
+                return _reconnectPolicy.NextRetryDelay(new RetryContext
+                {
+                    PreviousRetryCount = previousRetryCount,
+                    ElapsedTime = elapsedTime,
+                });
             }
             catch (Exception ex)
             {
-                Log.ErrorDuringClosedEvent(_logger, ex);
+                Log.ErrorDuringNextRetryDelay(_logger, ex);
+                return null;
+            }
+        }
+
+        private void RunReconnectingEvent(Exception closeException)
+        {
+            var reconnecting = Reconnecting;
+
+            async Task RunReconnectingEventAsync()
+            {
+                // Dispatch to the thread pool before we invoke the user callback
+                await AwaitableThreadPool.Yield();
+
+                try
+                {
+                    await reconnecting.Invoke(closeException);
+                }
+                catch (Exception ex)
+                {
+                    Log.ErrorDuringReconnectingEvent(_logger, ex);
+                }
+            }
+
+            // There is no need to start a new task if there is no Closed event registered
+            if (reconnecting != null)
+            {
+                // Fire-and-forget the closed event
+                _ = RunReconnectingEventAsync();
+            }
+        }
+
+        private void RunReconnectedEvent()
+        {
+            var reconnected = Reconnected;
+
+            async Task RunReconnectedEventAsync()
+            {
+                // Dispatch to the thread pool before we invoke the user callback
+                await AwaitableThreadPool.Yield();
+
+                try
+                {
+                    await reconnected.Invoke(ConnectionId);
+                }
+                catch (Exception ex)
+                {
+                    Log.ErrorDuringReconnectedEvent(_logger, ex);
+                }
+            }
+
+            // There is no need to start a new task if there is no Closed event registered
+            if (reconnected != null)
+            {
+                // Fire-and-forget the reconnected event
+                _ = RunReconnectedEventAsync();
             }
         }
 
@@ -1345,15 +1576,17 @@ namespace Microsoft.AspNetCore.SignalR.Client
             }
         }
 
-        //TODO: Refactor all transient state about the connection into the ConnectionState class.
+        // TODO: Refactor all transient state about the connection into the ConnectionState class.
         private class ConnectionState : IInvocationBinder
         {
-            private volatile bool _stopping;
             private readonly HubConnection _hubConnection;
 
-            private TaskCompletionSource<object> _stopTcs;
             private readonly object _lock = new object();
             private readonly Dictionary<string, InvocationRequest> _pendingCalls = new Dictionary<string, InvocationRequest>(StringComparer.Ordinal);
+            private TaskCompletionSource<object> _stopTcs;
+
+            private volatile bool _stopping;
+
             private int _nextInvocationId;
             private int _nextStreamId;
 
