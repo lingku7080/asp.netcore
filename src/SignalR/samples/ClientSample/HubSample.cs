@@ -74,7 +74,8 @@ namespace ClientSample
                 return Task.CompletedTask;
             };
 
-            while (true)
+
+            do
             {
                 // Dispose the previous token
                 closedTokenSource?.Dispose();
@@ -83,48 +84,44 @@ namespace ClientSample
                 closedTokenSource = new CancellationTokenSource();
 
                 // Connect to the server
-                if (!await ConnectAsync(connection))
+            } while (!await ConnectAsync(connection));
+
+            Console.WriteLine("Connected to {0}", uri); ;
+
+            // Handle the connected connection
+            while (true)
+            {
+                try
                 {
+                    var line = Console.ReadLine();
+
+                    if (line == null || closedTokenSource.Token.IsCancellationRequested)
+                    {
+                        break;
+                    }
+
+                    await connection.InvokeAsync<object>("Send", line);
+                }
+                catch (IOException)
+                {
+                    // Process being shutdown
                     break;
                 }
-
-                Console.WriteLine("Connected to {0}", uri); ;
-
-                // Handle the connected connection
-                while (true)
+                catch (OperationCanceledException)
                 {
-                    try
-                    {
-                        var line = Console.ReadLine();
-
-                        if (line == null || closedTokenSource.Token.IsCancellationRequested)
-                        {
-                            break;
-                        }
-
-                        await connection.InvokeAsync<object>("Send", line);
-                    }
-                    catch (IOException)
-                    {
-                        // Process being shutdown
-                        break;
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        // The connection closed
-                        break;
-                    }
-                    catch (ObjectDisposedException)
-                    {
-                        // We're shutting down the client
-                        break;
-                    }
-                    catch (Exception ex)
-                    {
-                        // Send could have failed because the connection closed
-                        System.Console.WriteLine(ex);
-                        break;
-                    }
+                    // The connection closed
+                    break;
+                }
+                catch (ObjectDisposedException)
+                {
+                    // We're shutting down the client
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    // Send could have failed because the connection closed
+                    System.Console.WriteLine(ex);
+                    break;
                 }
             }
 

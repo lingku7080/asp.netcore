@@ -199,7 +199,7 @@ namespace Microsoft.AspNetCore.SignalR.Client
                 LoggerMessage.Define<string>(LogLevel.Trace, new EventId(66, "CompletingStream"), "Sending completion message for stream '{StreamId}'.");
 
             private static readonly Action<ILogger, HubConnectionState, HubConnectionState, HubConnectionState, Exception> _stateTransitionFailed =
-                LoggerMessage.Define<HubConnectionState, HubConnectionState, HubConnectionState>(LogLevel.Error, new EventId(67, "StateTransitionFailed"), "The HubConnection failed to transition from the {expectedState} state to the {newState} state because it was actually in the {actualState} state.");
+                LoggerMessage.Define<HubConnectionState, HubConnectionState, HubConnectionState>(LogLevel.Error, new EventId(67, "StateTransitionFailed"), "The HubConnection failed to transition from the {ExpectedState} state to the {NewState} state because it was actually in the {ActualState} state.");
 
             private static readonly Action<ILogger, Exception> _reconnecting =
                 LoggerMessage.Define(LogLevel.Information, new EventId(68, "Reconnecting"), "HubConnection reconnecting.");
@@ -208,13 +208,13 @@ namespace Microsoft.AspNetCore.SignalR.Client
                 LoggerMessage.Define(LogLevel.Error, new EventId(69, "ReconnectingWithError"), "HubConnection reconnecting due to an error.");
 
             private static readonly Action<ILogger, long, TimeSpan, Exception> _reconnected =
-                LoggerMessage.Define<long, TimeSpan>(LogLevel.Information, new EventId(70, "Reconnected"), "HubConnection reconnected successfully after {reconnectAttempts} attempts and {elapsedTime} elapsed.");
+                LoggerMessage.Define<long, TimeSpan>(LogLevel.Information, new EventId(70, "Reconnected"), "HubConnection reconnected successfully after {ReconnectAttempts} attempts and {ElapsedTime} elapsed.");
 
             private static readonly Action<ILogger, long, TimeSpan, Exception> _reconnectAttemptsExhausted =
-                LoggerMessage.Define<long, TimeSpan>(LogLevel.Information, new EventId(71, "ReconnectAttemptsExhausted"), "Reconnect retries have been exhausted after {reconnectAttempts} failed attempts and {elapsedTime} elapsed. Disconnecting.");
+                LoggerMessage.Define<long, TimeSpan>(LogLevel.Information, new EventId(71, "ReconnectAttemptsExhausted"), "Reconnect retries have been exhausted after {ReconnectAttempts} failed attempts and {ElapsedTime} elapsed. Disconnecting.");
 
             private static readonly Action<ILogger, long, TimeSpan, Exception> _awaitingReconnectRetryDelay =
-                LoggerMessage.Define<long, TimeSpan>(LogLevel.Trace, new EventId(72, "AwaitingReconnectRetryDelay"), "Reconnect attempt number {reconnectAttempts} will start in {retryDelay}.");
+                LoggerMessage.Define<long, TimeSpan>(LogLevel.Trace, new EventId(72, "AwaitingReconnectRetryDelay"), "Reconnect attempt number {ReconnectAttempts} will start in {RetryDelay}.");
 
             private static readonly Action<ILogger, Exception> _reconnectAttemptFailed =
                 LoggerMessage.Define(LogLevel.Trace, new EventId(73, "ReconnectAttemptFailed"), "Reconnect attempt failed.");
