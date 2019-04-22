@@ -208,8 +208,7 @@ namespace Microsoft.AspNetCore.SignalR.Client
                 LoggerMessage.Define(LogLevel.Error, new EventId(69, "ErrorDuringReconnectingEvent"), "An exception was thrown in the handler for the Reconnecting event.");
 
             private static readonly Action<ILogger, Exception> _errorDuringReconnectedEvent =
-                LoggerMessage.Define(LogLevel.Error, new EventId(69, "ErrorDuringReconnectedEvent"), "An exception was thrown in the handler for the Reconnected event.");
-
+                LoggerMessage.Define(LogLevel.Error, new EventId(70, "ErrorDuringReconnectedEvent"), "An exception was thrown in the handler for the Reconnected event.");
 
             public static void PreparingNonBlockingInvocation(ILogger logger, string target, int count)
             {

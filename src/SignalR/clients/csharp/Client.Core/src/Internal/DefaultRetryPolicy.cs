@@ -35,7 +35,7 @@ namespace Microsoft.AspNetCore.SignalR.Client.Internal
 
         public TimeSpan? NextRetryDelay(RetryContext retryContext)
         {
-            return DEFAULT_RETRY_DELAYS_IN_MILLISECONDS[retryContext.PreviousRetryCount];
+            return _retryDelays[retryContext.PreviousRetryCount];
         }
     }
 }
