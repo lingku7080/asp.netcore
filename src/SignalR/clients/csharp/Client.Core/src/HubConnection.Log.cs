@@ -201,14 +201,41 @@ namespace Microsoft.AspNetCore.SignalR.Client
             private static readonly Action<ILogger, HubConnectionState, HubConnectionState, HubConnectionState, Exception> _stateTransitionFailed =
                 LoggerMessage.Define<HubConnectionState, HubConnectionState, HubConnectionState>(LogLevel.Error, new EventId(67, "StateTransitionFailed"), "The HubConnection failed to transition from the {expectedState} state to the {newState} state because it was actually in the {actualState} state.");
 
-            private static readonly Action<ILogger, Exception> _errorDuringNextRetryDelay  =
-                LoggerMessage.Define(LogLevel.Error, new EventId(68, "ErrorDuringGetNextRetryDelay"), "An exception was thrown from IRetryPolicy.GetNextRetryDelay().");
+            private static readonly Action<ILogger, Exception> _reconnecting =
+                LoggerMessage.Define(LogLevel.Information, new EventId(68, "Reconnecting"), "HubConnection reconnecting.");
+
+            private static readonly Action<ILogger, Exception> _reconnectingWithError =
+                LoggerMessage.Define(LogLevel.Error, new EventId(69, "ReconnectingWithError"), "HubConnection reconnecting due to an error.");
+
+            private static readonly Action<ILogger, long, TimeSpan, Exception> _reconnected =
+                LoggerMessage.Define<long, TimeSpan>(LogLevel.Information, new EventId(70, "Reconnected"), "HubConnection reconnected successfully after {reconnectAttempts} attempts and {elapsedTime} elapsed.");
+
+            private static readonly Action<ILogger, long, TimeSpan, Exception> _reconnectAttemptsExhausted =
+                LoggerMessage.Define<long, TimeSpan>(LogLevel.Information, new EventId(71, "ReconnectAttemptsExhausted"), "Reconnect retries have been exhausted after {reconnectAttempts} failed attempts and {elapsedTime} elapsed. Disconnecting.");
+
+            private static readonly Action<ILogger, long, TimeSpan, Exception> _awaitingReconnectRetryDelay =
+                LoggerMessage.Define<long, TimeSpan>(LogLevel.Trace, new EventId(72, "AwaitingReconnectRetryDelay"), "Reconnect attempt number {reconnectAttempts} will start in {retryDelay}.");
+
+            private static readonly Action<ILogger, Exception> _reconnectAttemptFailed =
+                LoggerMessage.Define(LogLevel.Trace, new EventId(73, "ReconnectAttemptFailed"), "Reconnect attempt failed.");
 
             private static readonly Action<ILogger, Exception> _errorDuringReconnectingEvent =
-                LoggerMessage.Define(LogLevel.Error, new EventId(69, "ErrorDuringReconnectingEvent"), "An exception was thrown in the handler for the Reconnecting event.");
+                LoggerMessage.Define(LogLevel.Error, new EventId(74, "ErrorDuringReconnectingEvent"), "An exception was thrown in the handler for the Reconnecting event.");
 
             private static readonly Action<ILogger, Exception> _errorDuringReconnectedEvent =
-                LoggerMessage.Define(LogLevel.Error, new EventId(70, "ErrorDuringReconnectedEvent"), "An exception was thrown in the handler for the Reconnected event.");
+                LoggerMessage.Define(LogLevel.Error, new EventId(75, "ErrorDuringReconnectedEvent"), "An exception was thrown in the handler for the Reconnected event.");
+
+            private static readonly Action<ILogger, Exception> _errorDuringNextRetryDelay  =
+                LoggerMessage.Define(LogLevel.Error, new EventId(76, "ErrorDuringGetNextRetryDelay"), "An exception was thrown from IRetryPolicy.GetNextRetryDelay().");
+
+            private static readonly Action<ILogger, Exception> _firstReconnectRetryDelayNull =
+                LoggerMessage.Define(LogLevel.Warning, new EventId(77, "FirstReconnectRetryDelayNull"), "Connection not reconnecting because the IRetryPolicy returned null on the first reconnect attempt.");
+
+            private static readonly Action<ILogger, Exception> _reconnectingStoppedDueToStateChangeDuringRetryDelay =
+                LoggerMessage.Define(LogLevel.Trace, new EventId(78, "ReconnectingStoppedDueToStateChangeDuringRetryDelay"), "Connection left the reconnecting state during reconnect delay. Done reconnecting.");
+
+            private static readonly Action<ILogger, Exception> _reconnectingStoppedDueToStateChangeDuringReconnectAttempt =
+                LoggerMessage.Define(LogLevel.Trace, new EventId(79, "ReconnectingStoppedDueToStateChangeDuringReconnectAttempt"), "Connection left the reconnecting state during reconnect attempt. Done reconnecting.");
 
             public static void PreparingNonBlockingInvocation(ILogger logger, string target, int count)
             {
@@ -546,9 +573,34 @@ namespace Microsoft.AspNetCore.SignalR.Client
                 _stateTransitionFailed(logger, expectedState, newState, actualState, null);
             }
 
-            public static void ErrorDuringNextRetryDelay(ILogger logger, Exception exception)
+            public static void Reconnecting(ILogger logger)
             {
-                _errorDuringNextRetryDelay(logger, exception);
+                _reconnecting(logger, null);
+            }
+
+            public static void ReconnectingWithError(ILogger logger, Exception exception)
+            {
+                _reconnectingWithError(logger, exception);
+            }
+
+            public static void Reconnected(ILogger logger, long reconnectAttempts, TimeSpan elapsedTime)
+            {
+                _reconnected(logger, reconnectAttempts, elapsedTime, null);
+            }
+
+            public static void ReconnectAttempsExhausted(ILogger logger, long reconnectAttempts, TimeSpan elapsedTime)
+            {
+                _reconnectAttemptsExhausted(logger, reconnectAttempts, elapsedTime, null);
+            }
+
+            public static void AwaitingReconnectRetryDelay(ILogger logger, long reconnectAttempts, TimeSpan retryDelay)
+            {
+                _awaitingReconnectRetryDelay(logger, reconnectAttempts, retryDelay, null);
+            }
+
+            public static void ReconnectAttemptFailed(ILogger logger, Exception exception)
+            {
+                _reconnectAttemptFailed(logger, exception);
             }
 
             public static void ErrorDuringReconnectingEvent(ILogger logger, Exception exception)
@@ -559,6 +611,26 @@ namespace Microsoft.AspNetCore.SignalR.Client
             public static void ErrorDuringReconnectedEvent(ILogger logger, Exception exception)
             {
                 _errorDuringReconnectedEvent(logger, exception);
+            }
+
+            public static void ErrorDuringNextRetryDelay(ILogger logger, Exception exception)
+            {
+                _errorDuringNextRetryDelay(logger, exception);
+            }
+
+            public static void FirstReconnectRetryDelayNull(ILogger logger)
+            {
+                _firstReconnectRetryDelayNull(logger, null);
+            }
+
+            public static void ReconnectingStoppedDueToStateChangeDuringRetryDelay(ILogger logger)
+            {
+                _reconnectingStoppedDueToStateChangeDuringRetryDelay(logger, null);
+            }
+
+            public static void ReconnectingStoppedDueToStateChangeDuringReconnectAttempt(ILogger logger)
+            {
+                _reconnectingStoppedDueToStateChangeDuringReconnectAttempt(logger, null);
             }
         }
     }

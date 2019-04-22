@@ -1313,13 +1313,14 @@ namespace Microsoft.AspNetCore.SignalR.Client
 
         private async Task Reconnect(Exception closeException)
         {
-            var reconnectStartTime = DateTime.UtcNow;
             var previousReconnectAttempts = 0;
+            var reconnectStartTime = DateTime.UtcNow;
 
             var nextRetryDelay = GetNextRetryDelay(previousReconnectAttempts++, TimeSpan.Zero);
 
-            if (nextRetryDelay == null) {
-                //_logger.log(LogLevel.Debug, "Connection not reconnecting because the IReconnectPolicy returned null on the first reconnect attempt.");
+            if (nextRetryDelay == null)
+            {
+                Log.FirstReconnectRetryDelayNull(_logger);
                 RunCloseEvent(closeException);
                 return;
             }
@@ -1329,25 +1330,31 @@ namespace Microsoft.AspNetCore.SignalR.Client
                 return;
             }
 
-            if (closeException != null) {
-                //_logger.log(LogLevel.Information, `Connection reconnecting because of error '${error}'.`);
-            } else {
-                //_logger.log(LogLevel.Information, "Connection reconnecting.");
+            if (closeException != null)
+            {
+                Log.ReconnectingWithError(_logger, closeException);
+            }
+            else
+            {
+                Log.Reconnecting(_logger);
             }
 
             RunReconnectingEvent(closeException);
 
-            while (nextRetryDelay != null) {
-                // _logger.log(LogLevel.Information, `Reconnect attempt number ${previousReconnectAttempts} will start in ${nextRetryDelay} ms.`);
+            while (nextRetryDelay != null)
+            {
+                Log.AwaitingReconnectRetryDelay(_logger, previousReconnectAttempts, nextRetryDelay.Value);
 
                 await Task.Delay(nextRetryDelay.Value);
 
-                if (State != HubConnectionState.Reconnecting) {
-                    //_logger.log(LogLevel.Debug, "Connection left the reconnecting state during reconnect delay. Done reconnecting.");
+                if (State != HubConnectionState.Reconnecting)
+                {
+                    Log.ReconnectingStoppedDueToStateChangeDuringRetryDelay(_logger);
                     return;
                 }
 
-                try {
+                try
+                {
                     // TODO: Use a token that is canceled in StopAsync.
                     await StartAsyncCore(CancellationToken.None);
 
@@ -1356,24 +1363,28 @@ namespace Microsoft.AspNetCore.SignalR.Client
                         return;
                     }
 
-                    //_logger.log(LogLevel.Information, "HubConnection reconnected successfully.");
+                    Log.Reconnected(_logger, previousReconnectAttempts, DateTime.UtcNow - reconnectStartTime);
 
                     RunReconnectedEvent();
                     return;
-                } catch (Exception) {
-                    //_logger.log(LogLevel.Information, `Reconnect attempt failed because of error '${e}'.`);
+                }
+                catch (Exception ex)
+                {
+                    Log.ReconnectAttemptFailed(_logger, ex);
 
-                    if (State != HubConnectionState.Reconnecting) {
-                        //_logger.log(LogLevel.Debug, "Connection left the reconnecting state during reconnect attempt. Done reconnecting.");
+                    if (State != HubConnectionState.Reconnecting)
+                    {
+                        Log.ReconnectingStoppedDueToStateChangeDuringReconnectAttempt(_logger);
                         return;
                     }
                 }
 
-                nextRetryDelay = GetNextRetryDelay(previousReconnectAttempts++, reconnectStartTime - DateTime.UtcNow);
+                nextRetryDelay = GetNextRetryDelay(previousReconnectAttempts++, DateTime.UtcNow - reconnectStartTime);
             }
 
-            var message = $"Reconnect retries have been exhausted after {DateTime.UtcNow - reconnectStartTime} and ${previousReconnectAttempts} failed attempts. Connection disconnecting.";
-            //_logger.Log(LogLevel.Information, message);
+            var elapsedTime = DateTime.UtcNow - reconnectStartTime;
+            var message = $"Reconnect retries have been exhausted after {previousReconnectAttempts} failed attempts and {elapsedTime} elapsed. Disconnecting.";
+            Log.ReconnectAttempsExhausted(_logger, previousReconnectAttempts, elapsedTime);
             RunCloseEvent(new TimeoutException(message));
         }
 

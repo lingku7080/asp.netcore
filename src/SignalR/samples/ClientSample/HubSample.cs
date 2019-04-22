@@ -3,12 +3,11 @@
 
 using System;
 using System.IO;
-using System.Linq;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.CommandLineUtils;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace ClientSample
@@ -36,6 +35,11 @@ namespace ClientSample
                 {
                     logging.AddConsole();
                 });
+
+            connectionBuilder.Services.Configure<LoggerFilterOptions>(options =>
+            {
+                options.MinLevel = LogLevel.Trace;
+            });
 
             if (uri.Scheme == "net.tcp")
             {
