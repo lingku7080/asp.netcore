@@ -226,7 +226,7 @@ namespace Microsoft.AspNetCore.SignalR.Client
                 LoggerMessage.Define(LogLevel.Error, new EventId(75, "ErrorDuringReconnectedEvent"), "An exception was thrown in the handler for the Reconnected event.");
 
             private static readonly Action<ILogger, Exception> _errorDuringNextRetryDelay  =
-                LoggerMessage.Define(LogLevel.Error, new EventId(76, "ErrorDuringGetNextRetryDelay"), "An exception was thrown from IRetryPolicy.GetNextRetryDelay().");
+                LoggerMessage.Define(LogLevel.Error, new EventId(76, "ErrorDuringNextRetryDelay"), $"An exception was thrown from {nameof(IRetryPolicy)}.{nameof(IRetryPolicy.NextRetryDelay)}().");
 
             private static readonly Action<ILogger, Exception> _firstReconnectRetryDelayNull =
                 LoggerMessage.Define(LogLevel.Warning, new EventId(77, "FirstReconnectRetryDelayNull"), "Connection not reconnecting because the IRetryPolicy returned null on the first reconnect attempt.");

@@ -47,7 +47,7 @@ namespace Microsoft.AspNetCore.SignalR.Client
         /// </summary>
         /// <param name="hubConnectionBuilder">The <see cref="IHubConnectionBuilder" /> to configure.</param>
         /// <param name="reconnectDelays">
-        /// An array containing the delays in milliseconds before trying each reconnect attempt.
+        /// An array containing the delays before trying each reconnect attempt.
         /// The length of the array represents how many failed reconnect attempts it takes before the client will stop attempting to reconnect.
         /// </param>
         /// <returns>The same instance of the <see cref="IHubConnectionBuilder"/> for chaining.</returns>
