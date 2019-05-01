@@ -1315,8 +1315,9 @@ namespace Microsoft.AspNetCore.SignalR.Client
         {
             var previousReconnectAttempts = 0;
             var reconnectStartTime = DateTime.UtcNow;
+            var retryReason = closeException;
 
-            var nextRetryDelay = GetNextRetryDelay(previousReconnectAttempts++, TimeSpan.Zero);
+            var nextRetryDelay = GetNextRetryDelay(previousReconnectAttempts++, TimeSpan.Zero, retryReason);
 
             if (nextRetryDelay == null)
             {
@@ -1370,6 +1371,8 @@ namespace Microsoft.AspNetCore.SignalR.Client
                 }
                 catch (Exception ex)
                 {
+                    retryReason = ex;
+
                     Log.ReconnectAttemptFailed(_logger, ex);
 
                     if (State != HubConnectionState.Reconnecting)
@@ -1379,7 +1382,7 @@ namespace Microsoft.AspNetCore.SignalR.Client
                     }
                 }
 
-                nextRetryDelay = GetNextRetryDelay(previousReconnectAttempts++, DateTime.UtcNow - reconnectStartTime);
+                nextRetryDelay = GetNextRetryDelay(previousReconnectAttempts++, DateTime.UtcNow - reconnectStartTime, retryReason);
             }
 
             var elapsedTime = DateTime.UtcNow - reconnectStartTime;
@@ -1388,7 +1391,7 @@ namespace Microsoft.AspNetCore.SignalR.Client
             RunCloseEvent(new TimeoutException(message));
         }
 
-        private TimeSpan? GetNextRetryDelay(long previousRetryCount, TimeSpan elapsedTime)
+        private TimeSpan? GetNextRetryDelay(long previousRetryCount, TimeSpan elapsedTime, Exception retryReason)
         {
             try
             {
@@ -1396,6 +1399,7 @@ namespace Microsoft.AspNetCore.SignalR.Client
                 {
                     PreviousRetryCount = previousRetryCount,
                     ElapsedTime = elapsedTime,
+                    RetryReason = retryReason,
                 });
             }
             catch (Exception ex)
