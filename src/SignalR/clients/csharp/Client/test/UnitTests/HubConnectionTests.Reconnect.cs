@@ -65,15 +65,19 @@ namespace Microsoft.AspNetCore.SignalR.Client.Tests
             bool ExpectedErrors(WriteContext writeContext)
             {
                 return writeContext.LoggerName == typeof(HubConnection).FullName &&
-                       (writeContext.EventId.Name == "foo" ||
-                        writeContext.EventId.Name == "bar");
+                       (writeContext.EventId.Name == "ServerDisconnectedWithError" ||
+                        writeContext.EventId.Name == "ReconnectingWithError");
             }
 
-            var failReconnectTcs = new TaskCompletionSource<Exception>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var failReconnectTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             using (StartVerifiableLog(ExpectedErrors))
             {
+                var builder = new HubConnectionBuilder().WithLoggerFactory(LoggerFactory);
+                var testConnectionFactory = default(ReconnectingConnectionFactory);
                 var startCallCount = 0;
+                var originalConnectionId = "originalConnectionId";
+                var reconnectedConnectionId = "reconnectedConnectionId";
 
                 Task OnTestConnectionStart()
                 {
@@ -85,10 +89,22 @@ namespace Microsoft.AspNetCore.SignalR.Client.Tests
                         return failReconnectTcs.Task;
                     }
 
+                    // Change the connection id before reconnecting.
+                    if (startCallCount == 3)
+                    {
+                        testConnectionFactory.CurrentTestConnection.ConnectionId = reconnectedConnectionId;
+                    }
+                    else
+                    {
+                        testConnectionFactory.CurrentTestConnection.ConnectionId = originalConnectionId;
+                    }
+
                     return Task.CompletedTask;
                 }
 
-                var testConnection = new TestConnection(OnTestConnectionStart);
+                Func<TestConnection> testConnectionFunc = () => new TestConnection(OnTestConnectionStart);
+                testConnectionFactory = new ReconnectingConnectionFactory(testConnectionFunc);
+                builder.Services.AddSingleton<IConnectionFactory>(testConnectionFactory);
 
                 var retryContexts = new List<RetryContext>();
                 var mockReconnectPolicy = new Mock<IRetryPolicy>();
@@ -97,9 +113,9 @@ namespace Microsoft.AspNetCore.SignalR.Client.Tests
                     retryContexts.Add(context);
                     return TimeSpan.Zero;
                 });
+                builder.WithAutomaticReconnect(mockReconnectPolicy.Object);
 
-                await using var hubConnection = CreateHubConnection(testConnection, loggerFactory: LoggerFactory, reconnectPolicy: mockReconnectPolicy.Object);
-
+                await using var hubConnection = builder.Build();
                 var closedCalled = false;
                 var reconnectingCount = 0;
                 var reconnectedCount = 0;
@@ -128,8 +144,10 @@ namespace Microsoft.AspNetCore.SignalR.Client.Tests
 
                 await hubConnection.StartAsync().OrTimeout();
 
+                Assert.Same(originalConnectionId, hubConnection.ConnectionId);
+
                 var firstException = new Exception();
-                testConnection.CompleteFromTransport(firstException);
+                testConnectionFactory.CurrentTestConnection.CompleteFromTransport(firstException);
 
                 Assert.Same(firstException, await reconnectingErrorTcs.Task.OrTimeout());
                 Assert.Single(retryContexts);
@@ -138,9 +156,9 @@ namespace Microsoft.AspNetCore.SignalR.Client.Tests
                 Assert.Equal(TimeSpan.Zero, retryContexts[0].ElapsedTime);
 
                 var reconnectException = new Exception();
-                failReconnectTcs.TrySetResult(reconnectException);
+                failReconnectTcs.SetException(reconnectException);
 
-                Assert.Equal("", await reconnectedConnectionIdTcs.Task.OrTimeout());
+                Assert.Same(reconnectedConnectionId, await reconnectedConnectionIdTcs.Task.OrTimeout());
 
                 Assert.Equal(2, retryContexts.Count);
                 Assert.Same(reconnectException, retryContexts[1].RetryReason);
@@ -149,27 +167,6 @@ namespace Microsoft.AspNetCore.SignalR.Client.Tests
 
                 Assert.False(closedCalled);
             }
-        }
-
-        private static HubConnection CreateReconnectingHubConnection(Func<TestConnection> testConnectionFactory, ILoggerFactory loggerFactory = null, IRetryPolicy reconnectPolicy = null)
-        {
-            var builder = new HubConnectionBuilder();
-
-            var delegateConnectionFactory = new ReconnectingConnectionFactory(testConnectionFactory);
-
-            builder.Services.AddSingleton<IConnectionFactory>(delegateConnectionFactory);
-
-            if (loggerFactory != null)
-            {
-                builder.WithLoggerFactory(loggerFactory);
-            }
-
-            if (reconnectPolicy != null)
-            {
-                builder.WithAutomaticReconnect(reconnectPolicy);
-            }
-
-            return builder.Build();
         }
 
         private class ReconnectingConnectionFactory : IConnectionFactory
