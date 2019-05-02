@@ -116,7 +116,7 @@ try {
             Write-Error "Missing required parameter: AssetRootUrl"
         }
         $AssetRootUrl = $AssetRootUrl.TrimEnd('/')
-        $cliMetadataUrl = "$AssetRootUrl/orchestration-metadata/manifests/${CliManifestNam}${AccessTokenSuffix}"
+        $cliMetadataUrl = "$AssetRootUrl/orchestration-metadata/manifests/${CliManifestName}${AccessTokenSuffix}"
         Write-Host "CliMetadataUrl:  $cliMetadataUrl"
         [xml] $cli = Invoke-RestMethod $cliMetadataUrl
         $sdkVersion = $cli.Build.ProductVersion
