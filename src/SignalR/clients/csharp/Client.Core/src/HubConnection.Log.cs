@@ -228,11 +228,11 @@ namespace Microsoft.AspNetCore.SignalR.Client
             private static readonly Action<ILogger, Exception> _firstReconnectRetryDelayNull =
                 LoggerMessage.Define(LogLevel.Warning, new EventId(77, "FirstReconnectRetryDelayNull"), "Connection not reconnecting because the IRetryPolicy returned null on the first reconnect attempt.");
 
-            private static readonly Action<ILogger, Exception> _reconnectingStoppedDueToStateChangeDuringRetryDelay =
-                LoggerMessage.Define(LogLevel.Trace, new EventId(78, "ReconnectingStoppedDueToStateChangeDuringRetryDelay"), "Connection left the reconnecting state during reconnect delay. Done reconnecting.");
+            private static readonly Action<ILogger, Exception> _reconnectingStoppedDuringRetryDelay =
+                LoggerMessage.Define(LogLevel.Trace, new EventId(78, "ReconnectingStoppedDueToStateChangeDuringRetryDelay"), "Connection stopped during reconnect delay. Done reconnecting.");
 
-            private static readonly Action<ILogger, Exception> _reconnectingStoppedDueToStateChangeDuringReconnectAttempt =
-                LoggerMessage.Define(LogLevel.Trace, new EventId(79, "ReconnectingStoppedDueToStateChangeDuringReconnectAttempt"), "Connection left the reconnecting state during reconnect attempt. Done reconnecting.");
+            private static readonly Action<ILogger, Exception> _reconnectingStoppedDuringReconnectAttempt =
+                LoggerMessage.Define(LogLevel.Trace, new EventId(79, "ReconnectingStoppedDueToStateChangeDuringReconnectAttempt"), "Connection stopped during reconnect attempt. Done reconnecting.");
 
             public static void PreparingNonBlockingInvocation(ILogger logger, string target, int count)
             {
@@ -615,14 +615,14 @@ namespace Microsoft.AspNetCore.SignalR.Client
                 _firstReconnectRetryDelayNull(logger, null);
             }
 
-            public static void ReconnectingStoppedDueToStateChangeDuringRetryDelay(ILogger logger)
+            public static void ReconnectingStoppedDuringRetryDelay(ILogger logger)
             {
-                _reconnectingStoppedDueToStateChangeDuringRetryDelay(logger, null);
+                _reconnectingStoppedDuringRetryDelay(logger, null);
             }
 
-            public static void ReconnectingStoppedDueToStateChangeDuringReconnectAttempt(ILogger logger)
+            public static void ReconnectingStoppedDuringReconnectAttempt(ILogger logger)
             {
-                _reconnectingStoppedDueToStateChangeDuringReconnectAttempt(logger, null);
+                _reconnectingStoppedDuringReconnectAttempt(logger, null);
             }
         }
     }

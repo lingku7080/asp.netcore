@@ -240,15 +240,19 @@ namespace Microsoft.AspNetCore.SignalR.Client
                     throw new InvalidOperationException($"The {nameof(HubConnection)} cannot be started if it is not in the disconnected state.");
                 }
 
+                _state.StopCts = new CancellationTokenSource();
+
                 using (_logger.BeginScope(_logScope))
                 {
                     await StartAsyncCore(cancellationToken).ForceAsync();
                 }
 
-                if (!_state.TryChangeState(HubConnectionState.Connecting, HubConnectionState.Connected))
-                {
-                    throw new OperationCanceledException($"The {nameof(HubConnection)} left the connecting state during start.");
-                }
+                _state.ChangeState(HubConnectionState.Connecting, HubConnectionState.Connected);
+            }
+            catch
+            {
+                _state.TryChangeState(HubConnectionState.Connecting, HubConnectionState.Disconnected);
+                throw;
             }
             finally
             {
@@ -443,9 +447,28 @@ namespace Microsoft.AspNetCore.SignalR.Client
         // if we're disposing.
         private async Task StopAsyncCore(bool disposing)
         {
+            // StartAsync acquires the connection lock for the duration of the handshake.
+            // Cancel the StopCts without acquiring the lock so we can short-circuit it.
+            _state.StopCts?.Cancel();
+
             // Block a Start from happening until we've finished capturing the connection state.
             ConnectionState connectionState;
             await _state.WaitConnectionLockAsync();
+
+            // Wait to acquire the connection lock while not reconnecting.
+            while (_state.ReconnectTask != null && _state.ReconnectTask.Status != TaskStatus.RanToCompletion)
+            {
+                var reconnectTask = _state.ReconnectTask;
+
+                _state.ReleaseConnectionLock();
+
+                // Reconnect should never throw.
+                await reconnectTask;
+
+                _state.StopCts.Cancel();
+                await _state.WaitConnectionLockAsync();
+            }
+
             try
             {
                 if (disposing && _disposed)
@@ -993,7 +1016,7 @@ namespace Microsoft.AspNetCore.SignalR.Client
             try
             {
                 using (var handshakeCts = new CancellationTokenSource(HandshakeTimeout))
-                using (var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, handshakeCts.Token))
+                using (var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, handshakeCts.Token, _state.StopCts.Token))
                 {
                     while (true)
                     {
@@ -1175,40 +1198,35 @@ namespace Microsoft.AspNetCore.SignalR.Client
                 SafeAssert(ReferenceEquals(_state.CurrentConnectionStateUnsynchronized, connectionState),
                     "Someone other than ReceiveLoop cleared the connection state!");
                 _state.CurrentConnectionStateUnsynchronized = null;
+
+                // Dispose the connection
+                await CloseAsync(connectionState.Connection);
+
+                // Cancel any outstanding invocations within the connection lock
+                connectionState.CancelOutstandingInvocations(connectionState.CloseException);
+
+                if (connectionState.Stopping || _reconnectPolicy == null)
+                {
+                    if (connectionState.CloseException != null)
+                    {
+                        Log.ShutdownWithError(_logger, connectionState.CloseException);
+                    }
+                    else
+                    {
+                        Log.ShutdownConnection(_logger);
+                    }
+
+                    _state.ChangeState(HubConnectionState.Connected, HubConnectionState.Disconnected);
+                    RunCloseEvent(connectionState.CloseException);
+                }
+                else
+                {
+                    _state.ReconnectTask = ReconnectAsync(connectionState.CloseException);
+                }
             }
             finally
             {
                 _state.ReleaseConnectionLock();
-            }
-
-            // Dispose the connection
-            await CloseAsync(connectionState.Connection);
-
-            // Cancel any outstanding invocations within the connection lock
-            connectionState.CancelOutstandingInvocations(connectionState.CloseException);
-
-            if (connectionState.Stopping || _reconnectPolicy == null)
-            {
-                if (connectionState.CloseException != null)
-                {
-                    Log.ShutdownWithError(_logger, connectionState.CloseException);
-                }
-                else
-                {
-                    Log.ShutdownConnection(_logger);
-                }
-
-                if (!_state.TryChangeState(HubConnectionState.Connected, HubConnectionState.Disconnected))
-                {
-                    return;
-                }
-
-                RunCloseEvent(connectionState.CloseException);
-            }
-            else
-            {
-                // Fire-and-forget the reconnect loop
-                _ = Reconnect(connectionState.CloseException);
             }
         }
 
@@ -1240,40 +1258,35 @@ namespace Microsoft.AspNetCore.SignalR.Client
             }
         }
 
-        private async Task Reconnect(Exception closeException)
+        private async Task ReconnectAsync(Exception closeException)
         {
             var previousReconnectAttempts = 0;
             var reconnectStartTime = DateTime.UtcNow;
             var retryReason = closeException;
             var nextRetryDelay = GetNextRetryDelay(previousReconnectAttempts++, TimeSpan.Zero, retryReason);
+            
+            // We still have the connection lock from the caller, HandleConnectionClose.
+            _state.AssertInConnectionLock();
 
             if (nextRetryDelay == null)
             {
                 Log.FirstReconnectRetryDelayNull(_logger);
+
+                _state.ChangeState(HubConnectionState.Connected, HubConnectionState.Disconnected);
+
                 RunCloseEvent(closeException);
                 return;
             }
 
-            await _state.WaitConnectionLockAsync();
-            try
-            {
-                if (!_state.TryChangeState(HubConnectionState.Connected, HubConnectionState.Reconnecting))
-                {
-                    return;
-                }
+            _state.ChangeState(HubConnectionState.Connected, HubConnectionState.Reconnecting);
 
-                if (closeException != null)
-                {
-                    Log.ReconnectingWithError(_logger, closeException);
-                }
-                else
-                {
-                    Log.Reconnecting(_logger);
-                }
-            }
-            finally
+            if (closeException != null)
             {
-                _state.ReleaseConnectionLock();
+                Log.ReconnectingWithError(_logger, closeException);
+            }
+            else
+            {
+                Log.Reconnecting(_logger);
             }
 
             RunReconnectingEvent(closeException);
@@ -1282,24 +1295,31 @@ namespace Microsoft.AspNetCore.SignalR.Client
             {
                 Log.AwaitingReconnectRetryDelay(_logger, previousReconnectAttempts, nextRetryDelay.Value);
 
-                await Task.Delay(nextRetryDelay.Value);
-
-                if (State != HubConnectionState.Reconnecting)
+                try
                 {
-                    Log.ReconnectingStoppedDueToStateChangeDuringRetryDelay(_logger);
+                    await Task.Delay(nextRetryDelay.Value, _state.StopCts.Token);
+                }
+                catch (TaskCanceledException ex)
+                {
+                    Log.ReconnectingStoppedDuringRetryDelay(_logger);
+
+                    _state.ChangeState(HubConnectionState.Reconnecting, HubConnectionState.Disconnected);
+
+                    RunCloseEvent(GetTaskCanceledException("Connection stopped during reconnect delay. Done reconnecting.", ex, _state.StopCts.Token));
+
                     return;
                 }
 
                 await _state.WaitConnectionLockAsync();
                 try
                 {
-                    // TODO: Use a token that is canceled in StopAsync.
+                    SafeAssert(ReferenceEquals(_state.CurrentConnectionStateUnsynchronized, null),
+                        "Someone other than Reconnect set the connection state!");
+
+                    // HandshakeAsync already checks ReconnectingConnectionState.StopCts.Token.
                     await StartAsyncCore(CancellationToken.None);
 
-                    if (!_state.TryChangeState(HubConnectionState.Reconnecting, HubConnectionState.Connected))
-                    {
-                        return;
-                    }
+                    _state.ChangeState(HubConnectionState.Reconnecting, HubConnectionState.Connected);
 
                     Log.Reconnected(_logger, previousReconnectAttempts, DateTime.UtcNow - reconnectStartTime);
 
@@ -1312,9 +1332,13 @@ namespace Microsoft.AspNetCore.SignalR.Client
 
                     Log.ReconnectAttemptFailed(_logger, ex);
 
-                    if (State != HubConnectionState.Reconnecting)
+                    if (_state.StopCts.IsCancellationRequested)
                     {
-                        Log.ReconnectingStoppedDueToStateChangeDuringReconnectAttempt(_logger);
+                        Log.ReconnectingStoppedDuringReconnectAttempt(_logger);
+
+                        _state.ChangeState(HubConnectionState.Reconnecting, HubConnectionState.Disconnected);
+
+                        RunCloseEvent(GetTaskCanceledException("Connection stopped during reconnect attempt. Done reconnecting.", ex, _state.StopCts.Token));
                         return;
                     }
                 }
@@ -1326,10 +1350,24 @@ namespace Microsoft.AspNetCore.SignalR.Client
                 nextRetryDelay = GetNextRetryDelay(previousReconnectAttempts++, DateTime.UtcNow - reconnectStartTime, retryReason);
             }
 
-            var elapsedTime = DateTime.UtcNow - reconnectStartTime;
-            var message = $"Reconnect retries have been exhausted after {previousReconnectAttempts} failed attempts and {elapsedTime} elapsed. Disconnecting.";
-            Log.ReconnectAttempsExhausted(_logger, previousReconnectAttempts, elapsedTime);
-            RunCloseEvent(new TimeoutException(message));
+            await _state.WaitConnectionLockAsync();
+            try
+            {
+                SafeAssert(ReferenceEquals(_state.CurrentConnectionStateUnsynchronized, null),
+                    "Someone other than Reconnect set the connection state!");
+
+                var elapsedTime = DateTime.UtcNow - reconnectStartTime;
+                Log.ReconnectAttempsExhausted(_logger, previousReconnectAttempts, elapsedTime);
+
+                _state.ChangeState(HubConnectionState.Reconnecting, HubConnectionState.Disconnected);
+
+                var message = $"Reconnect retries have been exhausted after {previousReconnectAttempts} failed attempts and {elapsedTime} elapsed. Disconnecting.";
+                RunCloseEvent(new TaskCanceledException(message));
+            }
+            finally
+            {
+                _state.ReleaseConnectionLock();
+            }
         }
 
         private TimeSpan? GetNextRetryDelay(long previousRetryCount, TimeSpan elapsedTime, Exception retryReason)
@@ -1348,6 +1386,15 @@ namespace Microsoft.AspNetCore.SignalR.Client
                 Log.ErrorDuringNextRetryDelay(_logger, ex);
                 return null;
             }
+        }
+
+        private TaskCanceledException GetTaskCanceledException(string message, Exception innerException, CancellationToken cancellationToken)
+        {
+#if NETCOREAPP3_0
+            return new TaskCanceledException(message, innerException, _state.StopCts.Token);
+#else
+            return new TaskCanceledException(message, innerException);
+#endif
         }
 
         private void RunReconnectingEvent(Exception closeException)
@@ -1742,13 +1789,25 @@ namespace Microsoft.AspNetCore.SignalR.Client
 
             public HubConnectionState OverallState { get; private set; }
 
+            public CancellationTokenSource StopCts { get; set; }
+
+            public Task ReconnectTask { get; set; }
+
+            public void ChangeState(HubConnectionState expectedState, HubConnectionState newState)
+            {
+                if (!TryChangeState(expectedState, newState))
+                {
+                    Log.StateTransitionFailed(_logger, expectedState, newState, OverallState);
+                    throw new InvalidOperationException($"The HubConnection failed to transition from the '{expectedState}' state to the '{newState}' state because it was actually in the '{OverallState}' state.");
+                }
+            }
+
             public bool TryChangeState(HubConnectionState expectedState, HubConnectionState newState)
             {
                 AssertInConnectionLock();
 
                 if (OverallState != expectedState)
                 {
-                    Log.StateTransitionFailed(_logger, expectedState, newState, OverallState);
                     return false;
                 }
 
