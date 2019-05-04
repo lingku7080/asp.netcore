@@ -234,6 +234,9 @@ namespace Microsoft.AspNetCore.SignalR.Client
             private static readonly Action<ILogger, Exception> _reconnectingStoppedDuringReconnectAttempt =
                 LoggerMessage.Define(LogLevel.Trace, new EventId(79, "ReconnectingStoppedDueToStateChangeDuringReconnectAttempt"), "Connection stopped during reconnect attempt. Done reconnecting.");
 
+            private static readonly Action<ILogger, HubConnectionState, HubConnectionState, Exception> _attemptingStateTransition =
+                LoggerMessage.Define<HubConnectionState, HubConnectionState>(LogLevel.Trace, new EventId(80, "AttemptingStateTransition"), "The HubConnection is attempting to transition from the {ExpectedState} state to the {NewState} state.");
+
             public static void PreparingNonBlockingInvocation(ILogger logger, string target, int count)
             {
                 _preparingNonBlockingInvocation(logger, target, count, null);
@@ -623,6 +626,11 @@ namespace Microsoft.AspNetCore.SignalR.Client
             public static void ReconnectingStoppedDuringReconnectAttempt(ILogger logger)
             {
                 _reconnectingStoppedDuringReconnectAttempt(logger, null);
+            }
+
+            public static void AttemptingStateTransition(ILogger logger, HubConnectionState expectedState, HubConnectionState newState)
+            {
+                _attemptingStateTransition(logger, expectedState, newState, null);
             }
         }
     }
