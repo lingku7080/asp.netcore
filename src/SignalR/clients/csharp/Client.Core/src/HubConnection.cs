@@ -1152,6 +1152,7 @@ namespace Microsoft.AspNetCore.SignalR.Client
                                 {
                                     // Closing because we got a close frame, possibly with an error in it.
                                     connectionState.CloseException = exception;
+                                    connectionState.Stopping = true;
                                     break;
                                 }
                             }
@@ -1597,8 +1598,6 @@ namespace Microsoft.AspNetCore.SignalR.Client
                 get => _stopping;
                 set => _stopping = value;
             }
-
-            public bool Stopped => _stopTcs?.Task.Status == TaskStatus.RanToCompletion;
 
             public ConnectionState(ConnectionContext connection, HubConnection hubConnection)
             {
