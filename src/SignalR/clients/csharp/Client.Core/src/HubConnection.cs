@@ -1320,9 +1320,17 @@ namespace Microsoft.AspNetCore.SignalR.Client
                 {
                     Log.ReconnectingStoppedDuringRetryDelay(_logger);
 
-                    _state.ChangeState(HubConnectionState.Reconnecting, HubConnectionState.Disconnected);
+                    await _state.WaitConnectionLockAsync();
+                    try
+                    {
+                        _state.ChangeState(HubConnectionState.Reconnecting, HubConnectionState.Disconnected);
 
-                    CompleteClose(GetOperationCanceledException("Connection stopped during reconnect delay. Done reconnecting.", ex, _state.StopCts.Token));
+                        CompleteClose(GetOperationCanceledException("Connection stopped during reconnect delay. Done reconnecting.", ex, _state.StopCts.Token));
+                    }
+                    finally
+                    {
+                        _state.ReleaseConnectionLock();
+                    }
 
                     return;
                 }
@@ -1336,9 +1344,9 @@ namespace Microsoft.AspNetCore.SignalR.Client
                     // HandshakeAsync already checks ReconnectingConnectionState.StopCts.Token.
                     await StartAsyncCore(CancellationToken.None);
 
-                    _state.ChangeState(HubConnectionState.Reconnecting, HubConnectionState.Connected);
-
                     Log.Reconnected(_logger, previousReconnectAttempts, DateTime.UtcNow - reconnectStartTime);
+
+                    _state.ChangeState(HubConnectionState.Reconnecting, HubConnectionState.Connected);
 
                     RunReconnectedEvent();
                     return;
