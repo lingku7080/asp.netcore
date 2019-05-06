@@ -243,7 +243,7 @@ namespace Microsoft.AspNetCore.SignalR.Client.Tests
                     Assert.False(startTask.IsCompleted);
                     await syncPoint.WaitForSyncPoint();
 
-                    Assert.Equal(HubConnectionState.Disconnected, connection.State);
+                    Assert.Equal(HubConnectionState.Connecting, connection.State);
 
                     // Release the SyncPoint
                     syncPoint.Continue();
