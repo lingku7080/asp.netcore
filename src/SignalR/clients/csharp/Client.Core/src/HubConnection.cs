@@ -606,13 +606,14 @@ namespace Microsoft.AspNetCore.SignalR.Client
                 {
                     cancellationToken.Register(state => _ = OnStreamCanceled((InvocationRequest)state), irq);
                 }
+
+                LaunchStreams(connectionState, readers, cancellationToken);
             }
             finally
             {
                 _state.ReleaseConnectionLock();
             }
 
-            LaunchStreams(readers, cancellationToken);
             return channel;
         }
 
@@ -653,7 +654,7 @@ namespace Microsoft.AspNetCore.SignalR.Client
             return readers;
         }
 
-        private void LaunchStreams(Dictionary<string, object> readers, CancellationToken cancellationToken)
+        private void LaunchStreams(ConnectionState connectionState, Dictionary<string, object> readers, CancellationToken cancellationToken)
         {
             if (readers == null)
             {
@@ -673,18 +674,18 @@ namespace Microsoft.AspNetCore.SignalR.Client
                 {
                     _ = _sendIAsyncStreamItemsMethod
                         .MakeGenericMethod(reader.GetType().GetInterface("IAsyncEnumerable`1").GetGenericArguments())
-                        .Invoke(this, new object[] { kvp.Key.ToString(), reader, cancellationToken });
+                        .Invoke(this, new object[] { connectionState, kvp.Key.ToString(), reader, cancellationToken });
                     continue;
                 }
 #endif
                 _ = _sendStreamItemsMethod
                     .MakeGenericMethod(reader.GetType().GetGenericArguments())
-                    .Invoke(this, new object[] { kvp.Key.ToString(), reader, cancellationToken });
+                    .Invoke(this, new object[] { connectionState, kvp.Key.ToString(), reader, cancellationToken });
             }
         }
 
         // this is called via reflection using the `_sendStreamItems` field
-        private Task SendStreamItems<T>(string streamId, ChannelReader<T> reader, CancellationToken token)
+        private Task SendStreamItems<T>(ConnectionState connectionState, string streamId, ChannelReader<T> reader, CancellationToken token)
         {
             async Task ReadChannelStream(CancellationTokenSource tokenSource)
             {
@@ -692,18 +693,18 @@ namespace Microsoft.AspNetCore.SignalR.Client
                 {
                     while (!tokenSource.Token.IsCancellationRequested && reader.TryRead(out var item))
                     {
-                        await SendWithLock(new StreamItemMessage(streamId, item));
+                        await SendWithLock(connectionState, new StreamItemMessage(streamId, item));
                         Log.SendingStreamItem(_logger, streamId);
                     }
                 }
             }
 
-            return CommonStreaming(streamId, token, ReadChannelStream);
+            return CommonStreaming(connectionState, streamId, token, ReadChannelStream);
         }
 
 #if NETCOREAPP3_0
         // this is called via reflection using the `_sendIAsyncStreamItemsMethod` field
-        private Task SendIAsyncEnumerableStreamItems<T>(string streamId, IAsyncEnumerable<T> stream, CancellationToken token)
+        private Task SendIAsyncEnumerableStreamItems<T>(ConnectionState connectionState, string streamId, IAsyncEnumerable<T> stream, CancellationToken token)
         {
             async Task ReadAsyncEnumerableStream(CancellationTokenSource tokenSource)
             {
@@ -711,45 +712,36 @@ namespace Microsoft.AspNetCore.SignalR.Client
 
                 await foreach (var streamValue in streamValues)
                 {
-                    await SendWithLock(new StreamItemMessage(streamId, streamValue));
+                    await SendWithLock(connectionState, new StreamItemMessage(streamId, streamValue));
                     Log.SendingStreamItem(_logger, streamId);
                 }
             }
 
-            return CommonStreaming(streamId, token, ReadAsyncEnumerableStream);
+            return CommonStreaming(connectionState, streamId, token, ReadAsyncEnumerableStream);
         }
 #endif
 
-        private async Task CommonStreaming(string streamId, CancellationToken token, Func<CancellationTokenSource, Task> createAndConsumeStream)
+        private async Task CommonStreaming(ConnectionState connectionState, string streamId, CancellationToken token, Func<CancellationTokenSource, Task> createAndConsumeStream)
         {
-            CheckDisposed();
-            var connectionState = await _state.WaitForActiveConnectionAsync(nameof(CommonStreaming));
+            // It's safe to access connectionState.UploadStreamToken as we still have the connection lock
+            _state.AssertInConnectionLock();
+            var cts = CancellationTokenSource.CreateLinkedTokenSource(connectionState.UploadStreamToken, token);
+
+            Log.StartingStream(_logger, streamId);
+            string responseError = null;
             try
             {
-                CheckDisposed();
-
-                var cts = CancellationTokenSource.CreateLinkedTokenSource(connectionState.UploadStreamToken, token);
-
-                Log.StartingStream(_logger, streamId);
-                string responseError = null;
-                try
-                {
-                    await createAndConsumeStream(cts);
-                }
-                catch (OperationCanceledException)
-                {
-                    Log.CancelingStream(_logger, streamId);
-                    responseError = $"Stream canceled by client.";
-                }
-
-                Log.CompletingStream(_logger, streamId);
-
-                await SendHubMessage(connectionState, CompletionMessage.WithError(streamId, responseError), cts.Token);
+                await createAndConsumeStream(cts);
             }
-            finally
+            catch (OperationCanceledException)
             {
-                _state.ReleaseConnectionLock();
+                Log.CancelingStream(_logger, streamId);
+                responseError = $"Stream canceled by client.";
             }
+
+            Log.CompletingStream(_logger, streamId);
+
+            await SendWithLock(connectionState, CompletionMessage.WithError(streamId, responseError), cts.Token);
         }
 
         private async Task<object> InvokeCoreAsyncCore(string methodName, Type returnType, object[] args, CancellationToken cancellationToken)
@@ -768,13 +760,13 @@ namespace Microsoft.AspNetCore.SignalR.Client
 
                 var irq = InvocationRequest.Invoke(cancellationToken, returnType, connectionState.GetNextId(), _loggerFactory, this, out invocationTask);
                 await InvokeCore(connectionState, methodName, irq, args, streamIds?.ToArray(), cancellationToken);
+
+                LaunchStreams(connectionState, readers, cancellationToken);
             }
             finally
             {
                 _state.ReleaseConnectionLock();
             }
-
-            LaunchStreams(readers, cancellationToken);
 
             // Wait for this outside the lock, because it won't complete until the server responds
             return await invocationTask;
@@ -867,22 +859,25 @@ namespace Microsoft.AspNetCore.SignalR.Client
                 Log.PreparingNonBlockingInvocation(_logger, methodName, args.Length);
                 var invocationMessage = new InvocationMessage(null, methodName, args, streamIds?.ToArray());
                 await SendHubMessage(connectionState, invocationMessage, cancellationToken);
+
+                LaunchStreams(connectionState, readers, cancellationToken);
             }
             finally
             {
                 _state.ReleaseConnectionLock();
             }
-
-            LaunchStreams(readers, cancellationToken);
         }
 
-        private async Task SendWithLock(HubMessage message, CancellationToken cancellationToken = default, [CallerMemberName] string callerName = "")
+        private async Task SendWithLock(ConnectionState expectedConnectionState, HubMessage message, CancellationToken cancellationToken = default, [CallerMemberName] string callerName = "")
         {
             CheckDisposed();
             var connectionState = await _state.WaitForActiveConnectionAsync(callerName);
             try
             {
                 CheckDisposed();
+
+                SafeAssert(ReferenceEquals(expectedConnectionState, connectionState), "The connection state changed unexpectedly!");
+
                 await SendHubMessage(connectionState, message, cancellationToken);
             }
             finally
