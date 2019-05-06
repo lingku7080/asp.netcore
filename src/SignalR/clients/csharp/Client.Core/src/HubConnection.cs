@@ -1566,7 +1566,6 @@ namespace Microsoft.AspNetCore.SignalR.Client
             }
         }
 
-        // TODO: Refactor all transient state about the connection into the ConnectionState class.
         private class ConnectionState : IInvocationBinder
         {
             private readonly HubConnection _hubConnection;
