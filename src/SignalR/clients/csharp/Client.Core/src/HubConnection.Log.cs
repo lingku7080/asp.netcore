@@ -180,6 +180,9 @@ namespace Microsoft.AspNetCore.SignalR.Client
             private static readonly Action<ILogger, string, Exception> _messageSentGeneric =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(60, "MessageSentGeneric"), "Sending {MessageType} message completed.");
 
+            private static readonly Action<ILogger, Exception> _acquiredConnectionLockForPing =
+                LoggerMessage.Define(LogLevel.Trace, new EventId(61, "AcquiredConnectionLockForPing"), "Acquired the Connection Lock in order to ping the server.");
+
             private static readonly Action<ILogger, Exception> _unableToAcquireConnectionLockForPing =
                 LoggerMessage.Define(LogLevel.Trace, new EventId(62, "UnableToAcquireConnectionLockForPing"), "Skipping ping because a send is already in progress.");
 
@@ -536,6 +539,11 @@ namespace Microsoft.AspNetCore.SignalR.Client
             public static void ArgumentBindingFailure(ILogger logger, string invocationId, string target, Exception exception)
             {
                 _argumentBindingFailure(logger, invocationId, target, exception);
+            }
+
+            public static void AcquiredConnectionLockForPing(ILogger logger)
+            {
+                _acquiredConnectionLockForPing(logger, null);
             }
 
             public static void UnableToAcquireConnectionLockForPing(ILogger logger)

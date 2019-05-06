@@ -421,7 +421,7 @@ namespace Microsoft.AspNetCore.SignalR.Client
 
             // Start the connection
             var connection = await _connectionFactory.ConnectAsync(_protocol.TransferFormat);
-            var startingConnectionState = new ConnectionState(connection, this);
+            var startingConnectionState = _state.CreateConnectionState(connection, this);
 
             // From here on, if an error occurs we need to shut down the connection because
             // we still own it.
@@ -824,14 +824,9 @@ namespace Microsoft.AspNetCore.SignalR.Client
             }
         }
 
-        private Task SendHubMessage(ConnectionState connectionState, HubMessage hubMessage, CancellationToken cancellationToken = default)
+        private async Task SendHubMessage(ConnectionState connectionState, HubMessage hubMessage, CancellationToken cancellationToken = default)
         {
             _state.AssertConnectionValid();
-            return UnsafeSendHubMessage(connectionState, hubMessage, cancellationToken);
-        }
-
-        private async Task UnsafeSendHubMessage(ConnectionState connectionState, HubMessage hubMessage, CancellationToken cancellationToken = default)
-        {
             _protocol.WriteMessage(hubMessage, connectionState.Connection.Transport.Output);
 
             Log.SendingMessage(_logger, hubMessage);
@@ -1582,6 +1577,10 @@ namespace Microsoft.AspNetCore.SignalR.Client
             private readonly Dictionary<string, InvocationRequest> _pendingCalls = new Dictionary<string, InvocationRequest>(StringComparer.Ordinal);
             private TaskCompletionSource<object> _stopTcs;
 
+            private readonly ReconnectingConnectionState _reconnectingState;
+            private readonly SemaphoreSlim _reconnectingLock;
+            private readonly ILogger _logger;
+
             private volatile bool _stopping;
 
             private int _nextInvocationId;
@@ -1601,11 +1600,20 @@ namespace Microsoft.AspNetCore.SignalR.Client
                 set => _stopping = value;
             }
 
-            public ConnectionState(ConnectionContext connection, HubConnection hubConnection)
+            public ConnectionState(
+                ConnectionContext connection,
+                HubConnection hubConnection,
+                ReconnectingConnectionState reconnectingState,
+                SemaphoreSlim reconnectingLock,
+                ILogger logger)
             {
                 _hubConnection = hubConnection;
                 _hubConnection._logScope.ConnectionId = connection.ConnectionId;
                 Connection = connection;
+
+                _reconnectingState = reconnectingState;
+                _reconnectingLock = reconnectingLock;
+                _logger = logger;
 
                 _hasInherentKeepAlive = connection.Features.Get<IConnectionInherentKeepAliveFeature>()?.HasInherentKeepAlive ?? false;
             }
@@ -1618,7 +1626,7 @@ namespace Microsoft.AspNetCore.SignalR.Client
                 {
                     if (_pendingCalls.ContainsKey(irq.InvocationId))
                     {
-                        Log.InvocationAlreadyInUse(_hubConnection._logger, irq.InvocationId);
+                        Log.InvocationAlreadyInUse(_logger, irq.InvocationId);
                         throw new InvalidOperationException($"Invocation ID '{irq.InvocationId}' is already in use.");
                     }
                     else
@@ -1654,13 +1662,13 @@ namespace Microsoft.AspNetCore.SignalR.Client
 
             public void CancelOutstandingInvocations(Exception exception)
             {
-                Log.CancelingOutstandingInvocations(_hubConnection._logger);
+                Log.CancelingOutstandingInvocations(_logger);
 
                 lock (_lock)
                 {
                     foreach (var outstandingCall in _pendingCalls.Values)
                     {
-                        Log.RemovingInvocation(_hubConnection._logger, outstandingCall.InvocationId);
+                        Log.RemovingInvocation(_logger, outstandingCall.InvocationId);
                         if (exception != null)
                         {
                             outstandingCall.Fail(exception);
@@ -1691,17 +1699,17 @@ namespace Microsoft.AspNetCore.SignalR.Client
 
             private async Task StopAsyncCore()
             {
-                Log.Stopping(_hubConnection._logger);
+                Log.Stopping(_logger);
 
                 // Complete our write pipe, which should cause everything to shut down
-                Log.TerminatingReceiveLoop(_hubConnection._logger);
+                Log.TerminatingReceiveLoop(_logger);
                 Connection.Transport.Input.CancelPendingRead();
 
                 // Wait ServerTimeout for the server or transport to shut down.
-                Log.WaitingForReceiveLoopToTerminate(_hubConnection._logger);
+                Log.WaitingForReceiveLoopToTerminate(_logger);
                 await ReceiveTask;
 
-                Log.Stopped(_hubConnection._logger);
+                Log.Stopped(_logger);
 
                 _hubConnection._logScope.ConnectionId = null;
                 _stopTcs.TrySetResult(null);
@@ -1709,10 +1717,10 @@ namespace Microsoft.AspNetCore.SignalR.Client
 
             public async Task TimerLoop(TimerAwaitable timer)
             {
-                // Tell the server we intend to ping
-                // Old clients never ping, and shouldn't be timed out
-                // So ping to tell the server that we should be timed out if we stop
-                await _hubConnection.UnsafeSendHubMessage(this, PingMessage.Instance);
+                // Tell the server we intend to ping.
+                // Old clients never ping, and shouldn't be timed out, so ping to tell the server that we should be timed out if we stop.
+                // The TimerLoop is started from the ReceiveLoop with the connection lock still acquired.
+                await _hubConnection.SendHubMessage(this, PingMessage.Instance);
 
                 // initialize the timers
                 timer.Start();
@@ -1751,7 +1759,26 @@ namespace Microsoft.AspNetCore.SignalR.Client
 
                 if (DateTime.UtcNow.Ticks > Volatile.Read(ref _nextActivationSendPing) && !Stopping)
                 {
-                    await _hubConnection.UnsafeSendHubMessage(this, PingMessage.Instance);
+                    if (!_reconnectingLock.Wait(0))
+                    {
+                        Log.UnableToAcquireConnectionLockForPing(_logger);
+                        return;
+                    }
+
+                    SafeAssert(ReferenceEquals(_reconnectingState.CurrentConnectionStateUnsynchronized, this) ||
+                               ReferenceEquals(_reconnectingState.CurrentConnectionStateUnsynchronized, null),
+                        "Something reset the connection state before the timer loop completed!");
+
+                    Log.AcquiredConnectionLockForPing(_logger);
+
+                    try
+                    {
+                        await _hubConnection.SendHubMessage(this, PingMessage.Instance);
+                    }
+                    finally
+                    {
+                        _reconnectingState.ReleaseConnectionLock();
+                    }
                 }
             }
 
@@ -1759,7 +1786,7 @@ namespace Microsoft.AspNetCore.SignalR.Client
             {
                 if (!TryGetInvocation(invocationId, out var irq))
                 {
-                    Log.ReceivedUnexpectedResponse(_hubConnection._logger, invocationId);
+                    Log.ReceivedUnexpectedResponse(_logger, invocationId);
                     return null;
                 }
                 return irq.ResultType;
@@ -1771,7 +1798,7 @@ namespace Microsoft.AspNetCore.SignalR.Client
                 // literally the same code as the above method
                 if (!TryGetInvocation(invocationId, out var irq))
                 {
-                    Log.ReceivedUnexpectedResponse(_hubConnection._logger, invocationId);
+                    Log.ReceivedUnexpectedResponse(_logger, invocationId);
                     return null;
                 }
                 return irq.ResultType;
@@ -1781,7 +1808,7 @@ namespace Microsoft.AspNetCore.SignalR.Client
             {
                 if (!_hubConnection._handlers.TryGetValue(methodName, out var invocationHandlerList))
                 {
-                    Log.MissingHandler(_hubConnection._logger, methodName);
+                    Log.MissingHandler(_logger, methodName);
                     return Type.EmptyTypes;
                 }
 
@@ -1816,6 +1843,11 @@ namespace Microsoft.AspNetCore.SignalR.Client
             public CancellationTokenSource StopCts { get; set; } = new CancellationTokenSource();
 
             public Task ReconnectTask { get; set; } = Task.CompletedTask;
+
+            public ConnectionState CreateConnectionState(ConnectionContext connectionContext, HubConnection hubConnection)
+            {
+                return new ConnectionState(connectionContext, hubConnection, this, _connectionLock, _logger);
+            }
 
             public void ChangeState(HubConnectionState expectedState, HubConnectionState newState)
             {
