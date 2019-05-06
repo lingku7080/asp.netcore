@@ -832,7 +832,7 @@ namespace Microsoft.AspNetCore.SignalR.Client
             Log.SendingMessage(_logger, hubMessage);
 
             // REVIEW: If a token is passed in and is canceled during FlushAsync it seems to break .Complete()...
-            await connectionState.Connection.Transport.Output.FlushAsync(cancellationToken);
+            await connectionState.Connection.Transport.Output.FlushAsync();
             Log.MessageSent(_logger, hubMessage);
 
             // We've sent a message, so don't ping for a while
