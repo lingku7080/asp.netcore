@@ -421,7 +421,7 @@ namespace Microsoft.AspNetCore.SignalR.Client
 
             // Start the connection
             var connection = await _connectionFactory.ConnectAsync(_protocol.TransferFormat);
-            var startingConnectionState = _state.CreateConnectionState(connection, this);
+            var startingConnectionState = new ConnectionState(connection, this);
 
             // From here on, if an error occurs we need to shut down the connection because
             // we still own it.
@@ -1572,14 +1572,11 @@ namespace Microsoft.AspNetCore.SignalR.Client
         private class ConnectionState : IInvocationBinder
         {
             private readonly HubConnection _hubConnection;
+            private readonly ILogger _logger;
 
             private readonly object _lock = new object();
             private readonly Dictionary<string, InvocationRequest> _pendingCalls = new Dictionary<string, InvocationRequest>(StringComparer.Ordinal);
             private TaskCompletionSource<object> _stopTcs;
-
-            private readonly ReconnectingConnectionState _reconnectingState;
-            private readonly SemaphoreSlim _reconnectingLock;
-            private readonly ILogger _logger;
 
             private volatile bool _stopping;
 
@@ -1600,21 +1597,14 @@ namespace Microsoft.AspNetCore.SignalR.Client
                 set => _stopping = value;
             }
 
-            public ConnectionState(
-                ConnectionContext connection,
-                HubConnection hubConnection,
-                ReconnectingConnectionState reconnectingState,
-                SemaphoreSlim reconnectingLock,
-                ILogger logger)
+            public ConnectionState(ConnectionContext connection, HubConnection hubConnection)
             {
-                _hubConnection = hubConnection;
-                _hubConnection._logScope.ConnectionId = connection.ConnectionId;
                 Connection = connection;
 
-                _reconnectingState = reconnectingState;
-                _reconnectingLock = reconnectingLock;
-                _logger = logger;
+                _hubConnection = hubConnection;
+                _hubConnection._logScope.ConnectionId = connection.ConnectionId;
 
+                _logger = _hubConnection._logger;
                 _hasInherentKeepAlive = connection.Features.Get<IConnectionInherentKeepAliveFeature>()?.HasInherentKeepAlive ?? false;
             }
 
@@ -1759,25 +1749,27 @@ namespace Microsoft.AspNetCore.SignalR.Client
 
                 if (DateTime.UtcNow.Ticks > Volatile.Read(ref _nextActivationSendPing) && !Stopping)
                 {
-                    if (!_reconnectingLock.Wait(0))
+                    if (!_hubConnection._state.TryAcquireConnectionLock())
                     {
                         Log.UnableToAcquireConnectionLockForPing(_logger);
                         return;
                     }
 
-                    SafeAssert(ReferenceEquals(_reconnectingState.CurrentConnectionStateUnsynchronized, this) ||
-                               ReferenceEquals(_reconnectingState.CurrentConnectionStateUnsynchronized, null),
-                        "Something reset the connection state before the timer loop completed!");
-
                     Log.AcquiredConnectionLockForPing(_logger);
 
                     try
                     {
-                        await _hubConnection.SendHubMessage(this, PingMessage.Instance);
+                        if (_hubConnection._state.CurrentConnectionStateUnsynchronized != null)
+                        {
+                            SafeAssert(ReferenceEquals(_hubConnection._state.CurrentConnectionStateUnsynchronized, this),
+                                "Something reset the connection state before the timer loop completed!");
+
+                            await _hubConnection.SendHubMessage(this, PingMessage.Instance);
+                        }
                     }
                     finally
                     {
-                        _reconnectingState.ReleaseConnectionLock();
+                        _hubConnection._state.ReleaseConnectionLock();
                     }
                 }
             }
@@ -1844,11 +1836,6 @@ namespace Microsoft.AspNetCore.SignalR.Client
 
             public Task ReconnectTask { get; set; } = Task.CompletedTask;
 
-            public ConnectionState CreateConnectionState(ConnectionContext connectionContext, HubConnection hubConnection)
-            {
-                return new ConnectionState(connectionContext, hubConnection, this, _connectionLock, _logger);
-            }
-
             public void ChangeState(HubConnectionState expectedState, HubConnectionState newState)
             {
                 if (!TryChangeState(expectedState, newState))
@@ -1887,6 +1874,11 @@ namespace Microsoft.AspNetCore.SignalR.Client
             {
                 Log.WaitingOnConnectionLock(_logger, memberName, filePath, lineNumber);
                 return _connectionLock.WaitAsync();
+            }
+
+            public bool TryAcquireConnectionLock()
+            {
+                return _connectionLock.Wait(0);
             }
 
             public async Task<ConnectionState> WaitForActiveConnectionAsync(string methodName, [CallerMemberName] string memberName = null, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = 0)
