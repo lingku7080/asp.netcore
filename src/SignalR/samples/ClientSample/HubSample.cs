@@ -86,7 +86,7 @@ namespace ClientSample
                 // Connect to the server
             } while (!await ConnectAsync(connection));
 
-            Console.WriteLine("Connected to {0}", uri); ;
+            Console.WriteLine("Connected to {0}", uri);
 
             // Handle the connected connection
             while (true)
