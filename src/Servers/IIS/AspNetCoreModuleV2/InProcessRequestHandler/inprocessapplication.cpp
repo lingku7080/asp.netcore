@@ -492,6 +492,7 @@ IN_PROCESS_APPLICATION::UnexpectedThreadExit(const ExecuteClrContext& context) c
     {
         if (!content.empty())
         {
+            // TODO put this in the response if in development.
             EventLog::Error(
                 ASPNETCORE_EVENT_INPROCESS_THREAD_EXCEPTION,
                 ASPNETCORE_EVENT_INPROCESS_THREAD_EXCEPTION_STDOUT_MSG,
