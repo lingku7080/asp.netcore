@@ -6,7 +6,7 @@ namespace Microsoft.AspNetCore.HeaderPropagation
     /// <summary>
     /// Provides configuration for the <see cref="HeaderPropagationMiddleware"/>.
     /// </summary>
-    public class HeaderPropagationOptions
+    public class HeaderPropagationClientOptions
     {
         /// <summary>
         /// Gets or sets the headers to be captured by the <see cref="HeaderPropagationMiddleware"/>
@@ -17,6 +17,6 @@ namespace Microsoft.AspNetCore.HeaderPropagation
         /// <see cref="HeaderPropagationMiddleware"/>. This can cause an earlier entry to take precedence
         /// over a later entry if they have the same <see cref="HeaderPropagationEntry.CapturedHeaderName"/>.
         /// </remarks>
-        public HeaderPropagationEntryCollection Headers { get; set; } = new HeaderPropagationEntryCollection();
+        public HeaderPropagationClientEntryCollection Headers { get; set; } = new HeaderPropagationClientEntryCollection();
     }
 }

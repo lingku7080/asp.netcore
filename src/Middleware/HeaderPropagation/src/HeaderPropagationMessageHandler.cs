@@ -17,7 +17,7 @@ namespace Microsoft.AspNetCore.HeaderPropagation
     public class HeaderPropagationMessageHandler : DelegatingHandler
     {
         private readonly HeaderPropagationValues _values;
-        private readonly HeaderPropagationOptions _options;
+        private readonly HeaderPropagationClientOptions _options;
 
         /// <summary>
         /// Creates a new instance of the <see cref="HeaderPropagationMessageHandler"/>.
@@ -25,7 +25,7 @@ namespace Microsoft.AspNetCore.HeaderPropagation
         /// <param name="options">The options that define which headers are propagated.</param>
         /// <param name="values">The values of the headers to be propagated populated by the
         /// <see cref="HeaderPropagationMiddleware"/>.</param>
-        public HeaderPropagationMessageHandler(IOptions<HeaderPropagationOptions> options, HeaderPropagationValues values)
+        public HeaderPropagationMessageHandler(IOptions<HeaderPropagationClientOptions> options, HeaderPropagationValues values)
         {
             if (options == null)
             {
@@ -71,7 +71,7 @@ namespace Microsoft.AspNetCore.HeaderPropagation
                 if (!request.Headers.TryGetValues(entry.OutboundHeaderName, out var _) &&
                     !(hasContent && request.Content.Headers.TryGetValues(entry.OutboundHeaderName, out var _)))
                 {
-                    if (captured.TryGetValue(entry.OutboundHeaderName, out var stringValues) &&
+                    if (captured.TryGetValue(entry.CapturedHeaderName, out var stringValues) &&
                         !StringValues.IsNullOrEmpty(stringValues))
                     {
                         if (stringValues.Count == 1)
