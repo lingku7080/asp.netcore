@@ -15,6 +15,7 @@ namespace Microsoft.AspNetCore.Mvc.Analyzers
             Context = context;
             HtmlHelperType = GetType(SymbolNames.IHtmlHelperType);
             HtmlHelperPartialExtensionsType = GetType(SymbolNames.HtmlHelperPartialExtensionsType);
+            TaskType = GetType(SymbolNames.TaskTypeName);
         }
 
         public CompilationStartAnalysisContext Context { get; }
@@ -22,6 +23,8 @@ namespace Microsoft.AspNetCore.Mvc.Analyzers
         public INamedTypeSymbol HtmlHelperType { get; }
 
         public INamedTypeSymbol HtmlHelperPartialExtensionsType { get; }
+
+        public INamedTypeSymbol TaskType { get; }
 
         private INamedTypeSymbol GetType(string name) => Context.Compilation.GetTypeByMetadataName(name);
 
