@@ -78,5 +78,7 @@ namespace Microsoft.AspNetCore.Mvc.Analyzers
         public const string TaskTypeName = "System.Threading.Tasks.Task";
 
         public const string TagHelperRunnerFieldName = "__tagHelperRunner";
+
+        public const string TagHelperRunnerTypeName = "Microsoft.AspNetCore.Razor.Runtime.TagHelpers.TagHelperRunner";
     }
 }
