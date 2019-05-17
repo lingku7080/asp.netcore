@@ -28,6 +28,10 @@
       "longName": "domain",
       "shortName": ""
     },
+    "Swagger": {
+      "longName": "swagger",
+      "shortName": "swag"
+    },
     "TenantId": {
       "longName": "tenant-id",
       "shortName": ""

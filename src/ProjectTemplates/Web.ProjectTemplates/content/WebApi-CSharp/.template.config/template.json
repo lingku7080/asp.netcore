@@ -65,6 +65,22 @@
       "defaultValue": "None",
       "description": "The type of authentication to use"
     },
+    "swagger": {
+      "type": "parameter",
+      "datatype": "choice",
+      "choices": [
+        {
+          "choice": "None",
+          "description": "No swagger"
+        },
+        {
+          "choice": "Swashbuckle",
+          "description": "Yarr!"
+        }
+      ],
+      "defaultValue": "false",
+      "description": "The swagger generator to use."
+    },
     "AAdB2CInstance": {
       "type": "parameter",
       "datatype": "string",
@@ -174,6 +190,14 @@
     "SingleOrgAuth": {
       "type": "computed",
       "value": "(auth == \"SingleOrg\")"
+    },
+    "NoSwagger": {
+      "type": "computed",
+      "value": "(swagger == \"None\")"
+    },
+    "Swashbuckle": {
+      "type": "computed",
+      "value": "(swagger == \"Swashbuckle\")"
     },
     "IndividualAuth": {
       "type": "computed",

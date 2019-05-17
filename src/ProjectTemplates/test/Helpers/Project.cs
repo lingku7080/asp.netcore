@@ -41,7 +41,7 @@ namespace Templates.Test.Helpers
         public ITestOutputHelper Output { get; set; }
         public IMessageSink DiagnosticsMessageSink { get; set; }
 
-        internal async Task<ProcessEx> RunDotNetNewAsync(string templateName, string auth = null, string language = null, bool useLocalDB = false, bool noHttps = false)
+        internal async Task<ProcessEx> RunDotNetNewAsync(string templateName, string auth = null, string language = null, bool useLocalDB = false, bool noHttps = false, IDictionary<string, string> argDict = null)
         {
             var hiveArg = $"--debug:custom-hive \"{TemplatePackageInstaller.CustomHivePath}\"";
             var args = $"new {templateName} {hiveArg}";
@@ -64,6 +64,11 @@ namespace Templates.Test.Helpers
             if (noHttps)
             {
                 args += $" --no-https";
+            }
+
+            foreach(var ar in argDict)
+            {
+                args += $" {ar.Key} {ar.Value}";
             }
 
             // Save a copy of the arguments used for better diagnostic error messages later.
