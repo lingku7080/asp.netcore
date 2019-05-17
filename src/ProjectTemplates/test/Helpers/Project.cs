@@ -66,9 +66,12 @@ namespace Templates.Test.Helpers
                 args += $" --no-https";
             }
 
-            foreach(var ar in argDict)
+            if(argDict != null)
             {
-                args += $" {ar.Key} {ar.Value}";
+                foreach (var ar in argDict)
+                {
+                    args += $" {ar.Key} {ar.Value}";
+                }
             }
 
             // Save a copy of the arguments used for better diagnostic error messages later.
