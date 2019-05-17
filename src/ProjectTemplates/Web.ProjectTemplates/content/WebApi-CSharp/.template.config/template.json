@@ -78,7 +78,7 @@
           "description": "Yarr!"
         }
       ],
-      "defaultValue": "false",
+      "defaultValue": "None",
       "description": "The swagger generator to use."
     },
     "AAdB2CInstance": {
