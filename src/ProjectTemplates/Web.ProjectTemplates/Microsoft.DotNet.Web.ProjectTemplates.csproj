@@ -21,6 +21,7 @@
       MicrosoftEntityFrameworkCoreToolsPackageVersion=$(MicrosoftEntityFrameworkCoreToolsPackageVersion);
       MicrosoftExtensionsHostingPackageVersion=$(MicrosoftExtensionsHostingPackageVersion);
       MicrosoftNETCoreAppPackageVersion=$(MicrosoftNETCoreAppPackageVersion);
+      SwashbuckleAspNetCorePackageVersion=$(SwashbuckleAspNetCorePackageVersion);
     </GeneratedContentProperties>
   </PropertyGroup>
 
