@@ -47,13 +47,16 @@ namespace Company.WebApplication1
                 .AddAzureADB2CBearer(options => Configuration.Bind("AzureAdB2C", options));
 #endif
             services.AddControllers()
-                .AddNewtonsoftJson();
 #if (Swashbuckle)
+                .AddNewtonsoftJson()
+                .AddApiExplorer();
 
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
             });
+#else
+                .AddNewtonsoftJson();
 #endif
         }
 

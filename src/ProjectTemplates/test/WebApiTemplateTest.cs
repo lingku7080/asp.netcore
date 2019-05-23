@@ -97,6 +97,8 @@ namespace Templates.Test
 
                 await aspNetProcess.AssertOk("/api/values");
                 await aspNetProcess.AssertNotFound("/");
+                await aspNetProcess.AssertOk("/swagger/v1/swagger.json");
+                await aspNetProcess.AssertOk("/swagger");
             }
 
             using (var aspNetProcess = Project.StartPublishedProjectAsync())
@@ -107,6 +109,8 @@ namespace Templates.Test
 
                 await aspNetProcess.AssertOk("/api/values");
                 await aspNetProcess.AssertNotFound("/");
+                await aspNetProcess.AssertOk("/swagger/v1/swagger.json");
+                await aspNetProcess.AssertOk("/swagger");
             }
         }
     }
