@@ -22,7 +22,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 #if (Swashbuckle)
-using Swashbuckle.AspNetCore.Swagger;
+using Microsoft.OpenApi.Models;
 #endif
 
 namespace Company.WebApplication1
@@ -52,7 +52,7 @@ namespace Company.WebApplication1
 
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new Info { Title = "My API", Version = "v1" });
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
             });
 #endif
         }
