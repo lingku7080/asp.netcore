@@ -41,44 +41,20 @@
 
   <Target Name="BuildRazorViews" DependsOnTargets="Compile" BeforeTargets="Build">
     <Message Text="Building razor views assemblies" Importance="High" />
-    <MSbuild Projects="$(MSBuildThisFile)"
-             Targets="BuildForUI"
-             Properties="
-             BuildProjectReferences=false;
-             RazorCompileOnBuild=true;
-             UIFrameworkVersion=%(UIFrameworkVersionMoniker.Identity);
-             IntermediateOutputPath=$(IntermediateOutputPath)%(UIFrameworkVersionMoniker.Identity)\;" />
+    <MSbuild Projects="$(MSBuildThisFile)" Targets="BuildForUI" Properties="&#xD;&#xA;             BuildProjectReferences=false;&#xD;&#xA;             RazorCompileOnBuild=true;&#xD;&#xA;             UIFrameworkVersion=%(UIFrameworkVersionMoniker.Identity);&#xD;&#xA;             IntermediateOutputPath=$(IntermediateOutputPath)%(UIFrameworkVersionMoniker.Identity)\;" />
 
-    <Copy
-      SourceFiles="$(IntermediateOutputPath)%(UIFrameworkVersionMoniker.Identity)\$(TargetName).Views.%(UIFrameworkVersionMoniker.Identity).dll"
-      DestinationFolder="$(OutDir)"
-      SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
-      OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
-      Retries="$(CopyRetryCount)"
-      RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
-      UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)"
-      UseSymboliclinksIfPossible="$(CreateSymbolicLinksForCopyFilesToOutputDirectoryIfPossible)">
+    <Copy SourceFiles="$(IntermediateOutputPath)%(UIFrameworkVersionMoniker.Identity)\$(TargetName).Views.%(UIFrameworkVersionMoniker.Identity).dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="$(SkipCopyUnchangedFiles)" OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)" Retries="$(CopyRetryCount)" RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)" UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)" UseSymboliclinksIfPossible="$(CreateSymbolicLinksForCopyFilesToOutputDirectoryIfPossible)">
 
-      <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
-      <Output TaskParameter="DestinationFiles" ItemName="_RazorAssembly"/>
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
+      <Output TaskParameter="DestinationFiles" ItemName="_RazorAssembly" />
     </Copy>
 
-    <Copy
-      SourceFiles="$(IntermediateOutputPath)%(UIFrameworkVersionMoniker.Identity)\$(TargetName).Views.%(UIFrameworkVersionMoniker.Identity).pdb"
-      DestinationFolder="$(OutDir)"
-      SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
-      OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
-      Retries="$(CopyRetryCount)"
-      RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
-      UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)"
-      UseSymboliclinksIfPossible="$(CreateSymbolicLinksForCopyFilesToOutputDirectoryIfPossible)">
+    <Copy SourceFiles="$(IntermediateOutputPath)%(UIFrameworkVersionMoniker.Identity)\$(TargetName).Views.%(UIFrameworkVersionMoniker.Identity).pdb" DestinationFolder="$(OutDir)" SkipUnchangedFiles="$(SkipCopyUnchangedFiles)" OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)" Retries="$(CopyRetryCount)" RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)" UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)" UseSymboliclinksIfPossible="$(CreateSymbolicLinksForCopyFilesToOutputDirectoryIfPossible)">
 
-      <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
     </Copy>
 
-    <Message
-      Importance="High"
-      Text="$(MSBuildProjectName) -&gt; %(_RazorAssembly.FullPath)" />
+    <Message Importance="High" Text="$(MSBuildProjectName) -&gt; %(_RazorAssembly.FullPath)" />
 
   </Target>
 
@@ -88,19 +64,15 @@
 
   <Target Name="SetupRazorInputs">
     <ItemGroup>
-      <_RazorGenerate
-        Include="Areas\Identity\Pages\$(UIFrameworkVersion)\**\*.cshtml" />
+      <_RazorGenerate Include="Areas\Identity\Pages\$(UIFrameworkVersion)\**\*.cshtml" />
 
-      <RazorGenerate
-        Include="@(_RazorGenerate)"
-        Link="Areas\Identity\Pages\%(RecursiveDir)%(Filename)%(Extension)" />
+      <RazorGenerate Include="@(_RazorGenerate)" Link="Areas\Identity\Pages\%(RecursiveDir)%(Filename)%(Extension)" />
     </ItemGroup>
   </Target>
 
   <Target Name="BuildForUI" DependsOnTargets="SetupRazorInputs;RazorCompile" />
 
-<Target
-    Name="_GetRazorDlls" BeforeTargets="GetCopyToOutputDirectoryItems">
+<Target Name="_GetRazorDlls" BeforeTargets="GetCopyToOutputDirectoryItems">
 
     <ItemGroup>
       <_GeneratedRazorViews Include="$(TargetDir)$(TargetName).Views.%(UIFrameworkVersionMoniker.Identity).dll" />
@@ -115,15 +87,13 @@
 
   <Target Name="_AddRazorDlls" BeforeTargets="BuiltProjectOutputGroup">
     <ItemGroup>
-      <BuiltProjectOutputGroupOutput
-        Include="$(IntermediateOutputPath)%(UIFrameworkVersionMoniker.Identity)\$(TargetName).Views.%(UIFrameworkVersionMoniker.Identity).dll" />
+      <BuiltProjectOutputGroupOutput Include="$(IntermediateOutputPath)%(UIFrameworkVersionMoniker.Identity)\$(TargetName).Views.%(UIFrameworkVersionMoniker.Identity).dll" />
     </ItemGroup>
   </Target>
 
   <Target Name="_AddRazorPdbs" BeforeTargets="DebugSymbolsProjectOutputGroup">
     <ItemGroup>
-      <DebugSymbolsProjectOutputGroupOutput
-        Include="$(IntermediateOutputPath)%(UIFrameworkVersionMoniker.Identity)\$(TargetName).Views.%(UIFrameworkVersionMoniker.Identity).pdb" />
+      <DebugSymbolsProjectOutputGroupOutput Include="$(IntermediateOutputPath)%(UIFrameworkVersionMoniker.Identity)\$(TargetName).Views.%(UIFrameworkVersionMoniker.Identity).pdb" />
     </ItemGroup>
   </Target>
 
@@ -133,8 +103,7 @@
       <ExpectedOutputFile Include="$(TargetDir)Microsoft.AspNetCore.Identity.UI.Views.V4.dll" />
     </ItemGroup>
 
-    <Error Text="Unable to find precompiled view file %(ExpectedOutputFile.Identity)"
-           Condition="!Exists('%(ExpectedOutputFile.Identity)')" />
+    <Error Text="Unable to find precompiled view file %(ExpectedOutputFile.Identity)" Condition="!Exists('%(ExpectedOutputFile.Identity)')" />
   </Target>
 
   <!-- This target is used to support selecting the UI target framework at compile time -->
@@ -147,20 +116,32 @@
 
   <Target Name="_UpdateAssetsForBootstrapVersion">
     <ItemGroup>
-      <_CurrentProjectStaticWebAssets
-      	Include="@(StaticWebAsset)"
-	      Condition="%(StaticWebAsset.SourceType) == ''" />
+      <_CurrentProjectStaticWebAssets Include="@(StaticWebAsset)" Condition="%(StaticWebAsset.SourceType) == ''" />
 
       <_V4StaticAssets Include="$(MSBuildThisFileDirectory)wwwroot\V4\**" />
+      <_V4StaticAssetsWithRelativePath Include="@(_V4StaticAssets)">
+        <RelativePath>%(RecursiveDir)%(FileName)%(Extension)</RelativePath>
+      </_V4StaticAssetsWithRelativePath>
+
       <_V3StaticAssets Include="$(MSBuildThisFileDirectory)wwwroot\V3\**" />
+      <_V3StaticAssetsWithRelativePath Include="@(_V3StaticAssets)">
+        <RelativePath>%(RecursiveDir)%(FileName)%(Extension)</RelativePath>
+      </_V3StaticAssetsWithRelativePath>
 
       <StaticWebAsset Remove="@(_V4StaticAssets)" Condition="'$(UiFrameworkVersion)' == 'BootstrapV3'" />
       <StaticWebAsset Remove="@(_V3StaticAssets)" Condition="'$(UiFrameworkVersion)' == 'BootstrapV4'" />
-
-      <StaticWebAsset Condition="%(StaticWebAsset.SourceType) == ''">
-        <ContentRoot>%(StaticWebAsset.ContentRoot)$(_SelectedVersionPrefix)</ContentRoot>
+      
+      <_UpdatedAssets Include="%(Identity)" Condition="%(StaticWebAsset.SourceType) == ''">
+        <RelativePath>@(_V3StaticAssetsWithRelativePath->'%(RelativePath)')</RelativePath>
+        <ContentRoot>@(StaticWebAsset->'%(ContentRoot)$(_SelectedVersionPrefix)\')</ContentRoot>
         <BasePath>Identity</BasePath>
-      </StaticWebAsset>
+        <SourceType>@(StaticWebAsset->'%(SourceType)')</SourceType>
+        <SourceId>@(StaticWebAsset->'%(SourceId)')</SourceId>
+      </_UpdatedAssets>
+
+      <StaticWebAsset Remove="@(_CurrentProjectStaticWebAssets)" />
+      <StaticWebAsset Include="@(_UpdatedAssets)" />
+
     </ItemGroup>
   </Target>
 
