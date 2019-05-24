@@ -18,6 +18,7 @@
       https://dotnet.myget.org/F/roslyn/api/v3/index.json;
       https://grpc.jfrog.io/grpc/api/nuget/v3/grpc-nuget-dev;
       https://api.nuget.org/v3/index.json;
+      C:\work\AspNetCore-Tooling\artifacts\packages\Debug\Shipping\
     </RestoreSources>
     <!-- TODO remove this once we remove usages of Internal.AspNetCore.Sdk. -->
     <RestoreSources>
