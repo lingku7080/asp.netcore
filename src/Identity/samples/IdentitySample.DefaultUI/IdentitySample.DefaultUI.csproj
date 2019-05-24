@@ -4,6 +4,7 @@
     <Description>Identity sample MVC application on ASP.NET Core using the default UI</Description>
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <UserSecretsId>aspnetcore-2ff9bc27-5e8c-4484-90ca-e3aace89b72a</UserSecretsId>
+    <AspNetCoreModule>AspNetCoreModuleV2</AspNetCoreModule>
   </PropertyGroup>
 
   <ItemGroup>
@@ -33,5 +34,20 @@
   <ItemGroup>
     <Folder Include="Properties\" />
   </ItemGroup>
+
+  <!-- This target is used to pass in properties to the Identity UI static web assets targets -->
+  <PropertyGroup>
+    <ResolveStaticWebAssetsInputsDependsOn>_SetBootstrapFrameworkVersion</ResolveStaticWebAssetsInputsDependsOn>
+    <BootstrapFrameworkVersion>BootstrapV3</BootstrapFrameworkVersion>
+
+  </PropertyGroup>
+
+  <Target Name="_SetBootstrapFrameworkVersion">
+    <ItemGroup>
+      <_StaticWebAssetsProjectReference Condition="'%(FileName)' == 'Microsoft.AspNetCore.identity.UI'">
+        <AdditionalProperties>UiFrameworkVersion=$(BootstrapFrameworkVersion)</AdditionalProperties>
+      </_StaticWebAssetsProjectReference>
+    </ItemGroup>
+  </Target>
 
 </Project>

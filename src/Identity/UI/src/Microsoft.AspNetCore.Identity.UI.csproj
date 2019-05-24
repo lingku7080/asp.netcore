@@ -137,4 +137,31 @@
            Condition="!Exists('%(ExpectedOutputFile.Identity)')" />
   </Target>
 
+  <!-- This target is used to support selecting the UI target framework at compile time -->
+  <PropertyGroup>
+    <GetCurrentProjectStaticWebAssetsDependsOn>_UpdateAssetsForBootstrapVersion</GetCurrentProjectStaticWebAssetsDependsOn>
+    <UiFrameworkVersion Condition="'$(UiFrameworkVersion)' == ''">BootstrapV4</UiFrameworkVersion>
+    <_SelectedVersionPrefix Condition="'$(UiFrameworkVersion)' == 'BootstrapV4'">V4</_SelectedVersionPrefix>
+    <_SelectedVersionPrefix Condition="'$(UiFrameworkVersion)' == 'BootstrapV3'">V3</_SelectedVersionPrefix>
+  </PropertyGroup>
+
+  <Target Name="_UpdateAssetsForBootstrapVersion">
+    <ItemGroup>
+      <_CurrentProjectStaticWebAssets
+      	Include="@(StaticWebAsset)"
+	      Condition="%(StaticWebAsset.SourceType) == ''" />
+
+      <_V4StaticAssets Include="$(MSBuildThisFileDirectory)wwwroot\V4\**" />
+      <_V3StaticAssets Include="$(MSBuildThisFileDirectory)wwwroot\V3\**" />
+
+      <StaticWebAsset Remove="@(_V4StaticAssets)" Condition="'$(UiFrameworkVersion)' == 'BootstrapV3'" />
+      <StaticWebAsset Remove="@(_V3StaticAssets)" Condition="'$(UiFrameworkVersion)' == 'BootstrapV4'" />
+
+      <StaticWebAsset Condition="%(StaticWebAsset.SourceType) == ''">
+        <ContentRoot>%(StaticWebAsset.ContentRoot)$(_SelectedVersionPrefix)</ContentRoot>
+        <BasePath>Identity</BasePath>
+      </StaticWebAsset>
+    </ItemGroup>
+  </Target>
+
 </Project>
