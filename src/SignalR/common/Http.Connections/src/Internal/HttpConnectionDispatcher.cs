@@ -147,34 +147,41 @@ namespace Microsoft.AspNetCore.Http.Connections.Internal
 
                 await DoPersistentConnection(connectionDelegate, sse, context, connection);
             }
-            else if (context.WebSockets.IsWebSocketRequest)
-            {
-                // Connection can be established lazily
-                var connection = await GetOrCreateConnectionAsync(context, options);
-                if (connection == null)
-                {
-                    // No such connection, GetOrCreateConnection already set the response status code
-                    return;
-                }
+            //else if (context.WebSockets.IsWebSocketRequest)
+            //{
+            //    // Connection can be established lazily
+            //    var connection = await GetOrCreateConnectionAsync(context, options);
+            //    if (connection == null)
+            //    {
+            //        // No such connection, GetOrCreateConnection already set the response status code
+            //        return;
+            //    }
 
-                if (!await EnsureConnectionStateAsync(connection, context, HttpTransportType.WebSockets, supportedTransports, logScope, options))
-                {
-                    // Bad connection state. It's already set the response status code.
-                    return;
-                }
+            //    if (!await EnsureConnectionStateAsync(connection, context, HttpTransportType.WebSockets, supportedTransports, logScope, options))
+            //    {
+            //        // Bad connection state. It's already set the response status code.
+            //        return;
+            //    }
 
-                Log.EstablishedConnection(_logger);
+            //    Log.EstablishedConnection(_logger);
 
-                // Allow the reads to be cancelled
-                connection.Cancellation = new CancellationTokenSource();
+            //    // Allow the reads to be cancelled
+            //    connection.Cancellation = new CancellationTokenSource();
 
-                var ws = new WebSocketsTransport(options.WebSockets, connection.Application, connection, _loggerFactory);
+            //    var ws = new WebSocketsTransport(options.WebSockets, connection.Application, connection, _loggerFactory);
 
-                await DoPersistentConnection(connectionDelegate, ws, context, connection);
-            }
+            //    await DoPersistentConnection(connectionDelegate, ws, context, connection);
+            //}
             else
             {
                 // GET /{path} maps to long polling
+
+                var transport = HttpTransportType.LongPolling;
+                if (context.WebSockets.IsWebSocketRequest)
+                {
+                    
+                    transport = HttpTransportType.WebSockets;
+                }
 
                 // Connection must already exist
                 var connection = await GetConnectionAsync(context);
@@ -184,7 +191,7 @@ namespace Microsoft.AspNetCore.Http.Connections.Internal
                     return;
                 }
 
-                if (!await EnsureConnectionStateAsync(connection, context, HttpTransportType.LongPolling, supportedTransports, logScope, options))
+                if (!await EnsureConnectionStateAsync(connection, context, transport, supportedTransports, logScope, options))
                 {
                     // Bad connection state. It's already set the response status code.
                     return;
@@ -212,12 +219,26 @@ namespace Microsoft.AspNetCore.Http.Connections.Internal
                     }
                 }
 
-                if (!connection.TryActivateLongPollingConnection(
-                        connectionDelegate, context, options.LongPolling.PollTimeout,
-                        currentRequestTcs.Task, _loggerFactory, _logger))
+                switch (transport)
                 {
-                    return;
+                    case HttpTransportType.None:
+                        break;
+                    case HttpTransportType.WebSockets:
+                        var ws = new WebSocketsTransport(options.WebSockets, connection.Application, connection, _loggerFactory);
+                        connection.TryActivatePersistentConnection(connectionDelegate, ws, currentRequestTcs.Task, _logger);
+                        break;
+                    case HttpTransportType.LongPolling:
+                        if (!connection.TryActivateLongPollingConnection(
+                            connectionDelegate, context, options.LongPolling.PollTimeout,
+                            currentRequestTcs.Task, _loggerFactory, _logger))
+                        {
+                            return;
+                        }
+                        break;
+                    default:
+                        break;
                 }
+                
 
                 var resultTask = await Task.WhenAny(connection.ApplicationTask, connection.TransportTask);
 
@@ -276,7 +297,7 @@ namespace Microsoft.AspNetCore.Http.Connections.Internal
                                                   HttpContext context,
                                                   HttpConnectionContext connection)
         {
-            if (connection.TryActivatePersistentConnection(connectionDelegate, transport, _logger))
+            //if (connection.TryActivatePersistentConnection(connectionDelegate, transport, _logger))
             {
                 // Wait for any of them to end
                 await Task.WhenAny(connection.ApplicationTask, connection.TransportTask);

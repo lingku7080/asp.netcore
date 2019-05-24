@@ -326,6 +326,7 @@ namespace Microsoft.AspNetCore.Http.Connections.Internal
         public bool TryActivatePersistentConnection(
             ConnectionDelegate connectionDelegate,
             IHttpTransport transport,
+            Task currentRequestTask,
             ILogger dispatcherLogger)
         {
             lock (_stateLock)
@@ -334,8 +335,10 @@ namespace Microsoft.AspNetCore.Http.Connections.Internal
                 {
                     Status = HttpConnectionStatus.Active;
 
+                    PreviousPollTask = currentRequestTask;
+
                     // Call into the end point passing the connection
-                    ApplicationTask = ExecuteApplication(connectionDelegate);
+                    ApplicationTask ??= ExecuteApplication(connectionDelegate);
 
                     // Start the transport
                     TransportTask = transport.ProcessRequestAsync(HttpContext, HttpContext.RequestAborted);

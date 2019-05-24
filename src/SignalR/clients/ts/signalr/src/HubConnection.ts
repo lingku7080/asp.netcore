@@ -157,9 +157,9 @@ export class HubConnection {
         }
     }
 
-    private async startInternal() {
+    private async startInternal(noHandshake: boolean = false) {
         this.stopDuringStartError = undefined;
-        this.receivedHandshakeResponse = false;
+        // this.receivedHandshakeResponse = false;
         // Set up the promise before any connection is (re)started otherwise it could race with received messages
         const handshakePromise = new Promise((resolve, reject) => {
             this.handshakeResolver = resolve;
@@ -167,6 +167,9 @@ export class HubConnection {
         });
 
         await this.connection.start(this.protocol.transferFormat);
+        if (noHandshake) {
+            return;
+        }
 
         try {
             const handshakeRequest: HandshakeRequestMessage = {
@@ -711,7 +714,7 @@ export class HubConnection {
             }
 
             try {
-                await this.startInternal();
+                await this.startInternal(true);
 
                 this.connectionState = HubConnectionState.Connected;
                 this.logger.log(LogLevel.Information, "HubConnection reconnected successfully.");

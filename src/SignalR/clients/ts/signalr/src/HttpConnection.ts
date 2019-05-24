@@ -207,10 +207,15 @@ export class HttpConnection implements IConnection {
         // Store the original base url and the access token factory since they may change
         // as part of negotiating
         let url = this.baseUrl;
+        let davidsvar = this.options.skipNegotiation;
+        if (this.connectionId) {
+            url += `?id=${this.connectionId}`;
+            davidsvar = true;
+        }
         this.accessTokenFactory = this.options.accessTokenFactory;
 
         try {
-            if (this.options.skipNegotiation) {
+            if (davidsvar) {
                 if (this.options.transport === HttpTransportType.WebSockets) {
                     // No need to add a connection ID in this case
                     this.transport = this.constructTransport(HttpTransportType.WebSockets);
@@ -450,7 +455,7 @@ export class HttpConnection implements IConnection {
             this.logger.log(LogLevel.Information, "Connection disconnected.");
         }
 
-        this.connectionId = undefined;
+        // this.connectionId = undefined;
         this.connectionState = ConnectionState.Disconnected;
 
         if (this.onclose && this.connectionStarted) {

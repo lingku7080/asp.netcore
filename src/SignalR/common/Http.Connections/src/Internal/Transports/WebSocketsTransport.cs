@@ -207,7 +207,7 @@ namespace Microsoft.AspNetCore.Http.Connections.Internal.Transports
             finally
             {
                 // We're done writing
-                _application.Output.Complete();
+                //_application.Output.Complete();
             }
         }
 
@@ -283,7 +283,7 @@ namespace Microsoft.AspNetCore.Http.Connections.Internal.Transports
                     await socket.CloseOutputAsync(error != null ? WebSocketCloseStatus.InternalServerError : WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
                 }
 
-                _application.Input.Complete();
+                //_application.Input.Complete();
             }
 
         }

@@ -25,6 +25,7 @@ namespace SignalRSamples
                 .ConfigureLogging(factory =>
                 {
                     factory.AddConsole();
+                    factory.SetMinimumLevel(LogLevel.Trace);
                 })
                 .UseKestrel(options =>
                 {
