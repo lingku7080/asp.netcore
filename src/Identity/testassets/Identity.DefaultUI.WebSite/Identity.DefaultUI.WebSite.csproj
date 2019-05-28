@@ -11,6 +11,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="Microsoft.AspNetCore" />
+    <Reference Include="Microsoft.Extensions.Hosting" />
     <Reference Include="Microsoft.AspNetCore.Authentication.Cookies" />
     <Reference Include="Microsoft.AspNetCore.Authentication.Facebook" />
     <Reference Include="Microsoft.AspNetCore.Authentication.Google" />
@@ -40,5 +42,20 @@
     <Reference Include="Microsoft.Extensions.Logging.Console" />
     <Reference Include="Microsoft.Extensions.Logging.Debug" />
   </ItemGroup>
+
+  <!-- Everything below here is to make the library work as a project reference -->
+  <Import Project="..\..\UI\src\build\Microsoft.AspNetCore.Identity.UI.props"/>
+
+  <PropertyGroup>
+    <ResolveStaticWebAssetsInputsDependsOn>_SetBootstrapFrameworkVersion</ResolveStaticWebAssetsInputsDependsOn>
+  </PropertyGroup>
+
+  <Target Name="_SetBootstrapFrameworkVersion">
+    <ItemGroup>
+      <_StaticWebAssetsProjectReference Condition="'%(FileName)' == 'Microsoft.AspNetCore.identity.UI'">
+        <AdditionalProperties>IdentityDefaultUIFramework=$(IdentityDefaultUIFramework)</AdditionalProperties>
+      </_StaticWebAssetsProjectReference>
+    </ItemGroup>
+  </Target>
 
 </Project>

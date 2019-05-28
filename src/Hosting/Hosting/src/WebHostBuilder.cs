@@ -33,6 +33,7 @@ namespace Microsoft.AspNetCore.Hosting
         private WebHostBuilderContext _context;
         private bool _webHostBuilt;
         private Action<WebHostBuilderContext, IConfigurationBuilder> _configureAppConfigurationBuilder;
+        private Action<IWebHostEnvironment> _configureWebHostEnvironment;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WebHostBuilder"/> class.
@@ -126,6 +127,23 @@ namespace Microsoft.AspNetCore.Hosting
         public IWebHostBuilder ConfigureAppConfiguration(Action<WebHostBuilderContext, IConfigurationBuilder> configureDelegate)
         {
             _configureAppConfigurationBuilder += configureDelegate;
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a delegate for configuring the <see cref="IWebHostEnvironment"/> that will be used by this <see cref="IWebHost"/>.
+        /// </summary>
+        /// <param name="configureDelegate">The delegate for configuring the <see cref="IWebHostEnvironment"/> that will be used by this <see cref="IWebHost"/>.</param>
+        /// <returns>The <see cref="IWebHostBuilder"/>.</returns>
+        /// <remarks>
+        /// The <see cref="IWebHostEnvironment"/> configuration is not finalized at this stage and all values might change as a result of following calls to
+        /// <see cref="ConfigureWebHostEnvironment(Action{IWebHostEnvironment})"/> so the call-order is important. The <paramref name="configureDelegate"/>
+        /// callbacks get called after the initial set of values has been populated from configuration, so properties like <see cref="IHostingEnvironment.ApplicationName"/>
+        /// and <see cref="IHostingEnvironment.EnvironmentName"/> are initially available, even though they might be modified by future callbacks.
+        /// </remarks>
+        public IWebHostBuilder ConfigureWebHostEnvironment(Action<IWebHostEnvironment> configureDelegate)
+        {
+            _configureWebHostEnvironment += configureDelegate;
             return this;
         }
 
@@ -255,6 +273,9 @@ namespace Microsoft.AspNetCore.Hosting
             // Initialize the hosting environment
             ((IWebHostEnvironment)_hostingEnvironment).Initialize(contentRootPath, _options);
             _context.HostingEnvironment = _hostingEnvironment;
+
+            // Custom IWebHostEnvironment initialization
+            _configureWebHostEnvironment?.Invoke(_hostingEnvironment);
 
             var services = new ServiceCollection();
             services.AddSingleton(_options);

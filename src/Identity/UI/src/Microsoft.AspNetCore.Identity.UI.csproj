@@ -17,12 +17,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="wwwroot/**/*" />
-    <EmbeddedResource Remove="wwwroot/**/LICENSE*" />
     <None Remove="wwwroot/**/LICENSE*" />
     <None Include="THIRD-PARTY-NOTICES.txt" Pack="true" PackagePath="/THIRD-PARTY-NOTICES.txt" />
 
     <Content Update="**\*.cshtml" Pack="false" />
+    <Content Include="build\**" Pack="true" PackagePath="build\" />
   </ItemGroup>
 
   <ItemGroup>
@@ -72,7 +71,7 @@
 
   <Target Name="BuildForUI" DependsOnTargets="SetupRazorInputs;RazorCompile" />
 
-<Target Name="_GetRazorDlls" BeforeTargets="GetCopyToOutputDirectoryItems">
+  <Target Name="_GetRazorDlls" BeforeTargets="GetCopyToOutputDirectoryItems">
 
     <ItemGroup>
       <_GeneratedRazorViews Include="$(TargetDir)$(TargetName).Views.%(UIFrameworkVersionMoniker.Identity).dll" />
@@ -109,40 +108,67 @@
   <!-- This target is used to support selecting the UI target framework at compile time -->
   <PropertyGroup>
     <GetCurrentProjectStaticWebAssetsDependsOn>_UpdateAssetsForBootstrapVersion</GetCurrentProjectStaticWebAssetsDependsOn>
-    <UiFrameworkVersion Condition="'$(UiFrameworkVersion)' == ''">BootstrapV4</UiFrameworkVersion>
-    <_SelectedVersionPrefix Condition="'$(UiFrameworkVersion)' == 'BootstrapV4'">V4</_SelectedVersionPrefix>
-    <_SelectedVersionPrefix Condition="'$(UiFrameworkVersion)' == 'BootstrapV3'">V3</_SelectedVersionPrefix>
+    <_SelectedVersionPrefix Condition="'$(IdentityDefaultUIFramework)' == 'Bootstrap4'">V4</_SelectedVersionPrefix>
+    <_SelectedVersionPrefix Condition="'$(IdentityDefaultUIFramework)' == 'Bootstrap3'">V3</_SelectedVersionPrefix>
   </PropertyGroup>
 
   <Target Name="_UpdateAssetsForBootstrapVersion">
     <ItemGroup>
+      <!-- Filter static assets for the current project-->
       <_CurrentProjectStaticWebAssets Include="@(StaticWebAsset)" Condition="%(StaticWebAsset.SourceType) == ''" />
 
-      <_V4StaticAssets Include="$(MSBuildThisFileDirectory)wwwroot\V4\**" />
+      <!-- Create V3 and V4 versions of the static assets with adjusted relative paths -->
+      <_V4StaticAssets Include="$(MSBuildThisFileDirectory)wwwroot\V4\**" Exclude="**LICENSE*" />
       <_V4StaticAssetsWithRelativePath Include="@(_V4StaticAssets)">
         <RelativePath>%(RecursiveDir)%(FileName)%(Extension)</RelativePath>
       </_V4StaticAssetsWithRelativePath>
 
-      <_V3StaticAssets Include="$(MSBuildThisFileDirectory)wwwroot\V3\**" />
+      <_V3StaticAssets Include="$(MSBuildThisFileDirectory)wwwroot\V3\**" Exclude="**LICENSE*" />
       <_V3StaticAssetsWithRelativePath Include="@(_V3StaticAssets)">
         <RelativePath>%(RecursiveDir)%(FileName)%(Extension)</RelativePath>
       </_V3StaticAssetsWithRelativePath>
 
-      <StaticWebAsset Remove="@(_V4StaticAssets)" Condition="'$(UiFrameworkVersion)' == 'BootstrapV3'" />
-      <StaticWebAsset Remove="@(_V3StaticAssets)" Condition="'$(UiFrameworkVersion)' == 'BootstrapV4'" />
-      
+      <!-- Remove the non selected version from the list of the static assets -->
+      <StaticWebAsset Remove="@(_V4StaticAssets)" Condition="'$(IdentityDefaultUIFramework)' == 'Bootstrap3'" />
+      <StaticWebAsset Remove="@(_V3StaticAssets)" Condition="'$(IdentityDefaultUIFramework)' == 'Bootstrap4'" />
+
+      <!-- Put the selected version into a collection for batching below -->
+      <_SelectedAssets Include="@(_V3StaticAssetsWithRelativePath)" Condition="'$(IdentityDefaultUIFramework)' == 'Bootstrap3'" />
+      <_SelectedAssets Include="@(_V4StaticAssetsWithRelativePath)" Condition="'$(IdentityDefaultUIFramework)' == 'Bootstrap4'" />
+
+      <!-- Batch over all remaining StaticWebAsset in the current project and update their metadata -->
       <_UpdatedAssets Include="%(Identity)" Condition="%(StaticWebAsset.SourceType) == ''">
-        <RelativePath>@(_V3StaticAssetsWithRelativePath->'%(RelativePath)')</RelativePath>
+        <RelativePath>@(_SelectedAssets->'%(RelativePath)')</RelativePath>
         <ContentRoot>@(StaticWebAsset->'%(ContentRoot)$(_SelectedVersionPrefix)\')</ContentRoot>
         <BasePath>Identity</BasePath>
         <SourceType>@(StaticWebAsset->'%(SourceType)')</SourceType>
         <SourceId>@(StaticWebAsset->'%(SourceId)')</SourceId>
       </_UpdatedAssets>
 
+      <!-- Remove items with old metadata -->
       <StaticWebAsset Remove="@(_CurrentProjectStaticWebAssets)" />
+      <!-- Add items with updated metadata -->
       <StaticWebAsset Include="@(_UpdatedAssets)" />
 
     </ItemGroup>
   </Target>
 
+  <Target Name="_RemoveStaticWebAssetsFromPublish" BeforeTargets="GetCopyToPublishDirectoryItems">
+
+    <ItemGroup>
+      <_CurrentProjectStaticWebAssets Include="@(StaticWebAsset)" Condition="%(StaticWebAsset.SourceType) == ''">
+        <ProjectRelativePath>$([MSBuild]::MakeRelative('$(MSBuildThisFileDirectory)', '%(StaticWebAsset.FullPath)'))</ProjectRelativePath>
+      </_CurrentProjectStaticWebAssets>
+    </ItemGroup>
+        
+    <ItemGroup>
+      <_ContentToPreserve Include="@(ContentWithTargetPath)" Exclude="@(_CurrentProjectStaticWebAssets->'%(ProjectRelativePath)')" />
+      <_ContentToExclude Include="@(ContentWithTargetPath)" Exclude="@(_ContentToPreserve)" />
+      <ContentWithTargetPath Remove="@(_ContentToExclude)" />
+      <ContentWithTargetPath Include="@(_ContentToExclude)">
+        <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+      </ContentWithTargetPath>
+    </ItemGroup>
+
+  </Target>
 </Project>

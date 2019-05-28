@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -74,6 +74,11 @@ namespace Microsoft.AspNetCore.Hosting.Internal
         public IWebHostBuilder UseStartup(Type startupType)
         {
             return _builder.UseStartup(startupType);
+        }
+
+        public IWebHostBuilder ConfigureWebHostEnvironment(Action<IWebHostEnvironment> configureDelegate)
+        {
+            return _builder.ConfigureWebHostEnvironment(configureDelegate);
         }
     }
 }

@@ -19,6 +19,19 @@ namespace Microsoft.AspNetCore.Hosting
         IWebHost Build();
 
         /// <summary>
+        /// Adds a delegate for configuring the <see cref="IWebHostEnvironment"/> that will be used by this <see cref="IWebHost"/>.
+        /// </summary>
+        /// <param name="configureDelegate">The delegate for configuring the <see cref="IWebHostEnvironment"/> that will be used by this <see cref="IWebHost"/>.</param>
+        /// <returns>The <see cref="IWebHostBuilder"/>.</returns>
+        /// <remarks>
+        /// The <see cref="IWebHostEnvironment"/> configuration is not finalized at this stage and all values might change as a result of following calls to
+        /// <see cref="ConfigureWebHostEnvironment(Action{IWebHostEnvironment})"/> so the call-order is important. The <paramref name="configureDelegate"/>
+        /// callbacks get called after the initial set of values has been populated from configuration, so properties like <see cref="IHostingEnvironment.ApplicationName"/>
+        /// and <see cref="IHostingEnvironment.EnvironmentName"/> are initially available, even though they might be modified by future callbacks.
+        /// </remarks>
+        public IWebHostBuilder ConfigureWebHostEnvironment(Action<IWebHostEnvironment> configureDelegate);
+
+        /// <summary>
         /// Adds a delegate for configuring the <see cref="IConfigurationBuilder"/> that will construct an <see cref="IConfiguration"/>.
         /// </summary>
         /// <param name="configureDelegate">The delegate for configuring the <see cref="IConfigurationBuilder" /> that will be used to construct an <see cref="IConfiguration" />.</param>

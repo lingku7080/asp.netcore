@@ -5,12 +5,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity.UI;
 using Microsoft.AspNetCore.Identity.UI.Services;
-using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 
 namespace Microsoft.AspNetCore.Identity
 {
@@ -19,49 +20,6 @@ namespace Microsoft.AspNetCore.Identity
     /// </summary>
     public static class IdentityBuilderUIExtensions
     {
-        /// <summary>
-        /// Adds a default, self-contained UI for Identity to the application using
-        /// Razor Pages in an area named Identity.
-        /// </summary>
-        /// <remarks>
-        /// In order to use the default UI, the application must be using <see cref="Microsoft.AspNetCore.Mvc"/>,
-        /// <see cref="Microsoft.AspNetCore.StaticFiles"/> and contain a <c>_LoginPartial</c> partial view that
-        /// can be found by the application.
-        /// </remarks>
-        /// <param name="builder">The <see cref="IdentityBuilder"/>.</param>
-        /// <returns>The <see cref="IdentityBuilder"/>.</returns>
-        public static IdentityBuilder AddDefaultUI(this IdentityBuilder builder) => builder.AddDefaultUI(UIFramework.Bootstrap4);
-
-
-        /// <summary>
-        /// Adds a default, self-contained UI for Identity to the application using
-        /// Razor Pages in an area named Identity.
-        /// </summary>
-        /// <remarks>
-        /// In order to use the default UI, the application must be using <see cref="Microsoft.AspNetCore.Mvc"/>,
-        /// <see cref="Microsoft.AspNetCore.StaticFiles"/> and contain a <c>_LoginPartial</c> partial view that
-        /// can be found by the application.
-        /// </remarks>
-        /// <param name="builder">The <see cref="IdentityBuilder"/>.</param>
-        /// <param name="framework">The <see cref="UIFramework"/>.</param>
-        /// <returns>The <see cref="IdentityBuilder"/>.</returns>
-        public static IdentityBuilder AddDefaultUI(
-            this IdentityBuilder builder,
-            UIFramework framework)
-        {
-            builder.AddSignInManager();
-            AddRelatedParts(builder, framework);
-
-            builder.Services.ConfigureOptions(
-                typeof(IdentityDefaultUIConfigureOptions<>)
-                    .MakeGenericType(builder.UserType));
-            builder.Services.TryAddTransient<IEmailSender, EmailSender>();
-
-            builder.Services.Configure<DefaultUIOptions>(o => o.UIFramework = framework);
-
-            return builder;
-        }
-
         private static readonly IDictionary<UIFramework, string> _assemblyMap =
             new Dictionary<UIFramework, string>()
             {
@@ -69,8 +27,41 @@ namespace Microsoft.AspNetCore.Identity
                 [UIFramework.Bootstrap4] = "Microsoft.AspNetCore.Identity.UI.Views.V4",
             };
 
-        private static void AddRelatedParts(IdentityBuilder builder, UIFramework framework)
+        /// <summary>
+        /// Adds a default, self-contained UI for Identity to the application using
+        /// Razor Pages in an area named Identity.
+        /// </summary>
+        /// <remarks>
+        /// In order to use the default UI, the application must be using <see cref="Microsoft.AspNetCore.Mvc"/>,
+        /// <see cref="Microsoft.AspNetCore.StaticFiles"/> and contain a <c>_LoginPartial</c> partial view that
+        /// can be found by the application.
+        /// </remarks>
+        /// <param name="builder">The <see cref="IdentityBuilder"/>.</param>
+        /// <returns>The <see cref="IdentityBuilder"/>.</returns>
+        public static IdentityBuilder AddDefaultUI(this IdentityBuilder builder)
         {
+            builder.AddSignInManager();
+
+            AddRelatedParts(builder);
+
+            builder.Services.ConfigureOptions(
+                typeof(IdentityDefaultUIConfigureOptions<>)
+                    .MakeGenericType(builder.UserType));
+            builder.Services.TryAddTransient<IEmailSender, EmailSender>();
+
+            return builder;
+        }
+
+        private static void AddRelatedParts(IdentityBuilder builder)
+        {
+            var environment = (IWebHostEnvironment)builder
+                .Services
+                .LastOrDefault(d => d.ServiceType == typeof(IWebHostEnvironment))
+                ?.ImplementationInstance;
+
+            var appAssembly = Assembly.Load(environment.ApplicationName);
+            var framework = ResolveUIFramework(appAssembly);
+
             var mvcBuilder = builder.Services
                 .AddMvc()
                 .ConfigureApplicationPartManager(partManager =>
@@ -130,6 +121,14 @@ namespace Microsoft.AspNetCore.Identity
                         }
                     }
                 });
+        }
+
+        private static UIFramework ResolveUIFramework(Assembly assembly)
+        {
+            var metadata = assembly.GetCustomAttributes<UIFrameworkAttribute>()
+                .Single().Framework;
+
+            return Enum.Parse<UIFramework>(metadata, ignoreCase: true);
         }
     }
 }

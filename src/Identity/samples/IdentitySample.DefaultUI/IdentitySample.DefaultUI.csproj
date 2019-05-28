@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <Description>Identity sample MVC application on ASP.NET Core using the default UI</Description>
@@ -29,23 +29,29 @@
     <Reference Include="Microsoft.Extensions.Configuration.UserSecrets" />
     <Reference Include="Microsoft.Extensions.Logging.Console" />
     <Reference Include="Microsoft.Extensions.Logging.Debug" />
+    <Reference Include="Microsoft.Extensions.Hosting" />
+    <Reference Include="Microsoft.AspNetCore" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Properties\" />
   </ItemGroup>
 
-  <!-- This target is used to pass in properties to the Identity UI static web assets targets -->
+  <PropertyGroup>
+    <IdentityDefaultUIFramework>Bootstrap3</IdentityDefaultUIFramework>
+  </PropertyGroup>
+  
+  <!-- Everything below here is to make the library work as a project reference -->
+  <Import Project="..\..\UI\src\build\Microsoft.AspNetCore.Identity.UI.props"/>
+
   <PropertyGroup>
     <ResolveStaticWebAssetsInputsDependsOn>_SetBootstrapFrameworkVersion</ResolveStaticWebAssetsInputsDependsOn>
-    <BootstrapFrameworkVersion>BootstrapV3</BootstrapFrameworkVersion>
-
   </PropertyGroup>
 
   <Target Name="_SetBootstrapFrameworkVersion">
     <ItemGroup>
       <_StaticWebAssetsProjectReference Condition="'%(FileName)' == 'Microsoft.AspNetCore.identity.UI'">
-        <AdditionalProperties>UiFrameworkVersion=$(BootstrapFrameworkVersion)</AdditionalProperties>
+        <AdditionalProperties>IdentityDefaultUIFramework=$(IdentityDefaultUIFramework)</AdditionalProperties>
       </_StaticWebAssetsProjectReference>
     </ItemGroup>
   </Target>

@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <IdentityDefaultUIFramework Condition="'$(IdentityDefaultUIFramework)' == ''">Bootstrap4</IdentityDefaultUIFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <AssemblyAttribute Include="Microsoft.AspNetCore.Identity.UI.UIFrameworkAttribute">
+      <_Parameter1>$(IdentityDefaultUIFramework)</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+</Project>
