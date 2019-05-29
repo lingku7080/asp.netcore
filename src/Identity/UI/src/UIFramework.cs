@@ -11,11 +11,11 @@ namespace Microsoft.AspNetCore.Identity.UI
         /// <summary>
         /// Bootstrap 3
         /// </summary>
-        Bootstrap3 = 0,
+        Bootstrap3 = 1,
 
         /// <summary>
         /// Bootstrap 4
         /// </summary>
-        Bootstrap4 = 1
+        Bootstrap4 = 0
     }
 }

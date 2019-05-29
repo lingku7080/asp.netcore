@@ -55,13 +55,17 @@ namespace Microsoft.AspNetCore.Identity
 
         private static void AddRelatedParts(IdentityBuilder builder)
         {
-            var environment = builder.Services.Where(d => d.ServiceType == typeof(IWebHostEnvironment)).ToArray();
-            var applicationName = ((IWebHostEnvironment)environment.LastOrDefault()?.ImplementationInstance)
-                .ApplicationName;
-
-            var appAssembly = Assembly.Load(applicationName);
-
-            var framework = ResolveUIFramework(appAssembly);
+            // We try to resolve the UI framework that was used by looking at the entry assembly.
+            // When an app runs, the entry assembly will point to the built app. In some rare cases
+            // (functional testing) the app assembly will be different, and we'll try to locate it through
+            // the same mechanism that MVC uses today.
+            // Finally, if for some reason we aren't able to find the assembly, we'll use our default value
+            // (Bootstrap4)
+            if (!TryResolveUIFramework(Assembly.GetEntryAssembly(), out var framework) ||
+                !TryResolveUIFramework(GetApplicationAssembly(builder), out framework))
+            {
+                framework = default;
+            }
 
             var mvcBuilder = builder.Services
                 .AddMvc()
@@ -126,12 +130,30 @@ namespace Microsoft.AspNetCore.Identity
                 });
         }
 
-        private static UIFramework ResolveUIFramework(Assembly assembly)
+        private static Assembly GetApplicationAssembly(IdentityBuilder builder)
+        {
+            // Whis is the same logic that MVC follows to find the application assembly.
+            var environment = builder.Services.Where(d => d.ServiceType == typeof(IWebHostEnvironment)).ToArray();
+            var applicationName = ((IWebHostEnvironment)environment.LastOrDefault()?.ImplementationInstance)
+                .ApplicationName;
+
+            var appAssembly = Assembly.Load(applicationName);
+            return appAssembly;
+        }
+
+        private static bool TryResolveUIFramework(Assembly assembly, out UIFramework uiFramework)
         {
             var metadata = assembly.GetCustomAttributes<UIFrameworkAttribute>()
-                .Single().Framework;
+                .SingleOrDefault().Framework; // Bootstrap4 is the default
+            if (metadata == null)
+            {
+                uiFramework = default;
+                return false;
+            }
 
-            return Enum.Parse<UIFramework>(metadata, ignoreCase: true);
+            // If we find the metadata there must be a valid framework here.
+            uiFramework = Enum.Parse<UIFramework>(metadata, ignoreCase: true);
+            return true;
         }
     }
 }
