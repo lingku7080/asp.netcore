@@ -144,7 +144,7 @@ namespace Microsoft.AspNetCore.Identity
         private static bool TryResolveUIFramework(Assembly assembly, out UIFramework uiFramework)
         {
             var metadata = assembly.GetCustomAttributes<UIFrameworkAttribute>()
-                .SingleOrDefault().Framework; // Bootstrap4 is the default
+                .SingleOrDefault()?.Framework; // Bootstrap4 is the default
             if (metadata == null)
             {
                 uiFramework = default;

@@ -7,62 +7,20 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Xml;
 using System.Xml.Linq;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.FileProviders;
 
 namespace Microsoft.AspNetCore
 {
-    /// <summary>
-    /// 
-    /// </summary>
-    public static class WebHostBuilderExtensions
+    internal static class StaticWebAssetsHelper
     {
         private const string StaticWebAssetsManifestName = "Microsoft.AspNetCore.StaticWebAssets.xml";
         private const string ManifestRootElementName = "StaticWebAssets";
         private const string VersionAttributeName = "Version";
         private const string ContentRootElementName = "ContentRoot";
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="builder"></param>
-        /// <returns></returns>
-        public static IWebHostBuilder UseStaticWebAssets(this IWebHostBuilder builder)
-        {
-            builder.ConfigureWebHostEnvironment(environment =>
-            {
-                UseStaticWebAssets(environment);
-            });
-
-            return builder;
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="builder"></param>
-        /// <param name="manifestPath"></param>
-        /// <returns></returns>
-        public static IWebHostBuilder UseStaticWebAssets(this IWebHostBuilder builder, string manifestPath)
-        {
-            builder.ConfigureWebHostEnvironment(environment =>
-            {
-                using (var manifest = File.OpenRead(manifestPath))
-                {
-                    UseStaticWebAssetsCore(environment, manifest);
-                }
-            });
-
-            return builder;
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="environment"></param>
-        public static void UseStaticWebAssets(this IWebHostEnvironment environment)
+        internal static void UseStaticWebAssets(this IWebHostEnvironment environment)
         {
             using (var manifest = ResolveManifest(environment))
             {
@@ -72,6 +30,28 @@ namespace Microsoft.AspNetCore
                 }
             }
         }
+
+        internal static void UseStaticWebAssetsCore(this IWebHostEnvironment environment, Stream manifest)
+        {
+            var staticWebAssetsFileProvider = new List<IFileProvider>();
+            var webRootFileProvider = environment.WebRootFileProvider;
+
+            var staticWebAssetContentRoots = Parse(manifest)
+                .Select(cr => new StaticWebAssetsFileProvider(cr.BasePath, cr.Path))
+                .OfType<IFileProvider>() // Upcast so we can insert on the resulting list.
+                .ToList();
+
+            if (staticWebAssetContentRoots.Count == 0)
+            {
+                return;
+            }
+            else
+            {
+                staticWebAssetContentRoots.Insert(0, webRootFileProvider);
+                environment.WebRootFileProvider = new CompositeFileProvider(staticWebAssetContentRoots);
+            }
+        }
+
 
         private static Stream ResolveManifest(IWebHostEnvironment environment)
         {
@@ -95,27 +75,6 @@ namespace Microsoft.AspNetCore
                     // at build time.
                     return null;
                 }
-            }
-        }
-
-        private static void UseStaticWebAssetsCore(this IWebHostEnvironment environment, Stream manifest)
-        {
-            var staticWebAssetsFileProvider = new List<IFileProvider>();
-            var webRootFileProvider = environment.WebRootFileProvider;
-
-            var staticWebAssetContentRoots = Parse(manifest)
-                .Select(cr => new StaticWebAssetsFileProvider(cr.BasePath, cr.Path))
-                .OfType<IFileProvider>() // Upcast so we can insert on the resulting list.
-                .ToList();
-
-            if (staticWebAssetContentRoots.Count == 0)
-            {
-                return;
-            }
-            else
-            {
-                staticWebAssetContentRoots.Insert(0, webRootFileProvider);
-                environment.WebRootFileProvider = new CompositeFileProvider(staticWebAssetContentRoots);
             }
         }
 
@@ -176,6 +135,5 @@ namespace Microsoft.AspNetCore
             public string BasePath { get; }
             public string Path { get; }
         }
-
     }
 }

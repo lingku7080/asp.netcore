@@ -59,28 +59,7 @@ namespace Identity.DefaultUI.WebSite
         public virtual void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             // This prevents running out of file watchers on some linux machines
-            var pendingProviders = new Stack<IFileProvider>();
-            pendingProviders.Push(env.WebRootFileProvider);
-            while (pendingProviders.TryPop(out var currentProvider))
-            {
-                switch (currentProvider)
-                {
-                    case PhysicalFileProvider physical:
-                        physical.UseActivePolling = false;
-                        break;
-                    case StaticWebAssetsFileProvider staticWebAssets:
-                        staticWebAssets.InnerProvider.UseActivePolling = false;
-                        break;
-                    case CompositeFileProvider composite:
-                        foreach (var childFileProvider in composite.FileProviders)
-                        {
-                            pendingProviders.Push(childFileProvider);
-                        }
-                        break;
-                    default:
-                        throw new InvalidOperationException("Unknown provider");
-                }
-            }
+            DisableFilePolling(env);
 
             if (env.IsDevelopment())
             {
@@ -107,6 +86,37 @@ namespace Identity.DefaultUI.WebSite
                 endpoints.MapControllers();
                 endpoints.MapRazorPages();
             });
+        }
+
+        protected static void DisableFilePolling(IWebHostEnvironment env)
+        {
+            var pendingProviders = new Stack<IFileProvider>();
+            pendingProviders.Push(env.WebRootFileProvider);
+            while (pendingProviders.TryPop(out var currentProvider))
+            {
+                switch (currentProvider)
+                {
+                    case PhysicalFileProvider physical:
+                        physical.UseActivePolling = false;
+                        break;
+                    case IFileProvider staticWebAssets when staticWebAssets.GetType().Name == "StaticWebAssetsFileProvider":
+                        GetUnderlyingProvider(staticWebAssets).UseActivePolling = false;
+                        break;
+                    case CompositeFileProvider composite:
+                        foreach (var childFileProvider in composite.FileProviders)
+                        {
+                            pendingProviders.Push(childFileProvider);
+                        }
+                        break;
+                    default:
+                        throw new InvalidOperationException("Unknown provider");
+                }
+            }
+        }
+
+        private static PhysicalFileProvider GetUnderlyingProvider(IFileProvider staticWebAssets)
+        {
+            return ((PhysicalFileProvider)staticWebAssets.GetType().GetProperty("InnerProvider").GetValue(staticWebAssets));
         }
     }
 }
