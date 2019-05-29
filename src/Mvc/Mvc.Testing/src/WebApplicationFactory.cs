@@ -10,6 +10,7 @@ using System.Reflection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyModel;
 using Microsoft.Extensions.Hosting;
@@ -151,6 +152,9 @@ namespace Microsoft.AspNetCore.Mvc.Testing
                 {
                     SetContentRoot(webHostBuilder);
                     _configuration(webHostBuilder);
+                    webHostBuilder.ConfigureWebHostEnvironment(e => e.ApplicationName = typeof(TEntryPoint).Assembly.GetName().Name);
+
+                    // Update the application name to ensure it points to the right value.
                     webHostBuilder.UseTestServer();
                 });
                 _host = CreateHost(hostBuilder);
@@ -162,12 +166,6 @@ namespace Microsoft.AspNetCore.Mvc.Testing
             SetContentRoot(builder);
             _configuration(builder);
             _server = CreateServer(builder);
-
-            EnsureDatabaseCreated();
-        }
-
-        public virtual void EnsureDatabaseCreated()
-        {
         }
 
         private void SetContentRoot(IWebHostBuilder builder)

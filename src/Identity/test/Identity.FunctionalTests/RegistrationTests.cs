@@ -31,7 +31,7 @@ namespace Microsoft.AspNetCore.Identity.FunctionalTests
                     .WithWebHostBuilder(whb => whb.ConfigureServices(ConfigureTestServices))
                     .CreateClient();
 
-            ServerFactory.EnsureDatabaseCreated();
+            
 
             var userName = $"{Guid.NewGuid()}@example.com";
             var password = $"!Test.Password1$";
@@ -51,7 +51,7 @@ namespace Microsoft.AspNetCore.Identity.FunctionalTests
             var client = server.CreateClient();
             var client2 = server.CreateClient();
 
-            ServerFactory.EnsureDatabaseCreated();
+            
 
             var userName = $"{Guid.NewGuid()}@example.com";
             var password = $"!Test.Password1$";
@@ -85,7 +85,7 @@ namespace Microsoft.AspNetCore.Identity.FunctionalTests
             var client = server.CreateClient();
             var client2 = server.CreateClient();
 
-            ServerFactory.EnsureDatabaseCreated();
+            
 
             var userName = $"{Guid.NewGuid()}@example.com";
             var password = $"!Test.Password1$";
@@ -108,7 +108,7 @@ namespace Microsoft.AspNetCore.Identity.FunctionalTests
                     .WithWebHostBuilder(whb => whb.ConfigureServices(ConfigureTestServices))
                     .CreateClient();
 
-            ServerFactory.EnsureDatabaseCreated();
+            
 
             var userName = $"{Guid.NewGuid()}@example.com";
             var password = $"!Test.Password1$";
@@ -129,7 +129,7 @@ namespace Microsoft.AspNetCore.Identity.FunctionalTests
                 .WithWebHostBuilder(whb => whb.ConfigureServices(ConfigureTestServices))
                 .CreateClient();
 
-            ServerFactory.EnsureDatabaseCreated();
+            
 
             var guid = Guid.NewGuid();
             var userName = $"{guid}";
@@ -151,7 +151,7 @@ namespace Microsoft.AspNetCore.Identity.FunctionalTests
                 .WithWebHostBuilder(whb => whb.ConfigureServices(ConfigureTestServices))
                 .CreateClient();
 
-            ServerFactory.EnsureDatabaseCreated();
+            
 
             var guid = Guid.NewGuid();
             var userName = $"{guid}";
@@ -174,7 +174,7 @@ namespace Microsoft.AspNetCore.Identity.FunctionalTests
                 .WithWebHostBuilder(whb => whb.ConfigureServices(ConfigureTestServices))
                 .CreateClient();
 
-            ServerFactory.EnsureDatabaseCreated();
+            
 
             var guid = Guid.NewGuid();
             var userName = $"{guid}";

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting.Internal;
 using Microsoft.AspNetCore.Identity.UI;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
@@ -54,12 +55,12 @@ namespace Microsoft.AspNetCore.Identity
 
         private static void AddRelatedParts(IdentityBuilder builder)
         {
-            var environment = (IWebHostEnvironment)builder
-                .Services
-                .LastOrDefault(d => d.ServiceType == typeof(IWebHostEnvironment))
-                ?.ImplementationInstance;
+            var environment = builder.Services.Where(d => d.ServiceType == typeof(IWebHostEnvironment)).ToArray();
+            var applicationName = ((IWebHostEnvironment)environment.LastOrDefault()?.ImplementationInstance)
+                .ApplicationName;
 
-            var appAssembly = Assembly.Load(environment.ApplicationName);
+            var appAssembly = Assembly.Load(applicationName);
+
             var framework = ResolveUIFramework(appAssembly);
 
             var mvcBuilder = builder.Services
@@ -120,6 +121,8 @@ namespace Microsoft.AspNetCore.Identity
                             }
                         }
                     }
+
+                    var partDescriptions = partManager.ApplicationParts.Select(p => (p.GetType().Name, p.Name)).ToArray();
                 });
         }
 

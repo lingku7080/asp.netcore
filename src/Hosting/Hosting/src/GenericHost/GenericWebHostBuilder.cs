@@ -26,7 +26,6 @@ namespace Microsoft.AspNetCore.Hosting.Internal
 
         private AggregateException _hostingStartupErrors;
         private HostingStartupWebHostBuilder _hostingStartupWebHostBuilder;
-        private Action<IWebHostEnvironment> _configureWebHostEnvironment;
 
         public GenericWebHostBuilder(IHostBuilder builder)
         {
@@ -323,7 +322,6 @@ namespace Microsoft.AspNetCore.Hosting.Internal
                     HostingEnvironment = new HostingEnvironment(),
                 };
                 webHostBuilderContext.HostingEnvironment.Initialize(context.HostingEnvironment.ContentRootPath, options);
-                _configureWebHostEnvironment?.Invoke(webHostBuilderContext.HostingEnvironment);
 
                 context.Properties[typeof(WebHostBuilderContext)] = webHostBuilderContext;
                 context.Properties[typeof(WebHostOptions)] = options;
@@ -349,7 +347,11 @@ namespace Microsoft.AspNetCore.Hosting.Internal
 
         public IWebHostBuilder ConfigureWebHostEnvironment(Action<IWebHostEnvironment> configureDelegate)
         {
-            _configureWebHostEnvironment += configureDelegate;
+            _builder.ConfigureAppConfiguration((hbc, cb) =>
+            {
+                var whbc = GetWebHostBuilderContext(hbc);
+                configureDelegate(whbc.HostingEnvironment);
+            });
             return this;
         }
 

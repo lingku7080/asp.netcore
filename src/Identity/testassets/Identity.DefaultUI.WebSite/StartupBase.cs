@@ -51,7 +51,7 @@ namespace Identity.DefaultUI.WebSite
                 .AddEntityFrameworkStores<TContext>();
 
             services.AddMvc();
-                
+
             services.AddSingleton<IFileVersionProvider, FileVersionProvider>();
         }
 

@@ -287,9 +287,7 @@ namespace Microsoft.AspNetCore.Identity.FunctionalTests
                 .SetupTestThirdPartyLogin()
                 .SetupGlobalAuthorizeFilter();
 
-            var server = ServerFactory.WithWebHostBuilder(whb => whb.ConfigureServices(ConfigureTestServices));
-
-            ServerFactory.EnsureDatabaseCreated();
+            var server = ServerFactory.WithWebHostBuilder(whb => whb.ConfigureServices(ConfigureTestServices));            
 
             var client = server.CreateClient();
             var newClient = server.CreateClient();
@@ -313,7 +311,7 @@ namespace Microsoft.AspNetCore.Identity.FunctionalTests
 
             var server = ServerFactory.WithWebHostBuilder(whb => whb.ConfigureServices(ConfigureTestServices));
 
-            ServerFactory.EnsureDatabaseCreated();
+            
 
             var client = server.CreateClient();
             var resetPasswordClient = server.CreateClient();

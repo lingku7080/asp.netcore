@@ -8,6 +8,7 @@ using System.Linq;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,38 +34,22 @@ namespace Microsoft.AspNetCore.Identity.FunctionalTests
 
         public string BootstrapFrameworkVersion { get; set; } = "V4";
 
-        protected override IHostBuilder CreateHostBuilder()
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
-            var builder = base.CreateHostBuilder();
+            base.ConfigureWebHost(builder);
+            builder.UseStartup<TStartup>();
 
-            builder.ConfigureWebHost(whb =>
+            builder.ConfigureServices(sc =>
             {
-                whb.UseStartup<TStartup>();
-                whb.UseSetting(WebHostDefaults.ApplicationKey, "Identity.DefaultUI.WebSite");
-                whb.UseSetting(WebHostDefaults.StartupAssemblyKey, "Identity.DefaultUI.WebSite");
-
-                whb.ConfigureServices(sc =>
-                {
-                    sc.SetupTestDatabase<TContext>(_connection)
-                        .AddMvc()
-                        // Mark the cookie as essential for right now, as Identity uses it on
-                        // several places to pass important data in post-redirect-get flows.
-                        .AddCookieTempDataProvider(o => o.Cookie.IsEssential = true);
-                });
-
-                whb.Configure(ab =>
-                {
-                    var factory = ab.ApplicationServices.GetRequiredService<IServiceScopeFactory>();
-                    using var scope = factory.CreateScope();
-                    var context = scope.ServiceProvider.GetRequiredService<TContext>();
-                    context.Database.EnsureCreated();
-                });
-
-                UpdateStaticAssets(whb);
-                UpdateApplicationParts(whb);
+                sc.SetupTestDatabase<TContext>(_connection)
+                    .AddMvc()
+                    // Mark the cookie as essential for right now, as Identity uses it on
+                    // several places to pass important data in post-redirect-get flows.
+                    .AddCookieTempDataProvider(o => o.Cookie.IsEssential = true);
             });
 
-            return builder;
+            UpdateStaticAssets(builder);
+            UpdateApplicationParts(builder);
         }
 
         private void UpdateApplicationParts(IWebHostBuilder builder)
@@ -137,13 +122,15 @@ namespace Microsoft.AspNetCore.Identity.FunctionalTests
                             }
                         }
                     }
+
+                    var partDescriptions = partManager.ApplicationParts.Select(p => (p.GetType().Name, p.Name)).ToArray();
                 });
             }
         }
 
         private void UpdateStaticAssets(IWebHostBuilder builder)
         {
-            var manifestPath = new Uri(typeof(ServerFactory<,>).Assembly.CodeBase).LocalPath;
+            var manifestPath = Path.GetDirectoryName(new Uri(typeof(ServerFactory<,>).Assembly.CodeBase).LocalPath);
             builder.ConfigureWebHostEnvironment(env =>
             {
                 if (env.WebRootFileProvider is CompositeFileProvider composite)
@@ -156,11 +143,26 @@ namespace Microsoft.AspNetCore.Identity.FunctionalTests
             builder.UseStaticWebAssets(Path.Combine(manifestPath, $"Testing.DefaultWebSite.StaticWebAssets.{BootstrapFrameworkVersion}.xml"));
         }
 
-        public override void EnsureDatabaseCreated()
+        protected override TestServer CreateServer(IWebHostBuilder builder)
         {
-            using (var scope = Services.CreateScope())
+            var server = base.CreateServer(builder);
+            EnsureDatabaseCreated(server.Host.Services);
+
+            return server;
+        }
+
+        protected override IHost CreateHost(IHostBuilder builder)
+        {
+            var host = base.CreateHost(builder);
+            EnsureDatabaseCreated(host.Services);
+            return host;
+        }
+
+        public void EnsureDatabaseCreated(IServiceProvider services)
+        {
+            using (var scope = services.CreateScope())
             {
-                scope.ServiceProvider.GetService<TContext>().Database.EnsureCreated();
+                scope.ServiceProvider.GetService<TContext>()?.Database?.EnsureCreated();
             }
         }
 
