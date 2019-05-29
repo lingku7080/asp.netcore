@@ -26,21 +26,25 @@
 
   <ItemGroup>
     <None Update="Testing.DefaultWebSite.StaticWebAssets.V4.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Testing.DefaultWebSite.StaticWebAssets.V3.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
 
   <Target Name="AddProjectReferenceAssemblyInfo" BeforeTargets="GetAssemblyAttributes" DependsOnTargets="ResolveAssemblyReferences">
     <ItemGroup>
-
       <_IdentitUIDefaultWebSite Include="@(ReferencePath)" Condition="'%(ReferencePath.FileName)' == 'Identity.DefaultUI.WebSite'" />
       <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
         <_Parameter1>Microsoft.AspNetCore.Testing.DefaultWebSiteProjectPath</_Parameter1>
         <_Parameter2>$([System.IO.Path]::GetDirectoryName('%(_IdentitUIDefaultWebSite.MSBuildSourceProjectFile)'))</_Parameter2>
+      </AssemblyAttribute>
+      <_IdentitUIProjectPath Include="@(ReferencePath)" Condition="'%(ReferencePath.FileName)' == 'Microsoft.AspNetCore.Identity.UI'" />
+      <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+        <_Parameter1>Microsoft.AspNetCore.Testing.IdentityUIProjectPath</_Parameter1>
+        <_Parameter2>$([System.IO.Path]::GetDirectoryName('%(_IdentitUIProjectPath.MSBuildSourceProjectFile)'))</_Parameter2>
       </AssemblyAttribute>
     </ItemGroup>    
   </Target>  

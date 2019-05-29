@@ -42,7 +42,16 @@
   </PropertyGroup>
   
   <!-- Everything below here is to make the library work as a project reference -->
-  <Import Project="..\..\UI\src\build\Microsoft.AspNetCore.Identity.UI.props"/>
+  <PropertyGroup>
+    <IdentityDefaultUIFramework Condition="'$(IdentityDefaultUIFramework)' == ''">Bootstrap4</IdentityDefaultUIFramework>
+  </PropertyGroup>
+
+  <!-- Include an assembly attribute into the built application assembly to indicate which flavor of the UI framework to use -->
+  <ItemGroup>
+    <AssemblyAttribute Include="Microsoft.AspNetCore.Identity.UI.UIFrameworkAttribute">
+      <_Parameter1>$(IdentityDefaultUIFramework)</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
 
   <PropertyGroup>
     <ResolveStaticWebAssetsInputsDependsOn>_SetBootstrapFrameworkVersion</ResolveStaticWebAssetsInputsDependsOn>

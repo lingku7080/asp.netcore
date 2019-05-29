@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -140,7 +141,21 @@ namespace Microsoft.AspNetCore.Identity.FunctionalTests
                 }
             });
 
-            builder.UseStaticWebAssets(Path.Combine(manifestPath, $"Testing.DefaultWebSite.StaticWebAssets.{BootstrapFrameworkVersion}.xml"));
+            string versionedPath = Path.Combine(manifestPath, $"Testing.DefaultWebSite.StaticWebAssets.{BootstrapFrameworkVersion}.xml");
+            UpdateManifest(versionedPath);
+
+            builder.UseStaticWebAssets(versionedPath);
+        }
+
+        private void UpdateManifest(string versionedPath)
+        {
+            var path = typeof(ServerFactory<,>).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
+                .Single(a => a.Key == "Microsoft.AspNetCore.Testing.IdentityUIProjectPath").Value;
+            var content = File.ReadAllText(versionedPath);
+
+            var updatedContent = content.Replace("{TEST_PLACEHOLDER}", Path.Combine(path, "wwwroot"));
+
+            File.WriteAllText(versionedPath, updatedContent);
         }
 
         protected override TestServer CreateServer(IWebHostBuilder builder)

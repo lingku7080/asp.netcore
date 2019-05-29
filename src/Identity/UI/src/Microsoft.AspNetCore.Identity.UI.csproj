@@ -7,7 +7,8 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageTags>aspnetcore;identity;membership;razorpages</PackageTags>
     <IsShippingPackage>true</IsShippingPackage>
-    <GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
+    <StaticWebAssetsDisableProjectBuildPropsFileGeneration>true</StaticWebAssetsDisableProjectBuildPropsFileGeneration>
+    <DisableStaticWebAssetsBuildPropsFileGeneration>true</DisableStaticWebAssetsBuildPropsFileGeneration>
     <ProvideApplicationPartFactoryAttributeTypeName>Microsoft.AspNetCore.Mvc.ApplicationParts.NullApplicationPartFactory, Microsoft.AspNetCore.Mvc.Core</ProvideApplicationPartFactoryAttributeTypeName>
     <RazorCompileOnBuild>false</RazorCompileOnBuild>
     <RazorCompileOnPublish>false</RazorCompileOnPublish>
@@ -21,7 +22,7 @@
     <None Include="THIRD-PARTY-NOTICES.txt" Pack="true" PackagePath="/THIRD-PARTY-NOTICES.txt" />
 
     <Content Update="**\*.cshtml" Pack="false" />
-    <Content Include="build\**" Pack="true" PackagePath="build\" />
+    <Content Include="build\**\*" Pack="true" PackagePath="build\" />
   </ItemGroup>
 
   <ItemGroup>
@@ -161,7 +162,7 @@
         <ProjectRelativePath>$([MSBuild]::MakeRelative('$(MSBuildThisFileDirectory)', '%(StaticWebAsset.FullPath)'))</ProjectRelativePath>
       </_CurrentProjectStaticWebAssets>
     </ItemGroup>
-        
+
     <ItemGroup>
       <_ContentToPreserve Include="@(ContentWithTargetPath)" Exclude="@(_CurrentProjectStaticWebAssets->'%(ProjectRelativePath)')" />
       <_ContentToExclude Include="@(ContentWithTargetPath)" Exclude="@(_ContentToPreserve)" />

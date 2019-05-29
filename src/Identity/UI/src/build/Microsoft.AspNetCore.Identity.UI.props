@@ -1,10 +1,33 @@
 <Project>
+
   <PropertyGroup>
     <IdentityDefaultUIFramework Condition="'$(IdentityDefaultUIFramework)' == ''">Bootstrap4</IdentityDefaultUIFramework>
   </PropertyGroup>
+
+  <!-- Include an assembly attribute into the built application assembly to indicate which flavor of the UI framework to use -->
   <ItemGroup>
     <AssemblyAttribute Include="Microsoft.AspNetCore.Identity.UI.UIFrameworkAttribute">
       <_Parameter1>$(IdentityDefaultUIFramework)</_Parameter1>
     </AssemblyAttribute>
   </ItemGroup>
+
+  <ItemGroup>
+    <StaticWebAsset Include="..\staticwebassets\V3" Condition="'$(IdentityDefaultUIFramework)' == 'Bootstrap3'">
+      <SourceType>Package</SourceType>
+      <SourceId>Microsoft.AspNetCore.Identity.UI</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\V3\</ContentRoot>
+      <BasePath>/Identity/</BasePath>
+      <RelativePath>%(RecursiveDir)%(FileName)%(Extension)</RelativePath>
+    </StaticWebAsset>
+
+    <StaticWebAsset Include="..\staticwebassets\V4" Condition="'$(IdentityDefaultUIFramework)' == 'Bootstrap4'">
+      <SourceType>Package</SourceType>
+      <SourceId>Microsoft.AspNetCore.Identity.UI</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\V4\</ContentRoot>
+      <BasePath>/Identity/</BasePath>
+      <RelativePath>%(RecursiveDir)%(FileName)%(Extension)</RelativePath>
+    </StaticWebAsset>
+  </ItemGroup>
+  
+
 </Project>
