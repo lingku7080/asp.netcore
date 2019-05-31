@@ -8,6 +8,8 @@
 #include "Environment.h"
 
 #define CS_ASPNETCORE_HANDLER_VERSION                    L"handlerVersion"
+#define CS_ASPNETCORE_SHADOW_COPY                        L"shadowCopy"
+#define CS_ASPNETCORE_SHADOW_COPY_DIRECTORY              L"shadowCopyDirectory"
 
 ShimOptions::ShimOptions(const ConfigurationSource &configurationSource) :
         m_hostingModel(HOSTING_UNKNOWN),
@@ -31,11 +33,16 @@ ShimOptions::ShimOptions(const ConfigurationSource &configurationSource) :
             "or hostingModel=\"outofprocess\" in the web.config file.", hostingModel.c_str()));
     }
 
+    const auto handlerSettings = section->GetKeyValuePairs(CS_ASPNETCORE_HANDLER_SETTINGS);
+
     if (m_hostingModel == HOSTING_OUT_PROCESS)
     {
-        const auto handlerSettings = section->GetKeyValuePairs(CS_ASPNETCORE_HANDLER_SETTINGS);
         m_strHandlerVersion = find_element(handlerSettings, CS_ASPNETCORE_HANDLER_VERSION).value_or(std::wstring());
     }
+
+    m_strEnableShadowCopying = find_element(handlerSettings, CS_ASPNETCORE_SHADOW_COPY).value_or(std::wstring());
+    // By default this will need to be a temp directory
+    m_strEnableShadowCopyingDirectory = find_element(handlerSettings, CS_ASPNETCORE_SHADOW_COPY_DIRECTORY).value_or(std::wstring());
 
     m_strProcessPath = section->GetRequiredString(CS_ASPNETCORE_PROCESS_EXE_PATH);
     m_strArguments = section->GetString(CS_ASPNETCORE_PROCESS_ARGUMENTS).value_or(CS_ASPNETCORE_PROCESS_ARGUMENTS_DEFAULT);

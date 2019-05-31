@@ -76,4 +76,6 @@ private:
     bool                           m_fStdoutLogEnabled;
     bool                           m_fDisableStartupPage;
     bool                           m_fShowDetailedErrors;
+    std::wstring                   m_strEnableShadowCopying;
+    std::wstring                   m_strEnableShadowCopyingDirectory;
 };
