@@ -65,6 +65,18 @@ public:
         return m_fShowDetailedErrors;
     }
 
+    bool
+    QueryShadowCopyEnabled() const noexcept
+    {
+        return m_fEnableShadowCopying;
+    }
+
+    const std::wstring&
+    QueryShadowCopyDirectory() const noexcept
+    {
+        return m_strShadowCopyingDirectory;
+    }
+
     ShimOptions(const ConfigurationSource &configurationSource);
 
 private:
@@ -76,6 +88,6 @@ private:
     bool                           m_fStdoutLogEnabled;
     bool                           m_fDisableStartupPage;
     bool                           m_fShowDetailedErrors;
-    std::wstring                   m_strEnableShadowCopying;
-    std::wstring                   m_strEnableShadowCopyingDirectory;
+    bool                           m_fEnableShadowCopying;
+    std::wstring                   m_strShadowCopyingDirectory;
 };

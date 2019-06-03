@@ -54,6 +54,7 @@ HRESULT
 FILE_WATCHER::Create(
     _In_ PCWSTR                  pszDirectoryToMonitor,
     _In_ PCWSTR                  pszFileNameToMonitor,
+    _In_ bool                    fTrackDllChanges,
     _In_ AppOfflineTrackingApplication *pApplication
 )
 {
@@ -82,6 +83,8 @@ FILE_WATCHER::Create(
     RETURN_IF_FAILED(_strFullName.Append(_strDirectoryName));
     RETURN_IF_FAILED(_strFullName.Append(_strFileName));
 
+    // TODO I'm concerned about how detecting a dll change will work if it too late
+    _fTrackDllChanges = fTrackDllChanges;
     //
     // Resize change buffer to something "reasonable"
     //
@@ -245,6 +248,17 @@ HRESULT
                 fFileChanged = TRUE;
                 break;
             }
+            //
+            // this is the tricky part, how do we know which dlls here to listen for?
+            // app_offline was a great signal to know that we are done copying, now that doesn't necessarily exist
+            // What if we just look for dlls for now.
+            //
+            // TODO make this based on a setting
+            if (_fTrackDllChanges && std::filesystem::path(pNotificationInfo->FileName).extension() == L"dll")
+            {
+                fFileChanged = TRUE;
+            }
+
             //
             // Advance to next notification
             //

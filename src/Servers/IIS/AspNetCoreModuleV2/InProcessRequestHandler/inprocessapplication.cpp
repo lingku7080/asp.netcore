@@ -37,6 +37,13 @@ IN_PROCESS_APPLICATION::IN_PROCESS_APPLICATION(
         m_dotnetExeKnownLocation = knownLocation;
     }
 
+    const auto shadowCopyDirectory = FindParameter<PCWSTR>("ShadowCopyDirectory", pParameters, nParameters);
+
+    if (shadowCopyDirectory != nullptr)
+    {
+        m_shadowCopyDirectory = shadowCopyDirectory;
+    }
+
     m_stringRedirectionOutput = std::make_shared<StringStreamRedirectionOutput>();
 }
 
@@ -124,6 +131,7 @@ IN_PROCESS_APPLICATION::SetCallbackHandles(
     EventLog::Info(
         ASPNETCORE_EVENT_INPROCESS_START_SUCCESS,
         ASPNETCORE_EVENT_INPROCESS_START_SUCCESS_MSG,
+        // Keep as original directory
         QueryApplicationPhysicalPath().c_str());
 
     SetEvent(m_pInitializeEvent);
@@ -200,7 +208,8 @@ IN_PROCESS_APPLICATION::ExecuteApplication()
             THROW_IF_FAILED(HostFxrResolutionResult::Create(
                 m_dotnetExeKnownLocation,
                 m_pConfig->QueryProcessPath(),
-                QueryApplicationPhysicalPath(),
+                // Shadow Copy here
+                m_shadowCopyDirectory.empty() ? QueryApplicationPhysicalPath() : m_shadowCopyDirectory,
                 m_pConfig->QueryArguments(),
                 hostFxrResolutionResult
                 ));
@@ -236,6 +245,7 @@ IN_PROCESS_APPLICATION::ExecuteApplication()
                 LOG_INFOF(L"Setting dll directory to %s", currentDirectory.c_str());
             }
 
+            // I think I still want this to be the current directory
             LOG_LAST_ERROR_IF(!SetCurrentDirectory(this->QueryApplicationPhysicalPath().c_str()));
 
             LOG_INFOF(L"Setting current directory to %s", this->QueryApplicationPhysicalPath().c_str());
@@ -479,7 +489,7 @@ IN_PROCESS_APPLICATION::SetEnvironmentVariablesOnWorkerProcess()
         m_pConfig->QueryBasicAuthEnabled(),
         m_pConfig->QueryAnonymousAuthEnabled(),
         false, // fAddHostingStartup
-        QueryApplicationPhysicalPath().c_str(),
+        QueryApplicationPhysicalPath().c_str(), // no idea if this needs to be shadow copy
         nullptr);
 
     for (const auto & variable : variables)

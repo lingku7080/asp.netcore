@@ -31,7 +31,11 @@ HRESULT AppOfflineApplication::OnAppOfflineFound()
                         FILE_ATTRIBUTE_NORMAL,
                         nullptr);
 
-    RETURN_LAST_ERROR_IF(handle == INVALID_HANDLE_VALUE);
+    if (handle == INVALID_HANDLE_VALUE)
+    {
+        // HACK, return S_OK for now.
+        return S_OK;
+    }
 
     RETURN_LAST_ERROR_IF(!GetFileSizeEx(handle, &li));
 

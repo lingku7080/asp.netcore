@@ -29,6 +29,7 @@ HandlerResolver::HandlerResolver(HMODULE hModule, const IHttpServer &pServer)
 
 HRESULT
 HandlerResolver::LoadRequestHandlerAssembly(const IHttpApplication &pApplication,
+    std::filesystem::path shadowCopyPath,
     const ShimOptions& pConfiguration,
     std::unique_ptr<ApplicationFactory>& pApplicationFactory,
     ErrorContext& errorContext)
@@ -62,7 +63,7 @@ HandlerResolver::LoadRequestHandlerAssembly(const IHttpApplication &pApplication
             RETURN_IF_FAILED(HostFxrResolutionResult::Create(
                 L"",
                 pConfiguration.QueryProcessPath(),
-                pApplication.GetApplicationPhysicalPath(),
+                shadowCopyPath.empty() ? pApplication.GetApplicationPhysicalPath() : shadowCopyPath,
                 pConfiguration.QueryArguments(),
                 options));
 
@@ -70,7 +71,7 @@ HandlerResolver::LoadRequestHandlerAssembly(const IHttpApplication &pApplication
 
             auto redirectionOutput = std::make_shared<StringStreamRedirectionOutput>();
 
-            hr = FindNativeAssemblyFromHostfxr(*options, pstrHandlerDllName, handlerDllPath, pApplication, pConfiguration, redirectionOutput, errorContext);
+            hr = FindNativeAssemblyFromHostfxr(*options, pstrHandlerDllName, handlerDllPath, pApplication, shadowCopyPath, pConfiguration, redirectionOutput, errorContext);
 
             auto output = redirectionOutput->GetOutput();
 
@@ -124,7 +125,7 @@ HandlerResolver::LoadRequestHandlerAssembly(const IHttpApplication &pApplication
 }
 
 HRESULT
-HandlerResolver::GetApplicationFactory(const IHttpApplication& pApplication, std::unique_ptr<ApplicationFactory>& pApplicationFactory, const ShimOptions& options, ErrorContext& errorContext)
+HandlerResolver::GetApplicationFactory(const IHttpApplication& pApplication, std::filesystem::path shadowCopyPath, std::unique_ptr<ApplicationFactory>& pApplicationFactory, const ShimOptions& options, ErrorContext& errorContext)
 {
     SRWExclusiveLock lock(m_requestHandlerLoadLock);
     if (m_loadedApplicationHostingModel != HOSTING_UNKNOWN)
@@ -167,7 +168,7 @@ HandlerResolver::GetApplicationFactory(const IHttpApplication& pApplication, std
 
     m_loadedApplicationHostingModel = options.QueryHostingModel();
     m_loadedApplicationId = pApplication.GetApplicationId();
-    RETURN_IF_FAILED(LoadRequestHandlerAssembly(pApplication, options, pApplicationFactory, errorContext));
+    RETURN_IF_FAILED(LoadRequestHandlerAssembly(pApplication, shadowCopyPath, options, pApplicationFactory, errorContext));
 
     return S_OK;
 }
@@ -229,6 +230,7 @@ HandlerResolver::FindNativeAssemblyFromHostfxr(
     PCWSTR libraryName,
     std::wstring& handlerDllPath,
     const IHttpApplication &pApplication,
+    std::filesystem::path shadowCopyPath,
     const ShimOptions& pConfiguration,
     std::shared_ptr<StringStreamRedirectionOutput> stringRedirectionOutput,
     ErrorContext& errorContext
@@ -258,7 +260,7 @@ try
         auto redirectionOutput = LoggingHelpers::CreateOutputs(
                 pConfiguration.QueryStdoutLogEnabled(),
                 pConfiguration.QueryStdoutLogFile(),
-                pApplication.GetApplicationPhysicalPath(),
+                pApplication.GetApplicationPhysicalPath(), // no need to use shadow copy here.
                 stringRedirectionOutput
             );
 

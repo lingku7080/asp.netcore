@@ -3,6 +3,8 @@
 
 #include "applicationinfo.h"
 
+#include "rpcdce.h"
+#include "Rpc.h"
 #include "proxymodule.h"
 #include "HostFxrResolver.h"
 #include "debugutil.h"
@@ -91,6 +93,7 @@ APPLICATION_INFO::CreateApplication(IHttpContext& pHttpContext)
             errorContext.statusCode = 500i16;
             errorContext.subStatusCode = 0i16;
 
+
             const auto hr = TryCreateApplication(pHttpContext, options, errorContext);
 
             if (FAILED_LOG(hr))
@@ -178,13 +181,29 @@ APPLICATION_INFO::TryCreateApplication(IHttpContext& pHttpContext, const ShimOpt
         }
     }
 
-    RETURN_IF_FAILED(m_handlerResolver.GetApplicationFactory(*pHttpContext.GetApplication(), m_pApplicationFactory, options, error));
+    // shadow copy here.
+    // For now, copy the entire contents but keep the current directory the same.
+    // TODO eventually compare dates here on dlls (newer dlls will always be taken).
+
+    std::filesystem::path path;
+
+    if (options.QueryShadowCopyEnabled())
+    {
+        // TODO what about deleting assets that are present in the shadow copy that aren't in the directory.
+        // may be easier to do a hard delete everytime.
+        // we also may need to do this ourselves.
+        path = options.QueryShadowCopyDirectory();
+        std::filesystem::copy(pHttpContext.GetApplication()->GetApplicationPhysicalPath(), path, std::filesystem::copy_options::recursive | std::filesystem::copy_options::update_existing);
+    }
+   
+    RETURN_IF_FAILED(m_handlerResolver.GetApplicationFactory(*pHttpContext.GetApplication(), path, m_pApplicationFactory, options, error));
     LOG_INFO(L"Creating handler application");
 
     IAPPLICATION * newApplication;
     RETURN_IF_FAILED(m_pApplicationFactory->Execute(
         &m_pServer,
         &pHttpContext,
+        path,
         &newApplication));
 
     m_pApplication.reset(newApplication);

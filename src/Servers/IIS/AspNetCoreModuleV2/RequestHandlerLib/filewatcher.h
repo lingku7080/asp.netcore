@@ -25,6 +25,7 @@ public:
     HRESULT Create(
         _In_ PCWSTR                  pszDirectoryToMonitor,
         _In_ PCWSTR                  pszFileNameToMonitor,
+        _In_ bool                    fTrackDllChanges,
         _In_ AppOfflineTrackingApplication *pApplication
     );
 
@@ -52,6 +53,7 @@ private:
     STRU                    _strDirectoryName;
     STRU                    _strFullName;
     LONG                    _lStopMonitorCalled {};
+    bool                    _fTrackDllChanges;
     OVERLAPPED              _overlapped;
     std::unique_ptr<AppOfflineTrackingApplication, IAPPLICATION_DELETER> _pApplication;
 };
