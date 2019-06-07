@@ -52,6 +52,11 @@ namespace Microsoft.AspNetCore.SignalR.Client
                 return new TcpConnection(_endPoint).StartAsync();
             }
 
+            public Task<ConnectionContext> ConnectAsync(string url, TransferFormat transferFormat, CancellationToken cancellationToken = default)
+            {
+                throw new NotImplementedException();
+            }
+
             public Task DisposeAsync(ConnectionContext connection)
             {
                 return connection.DisposeAsync().AsTask();

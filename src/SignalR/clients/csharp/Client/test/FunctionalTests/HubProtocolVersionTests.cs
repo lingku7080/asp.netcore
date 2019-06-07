@@ -209,6 +209,11 @@ namespace Microsoft.AspNetCore.SignalR.Client.FunctionalTests
             {
                 return _innerFactory.DisposeAsync(connection);
             }
+
+            public Task<ConnectionContext> ConnectAsync(string url, TransferFormat transferFormat, CancellationToken cancellationToken = default)
+            {
+                throw new NotImplementedException();
+            }
         }
 
         public static IEnumerable<object[]> TransportTypes()

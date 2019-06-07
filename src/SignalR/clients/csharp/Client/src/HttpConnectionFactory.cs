@@ -57,6 +57,23 @@ namespace Microsoft.AspNetCore.SignalR.Client
             }
         }
 
+        public async Task<ConnectionContext> ConnectAsync(string url, TransferFormat transferFormat, CancellationToken cancellationToken = default)
+        {
+            _httpConnectionOptions.Url = new Uri(url);
+            var connection = new HttpConnection(_httpConnectionOptions, _loggerFactory);
+            try
+            {
+                await connection.StartAsync(transferFormat, cancellationToken);
+                return connection;
+            }
+            catch
+            {
+                // Make sure the connection is disposed, in case it allocated any resources before failing.
+                await connection.DisposeAsync();
+                throw;
+            }
+        }
+
         /// <inheritdoc />
         public Task DisposeAsync(ConnectionContext connection)
         {

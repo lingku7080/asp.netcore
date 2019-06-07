@@ -48,6 +48,49 @@ namespace Microsoft.AspNetCore.SignalR.Client.Tests
             }
 
             [Fact]
+            public async Task UpdatingUrlForActiveConnectionThrows()
+            {
+                var testConnection = new TestConnection();
+                await AsyncUsing(CreateHubConnection(testConnection), async connection =>
+                {
+                    Assert.Equal(HubConnectionState.Disconnected, connection.State);
+
+                    await connection.StartAsync().OrTimeout();
+
+                    Assert.True(testConnection.Started.IsCompleted);
+                    Assert.Equal(HubConnectionState.Connected, connection.State);
+
+                    var ex = Assert.Throws<InvalidOperationException>(() => connection.UpdateConnectionUrl("www.example.com"));
+                    Assert.Equal("The HubConnection must be in the Disconnected or Reconnecting state to update the url.", ex.Message);
+                });
+            }
+
+
+            //[Fact]
+            //public async Task CanUpdateUrlForDisconnectedHubConnection()
+            //{
+            //    var testConnection = new TestConnection();
+            //    await AsyncUsing(CreateHubConnection(testConnection), async connection =>
+            //    {
+            //        Assert.Equal(HubConnectionState.Disconnected, connection.State);
+
+            //        await connection.StartAsync().OrTimeout();
+
+            //        Assert.True(testConnection.Started.IsCompleted);
+            //        Assert.Equal(HubConnectionState.Connected, connection.State);
+
+            //        await connection.StopAsync().OrTimeout();
+            //        Assert.Equal(HubConnectionState.Disconnected, connection.State);
+
+            //        connection.UpdateConnectionUrl("www.example.com");
+
+            //        await connection.StartAsync().OrTimeout();
+            //        Assert.True(testConnection.Started.IsCompleted);
+            //        Assert.Equal(HubConnectionState.Connected, connection.State);
+            //    });
+            //}
+
+            [Fact]
             public async Task StartAsyncThrowsIfPreviousStartIsAlreadyStarting()
             {
                 // Set up StartAsync to wait on the syncPoint when starting

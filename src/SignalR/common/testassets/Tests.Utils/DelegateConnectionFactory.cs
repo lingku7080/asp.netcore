@@ -26,6 +26,11 @@ namespace Microsoft.AspNetCore.SignalR.Tests
             return _connectDelegate(transferFormat);
         }
 
+        public Task<ConnectionContext> ConnectAsync(string url, TransferFormat transferFormat, CancellationToken cancellationToken = default)
+        {
+            return _connectDelegate(transferFormat);
+        }
+
         public Task DisposeAsync(ConnectionContext connection)
         {
             return _disposeDelegate(connection);

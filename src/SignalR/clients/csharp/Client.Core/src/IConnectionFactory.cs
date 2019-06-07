@@ -23,6 +23,9 @@ namespace Microsoft.AspNetCore.SignalR.Client
         /// </returns>
         Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, CancellationToken cancellationToken = default);
 
+        Task<ConnectionContext> ConnectAsync(string url, TransferFormat transferFormat, CancellationToken cancellationToken = default);
+
+
         // Current plan for IAsyncDisposable is that DisposeAsync will NOT take a CancellationToken
         // https://github.com/dotnet/csharplang/blob/195efa07806284d7b57550e7447dc8bd39c156bf/proposals/async-streams.md#iasyncdisposable
         /// <summary>

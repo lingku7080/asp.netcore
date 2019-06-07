@@ -66,6 +66,7 @@ namespace Microsoft.AspNetCore.SignalR.Client
         private readonly ReconnectingConnectionState _state;
 
         private bool _disposed;
+        private string _url;
 
         /// <summary>
         /// Occurs when the connection is closed. The connection could be closed due to an error or due to either the server or client intentionally
@@ -339,6 +340,17 @@ namespace Microsoft.AspNetCore.SignalR.Client
             return new Subscription(invocationHandler, invocationList);
         }
 
+
+        public void UpdateConnectionUrl(string url)
+        {
+            if (_state.OverallState != HubConnectionState.Disconnected && _state.OverallState != HubConnectionState.Reconnecting)
+            {
+                throw new InvalidOperationException("The HubConnection must be in the Disconnected or Reconnecting state to update the url.");
+            }
+
+            _url = url;
+        }
+
         /// <summary>
         /// Removes all handlers associated with the method with the specified method name.
         /// </summary>
@@ -425,7 +437,15 @@ namespace Microsoft.AspNetCore.SignalR.Client
             Log.Starting(_logger);
 
             // Start the connection
-            var connection = await _connectionFactory.ConnectAsync(_protocol.TransferFormat, cancellationToken);
+            ConnectionContext connection;
+            if (_url != null)
+            {
+                connection = await _connectionFactory.ConnectAsync(_url, _protocol.TransferFormat, cancellationToken);
+            }
+            else
+            {
+                connection = await _connectionFactory.ConnectAsync(_protocol.TransferFormat, cancellationToken);
+            }
             var startingConnectionState = new ConnectionState(connection, this);
 
             // From here on, if an error occurs we need to shut down the connection because

@@ -911,6 +911,11 @@ namespace Microsoft.AspNetCore.SignalR.Client.Tests
 
                     await disposingTestConnection.DisposeAsync();
                 }
+
+                public Task<ConnectionContext> ConnectAsync(string url, TransferFormat transferFormat, CancellationToken cancellationToken = default)
+                {
+                    throw new NotImplementedException();
+                }
             }
         }
     }
