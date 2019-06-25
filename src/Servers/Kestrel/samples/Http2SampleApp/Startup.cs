@@ -14,6 +14,8 @@ namespace Http2SampleApp
 
         public void Configure(IApplicationBuilder app)
         {
+            app.UseDefaultFiles();
+            app.UseStaticFiles();
             app.UseTimingMiddleware();
             app.Run(context =>
             {
