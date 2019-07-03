@@ -2,6 +2,8 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Buffers;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace Microsoft.AspNetCore.Components.RenderTree
@@ -15,37 +17,32 @@ namespace Microsoft.AspNetCore.Components.RenderTree
     /// components can be long-lived and re-render frequently, with the rendered size
     /// varying dramatically depending on the user's navigation in the app.
     /// </summary>
-    internal class ArrayBuilder<T>
+    internal class ArrayBuilder<T> : IDisposable
     {
-        private const int MinCapacity = 10;
-        private T[] _items;
-        private int _itemsInUse;
+        private static readonly T[] Empty = Array.Empty<T>();
+        private readonly ArrayPool<T> _arrayPool;
+        private readonly int _minCapacity;
+        private bool _disposed;
 
         /// <summary>
         /// Constructs a new instance of <see cref="ArrayBuilder{T}"/>.
         /// </summary>
-        public ArrayBuilder() : this(MinCapacity)
+        public ArrayBuilder(int minCapacity = 32, ArrayPool<T> arrayPool = null)
         {
-        }
-
-        /// <summary>
-        /// Constructs a new instance of <see cref="ArrayBuilder{T}"/>.
-        /// </summary>
-        public ArrayBuilder(int capacity)
-        {
-            _items = new T[capacity < MinCapacity ? MinCapacity : capacity];
-            _itemsInUse = 0;
+            _arrayPool = arrayPool ?? ArrayPool<T>.Shared;
+            _minCapacity = minCapacity;
+            Buffer = Empty;
         }
 
         /// <summary>
         /// Gets the number of items.
         /// </summary>
-        public int Count => _itemsInUse;
+        public int Count { get; private set; }
 
         /// <summary>
         /// Gets the underlying buffer.
         /// </summary>
-        public T[] Buffer => _items;
+        public T[] Buffer { get; private set; }
 
         /// <summary>
         /// Appends a new item, automatically resizing the underlying array if necessary.
@@ -55,13 +52,13 @@ namespace Microsoft.AspNetCore.Components.RenderTree
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // Just like System.Collections.Generic.List<T>
         public int Append(in T item)
         {
-            if (_itemsInUse == _items.Length)
+            if (Count == Buffer.Length)
             {
-                SetCapacity(_items.Length * 2, preserveContents: true);
+                GrowBuffer(Buffer.Length * 2);
             }
 
-            var indexOfAppendedItem = _itemsInUse++;
-            _items[indexOfAppendedItem] = item;
+            var indexOfAppendedItem = Count++;
+            Buffer[indexOfAppendedItem] = item;
             return indexOfAppendedItem;
         }
 
@@ -69,21 +66,21 @@ namespace Microsoft.AspNetCore.Components.RenderTree
         {
             // Expand storage if needed. Using same doubling approach as would
             // be used if you inserted the items one-by-one.
-            var requiredCapacity = _itemsInUse + length;
-            if (_items.Length < requiredCapacity)
+            var requiredCapacity = Count + length;
+            if (Buffer.Length < requiredCapacity)
             {
-                var candidateCapacity = _items.Length * 2;
+                var candidateCapacity = Math.Max(Buffer.Length * 2, _minCapacity);
                 while (candidateCapacity < requiredCapacity)
                 {
                     candidateCapacity *= 2;
                 }
 
-                SetCapacity(candidateCapacity, preserveContents: true);
+                GrowBuffer(candidateCapacity);
             }
 
-            Array.Copy(source, startIndex, _items, _itemsInUse, length);
-            var startIndexOfAppendedItems = _itemsInUse;
-            _itemsInUse += length;
+            Array.Copy(source, startIndex, Buffer, Count, length);
+            var startIndexOfAppendedItems = Count;
+            Count += length;
             return startIndexOfAppendedItems;
         }
 
@@ -95,34 +92,51 @@ namespace Microsoft.AspNetCore.Components.RenderTree
         /// <param name="value">The value.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Overwrite(int index, in T value)
-            => _items[index] = value;
+        {
+            if (index > Count)
+            {
+                ThrowIndexOutOfBoundsException();
+            }
+
+            Buffer[index] = value;
+        }
 
         /// <summary>
         /// Removes the last item.
         /// </summary>
         public void RemoveLast()
         {
-            _itemsInUse--;
-            _items[_itemsInUse] = default(T); // Release to GC
+            if (Count == 0)
+            {
+                ThrowIndexOutOfBoundsException();
+            }
+
+            Count--;
+            Buffer[Count] = default; // Release to GC
         }
 
         /// <summary>
         /// Inserts the item at the specified index, moving the contents of the subsequent entries along by one.
         /// </summary>
-        /// <param name="insertAtIndex">The index at which the value is to be inserted.</param>
+        /// <param name="index">The index at which the value is to be inserted.</param>
         /// <param name="value">The value to insert.</param>
-        public void InsertExpensive(int insertAtIndex, T value)
+        public void InsertExpensive(int index, T value)
         {
-            // Same expansion logic as elsewhere
-            if (_itemsInUse == _items.Length)
+            if (index > Count)
             {
-                SetCapacity(_items.Length * 2, preserveContents: true);
+                ThrowIndexOutOfBoundsException();
             }
 
-            Array.Copy(_items, insertAtIndex, _items, insertAtIndex + 1, _itemsInUse - insertAtIndex);
-            _itemsInUse++;
+            // Same expansion logic as elsewhere
+            if (Count == Buffer.Length)
+            {
+                GrowBuffer(Buffer.Length * 2);
+            }
 
-            _items[insertAtIndex] = value;
+            Array.Copy(Buffer, index, Buffer, index + 1, Count - index);
+            Count++;
+
+            Buffer[index] = value;
         }
 
         /// <summary>
@@ -131,17 +145,9 @@ namespace Microsoft.AspNetCore.Components.RenderTree
         /// </summary>
         public void Clear()
         {
-            var previousItemsInUse = _itemsInUse;
-            _itemsInUse = 0;
-
-            if (_items.Length > previousItemsInUse * 1.5)
-            {
-                SetCapacity((previousItemsInUse + _items.Length) / 2, preserveContents: false);
-            }
-            else if (previousItemsInUse > 0)
-            {
-                Array.Clear(_items, 0, previousItemsInUse); // Release to GC
-            }
+            ReturnBuffer();
+            Buffer = Empty;
+            Count = 0;
         }
 
         /// <summary>
@@ -149,7 +155,7 @@ namespace Microsoft.AspNetCore.Components.RenderTree
         /// </summary>
         /// <returns>The <see cref="ArrayRange{T}"/>.</returns>
         public ArrayRange<T> ToRange()
-            => new ArrayRange<T>(_items, _itemsInUse);
+            => new ArrayRange<T>(Buffer, Count);
 
         /// <summary>
         /// Produces an <see cref="ArrayBuilderSegment{T}"/> structure describing the selected contents.
@@ -160,29 +166,42 @@ namespace Microsoft.AspNetCore.Components.RenderTree
         public ArrayBuilderSegment<T> ToSegment(int fromIndexInclusive, int toIndexExclusive)
             => new ArrayBuilderSegment<T>(this, fromIndexInclusive, toIndexExclusive - fromIndexInclusive);
 
-        private void SetCapacity(int desiredCapacity, bool preserveContents)
+        private void GrowBuffer(int desiredCapacity)
         {
-            if (desiredCapacity < _itemsInUse)
-            {
-                throw new ArgumentOutOfRangeException(nameof(desiredCapacity), $"The value cannot be less than {nameof(Count)}");
-            }
+            var newCapacity = Math.Max(desiredCapacity, _minCapacity);
+            Debug.Assert(newCapacity > Buffer.Length);
 
-            var newCapacity = desiredCapacity < MinCapacity ? MinCapacity : desiredCapacity;
-            if (newCapacity != _items.Length)
-            {
-                var newItems = new T[newCapacity];
+            var newItems = _arrayPool.Rent(newCapacity);
+            Array.Copy(Buffer, newItems, Count);
 
-                if (preserveContents)
-                {
-                    Array.Copy(_items, newItems, _itemsInUse);
-                }
+            // Return the old buffer and start using the new buffer
+            ReturnBuffer();
+            Buffer = newItems;
+        }
 
-                _items = newItems;
-            }
-            else if (!preserveContents)
+        private void ReturnBuffer()
+        {
+            if (!ReferenceEquals(Buffer, Empty))
             {
-                Array.Clear(_items, 0, _items.Length);
+                // ArrayPool<>.Return with clearArray: true calls Array.Clear on the entire buffer.
+                // In the most common case, Count would be much smaller than Buffer.Length so we'll specifically clear that subset.
+                Array.Clear(Buffer, 0, Count);
+                _arrayPool.Return(Buffer);
             }
+        }
+
+        public void Dispose()
+        {
+            if (!_disposed)
+            {
+                _disposed = true;
+                ReturnBuffer();
+            }
+        }
+
+        private static void ThrowIndexOutOfBoundsException()
+        {
+            throw new ArgumentOutOfRangeException("index");
         }
     }
 }

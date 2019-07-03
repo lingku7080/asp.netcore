@@ -37,7 +37,7 @@ namespace ComponentsApp.Server
             {
                 endpoints.MapRazorPages();
                 endpoints.MapControllers();
-                endpoints.MapBlazorHub();
+                endpoints.MapBlazorHub<ComponentsApp.App.App>("app");
                 endpoints.MapFallbackToPage("/Index");
             });
         }

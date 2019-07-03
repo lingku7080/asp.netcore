@@ -12,17 +12,26 @@ using Xunit;
 
 namespace Microsoft.AspNetCore.Components.Test
 {
-    public class RenderTreeDiffBuilderTest
+    public class RenderTreeDiffBuilderTest : IDisposable
     {
         private readonly Renderer renderer;
         private readonly RenderTreeBuilder oldTree;
         private readonly RenderTreeBuilder newTree;
+        private RenderBatchBuilder batchBuilder;
 
         public RenderTreeDiffBuilderTest()
         {
             renderer = new FakeRenderer();
             oldTree = new RenderTreeBuilder(renderer);
             newTree = new RenderTreeBuilder(renderer);
+        }
+
+        void IDisposable.Dispose()
+        {
+            renderer.Dispose();
+            oldTree.Dispose();
+            newTree.Dispose();
+            batchBuilder.Dispose();
         }
 
         [Theory]
@@ -207,7 +216,8 @@ namespace Microsoft.AspNetCore.Components.Test
             oldTree.SetKey("retained key");
             oldTree.AddAttribute(1, "ParamName", "Param old value");
             oldTree.CloseComponent();
-            GetRenderedBatch(new RenderTreeBuilder(renderer), oldTree, false); // Assign initial IDs
+            using var initial = new RenderTreeBuilder(renderer);
+            GetRenderedBatch(initial, oldTree, false); // Assign initial IDs
             var oldComponent = GetComponents<CaptureSetParametersComponent>(oldTree).Single();
 
             newTree.OpenComponent<CaptureSetParametersComponent>(0);
@@ -226,12 +236,12 @@ namespace Microsoft.AspNetCore.Components.Test
             // param on the second component.
 
             // Act
-            var batch = GetRenderedBatch(initializeFromFrames: false);
+            var batchBuilder = GetRenderedBatch(initializeFromFrames: false);
             var newComponents = GetComponents<CaptureSetParametersComponent>(newTree);
 
             // Assert: Inserts new component at position 0
-            Assert.Equal(1, batch.UpdatedComponents.Count);
-            Assert.Collection(batch.UpdatedComponents.Array[0].Edits,
+            Assert.Equal(1, batchBuilder.UpdatedComponents.Count);
+            Assert.Collection(batchBuilder.UpdatedComponents.Array[0].Edits,
                 entry => AssertEdit(entry, RenderTreeEditType.PrependFrame, 0));
 
             // Assert: Retains old component instance in position 1, and updates its params
@@ -254,7 +264,8 @@ namespace Microsoft.AspNetCore.Components.Test
             oldTree.CloseComponent();
 
             // Instantiate initial components
-            GetRenderedBatch(new RenderTreeBuilder(renderer), oldTree, false);
+            using var initial = new RenderTreeBuilder(renderer);
+            GetRenderedBatch(initial, oldTree, false);
             var oldComponents = GetComponents(oldTree);
 
             newTree.OpenComponent<FakeComponent>(0);
@@ -285,7 +296,8 @@ namespace Microsoft.AspNetCore.Components.Test
             oldTree.CloseComponent();
 
             // Instantiate initial component
-            GetRenderedBatch(new RenderTreeBuilder(renderer), oldTree, false);
+            using var renderTreeBuilder = new RenderTreeBuilder(renderer);
+            GetRenderedBatch(renderTreeBuilder, oldTree, false);
             var oldComponent = GetComponents(oldTree).Single();
             Assert.NotNull(oldComponent);
 
@@ -772,10 +784,11 @@ namespace Microsoft.AspNetCore.Components.Test
             // Arrange
             oldTree.OpenComponent<FakeComponent>(123);
             oldTree.CloseComponent();
-            GetRenderedBatch(new RenderTreeBuilder(renderer), oldTree, false); // Assign initial IDs
+            using var initial = new RenderTreeBuilder(renderer);
+            GetRenderedBatch(initial, oldTree, false); // Assign initial IDs
             newTree.OpenComponent<FakeComponent2>(123);
             newTree.CloseComponent();
-            var batchBuilder = new RenderBatchBuilder();
+            using var batchBuilder = new RenderBatchBuilder();
 
             // Act
             var diff = RenderTreeDiffBuilder.ComputeDiff(renderer, batchBuilder, 0, oldTree.GetFrames(), newTree.GetFrames());
@@ -883,7 +896,7 @@ namespace Microsoft.AspNetCore.Components.Test
             newTree.CloseElement();
 
             // Act
-            var (result, referenceFrames, batch) = GetSingleUpdatedComponentWithBatch(initializeFromFrames: true);
+            var (result, referenceFrames, batchBuilder) = GetSingleUpdatedComponentWithBatch(initializeFromFrames: true);
             var removedEventHandlerFrame = oldTree.GetFrames().Array[2];
 
             // Assert
@@ -897,7 +910,7 @@ namespace Microsoft.AspNetCore.Components.Test
             Assert.NotEqual(0, removedEventHandlerFrame.AttributeEventHandlerId);
             Assert.Equal(
                 new[] { removedEventHandlerFrame.AttributeEventHandlerId },
-                batch.DisposedEventHandlerIDs.AsEnumerable());
+                batchBuilder.DisposedEventHandlerIDs.AsEnumerable());
         }
 
         [Fact]
@@ -1587,7 +1600,9 @@ namespace Microsoft.AspNetCore.Components.Test
             newTree.CloseComponent();                           //       </FakeComponent2>
             newTree.CloseElement();                             //     </container>
 
-            RenderTreeDiffBuilder.ComputeDiff(renderer, new RenderBatchBuilder(), 0, new RenderTreeBuilder(renderer).GetFrames(), oldTree.GetFrames());
+            using var batchBuilder = new RenderBatchBuilder();
+            using var renderTreeBuilder = new RenderTreeBuilder(renderer);
+            RenderTreeDiffBuilder.ComputeDiff(renderer, batchBuilder, 0, renderTreeBuilder.GetFrames(), oldTree.GetFrames());
             var originalFakeComponentInstance = oldTree.GetFrames().Array[2].Component;
             var originalFakeComponent2Instance = oldTree.GetFrames().Array[3].Component;
 
@@ -1617,7 +1632,7 @@ namespace Microsoft.AspNetCore.Components.Test
             newTree.CloseElement();
 
             // Act
-            var (result, referenceFrames, batch) = GetSingleUpdatedComponentWithBatch(initializeFromFrames: true);
+            var (result, referenceFrames, batchBuilder) = GetSingleUpdatedComponentWithBatch(initializeFromFrames: true);
             var oldAttributeFrame = oldTree.GetFrames().Array[1];
             var newAttributeFrame = newTree.GetFrames().Array[1];
 
@@ -1627,7 +1642,7 @@ namespace Microsoft.AspNetCore.Components.Test
             AssertFrame.Attribute(newAttributeFrame, "ontest", retainedHandler);
             Assert.NotEqual(0, oldAttributeFrame.AttributeEventHandlerId);
             Assert.Equal(oldAttributeFrame.AttributeEventHandlerId, newAttributeFrame.AttributeEventHandlerId);
-            Assert.Empty(batch.DisposedEventHandlerIDs.AsEnumerable());
+            Assert.Empty(batchBuilder.DisposedEventHandlerIDs.AsEnumerable());
         }
 
         [Fact]
@@ -1644,7 +1659,7 @@ namespace Microsoft.AspNetCore.Components.Test
             newTree.CloseElement();
 
             // Act
-            var (result, referenceFrames, batch) = GetSingleUpdatedComponentWithBatch(initializeFromFrames: true);
+            var (result, referenceFrames, batchBuilder) = GetSingleUpdatedComponentWithBatch(initializeFromFrames: true);
             var oldAttributeFrame = oldTree.GetFrames().Array[1];
             var newAttributeFrame = newTree.GetFrames().Array[2];
 
@@ -1654,7 +1669,7 @@ namespace Microsoft.AspNetCore.Components.Test
             AssertFrame.Attribute(newAttributeFrame, "ontest", retainedHandler);
             Assert.NotEqual(0, oldAttributeFrame.AttributeEventHandlerId);
             Assert.Equal(oldAttributeFrame.AttributeEventHandlerId, newAttributeFrame.AttributeEventHandlerId);
-            Assert.Empty(batch.DisposedEventHandlerIDs.AsEnumerable());
+            Assert.Empty(batchBuilder.DisposedEventHandlerIDs.AsEnumerable());
         }
 
         [Fact]
@@ -1671,7 +1686,9 @@ namespace Microsoft.AspNetCore.Components.Test
             newTree.AddAttribute(14, nameof(FakeComponent.ObjectProperty), objectWillNotChange);
             newTree.CloseComponent();
 
-            RenderTreeDiffBuilder.ComputeDiff(renderer, new RenderBatchBuilder(), 0, new RenderTreeBuilder(renderer).GetFrames(), oldTree.GetFrames());
+            using var batchBuilder = new RenderBatchBuilder();
+            using var renderTree = new RenderTreeBuilder(renderer);
+            RenderTreeDiffBuilder.ComputeDiff(renderer, batchBuilder, 0, renderTree.GetFrames(), oldTree.GetFrames());
             var originalComponentInstance = (FakeComponent)oldTree.GetFrames().Array[0].Component;
 
             // Act
@@ -1709,7 +1726,9 @@ namespace Microsoft.AspNetCore.Components.Test
                 tree.CloseComponent();
             }
 
-            RenderTreeDiffBuilder.ComputeDiff(renderer, new RenderBatchBuilder(), 0, new RenderTreeBuilder(renderer).GetFrames(), oldTree.GetFrames());
+            using var batchBuilder = new RenderBatchBuilder();
+            using var renderTreeBuilder = new RenderTreeBuilder(renderer);
+            RenderTreeDiffBuilder.ComputeDiff(renderer, batchBuilder, 0, renderTreeBuilder.GetFrames(), oldTree.GetFrames());
             var originalComponentInstance = (CaptureSetParametersComponent)oldTree.GetFrames().Array[0].Component;
             Assert.Equal(1, originalComponentInstance.SetParametersCallCount);
 
@@ -1737,7 +1756,9 @@ namespace Microsoft.AspNetCore.Components.Test
                 tree.CloseComponent();
             }
 
-            RenderTreeDiffBuilder.ComputeDiff(renderer, new RenderBatchBuilder(), 0, new RenderTreeBuilder(renderer).GetFrames(), oldTree.GetFrames());
+            using var batchBuilder = new RenderBatchBuilder();
+            using var renderTreeBuilder = new RenderTreeBuilder(renderer);
+            RenderTreeDiffBuilder.ComputeDiff(renderer, batchBuilder, 0, renderTreeBuilder.GetFrames(), oldTree.GetFrames());
             var componentInstance = (CaptureSetParametersComponent)oldTree.GetFrames().Array[0].Component;
             Assert.Equal(1, componentInstance.SetParametersCallCount);
 
@@ -1761,8 +1782,9 @@ namespace Microsoft.AspNetCore.Components.Test
             newTree.OpenComponent<DisposableComponent>(30);       // <DisposableComponent>
             newTree.CloseComponent();                             // </DisposableComponent>
 
-            var batchBuilder = new RenderBatchBuilder();
-            RenderTreeDiffBuilder.ComputeDiff(renderer, batchBuilder, 0, new RenderTreeBuilder(renderer).GetFrames(), oldTree.GetFrames());
+            using var batchBuilder = new RenderBatchBuilder();
+            using var renderTree = new RenderTreeBuilder(renderer);
+            RenderTreeDiffBuilder.ComputeDiff(renderer, batchBuilder, 0, renderTree.GetFrames(), oldTree.GetFrames());
 
             // Act/Assert
             // Note that we track NonDisposableComponent was disposed even though it's not IDisposable,
@@ -1971,7 +1993,8 @@ namespace Microsoft.AspNetCore.Components.Test
             oldTree.AddAttribute(1, nameof(FakeComponent.StringProperty), "Second param");
             oldTree.CloseComponent();
 
-            GetRenderedBatch(new RenderTreeBuilder(renderer), oldTree, false); // Assign initial IDs
+            using var renderTreeBuilder = new RenderTreeBuilder(renderer);
+            GetRenderedBatch(renderTreeBuilder, oldTree, false); // Assign initial IDs
             var oldComponents = GetComponents<CaptureSetParametersComponent>(oldTree);
 
             newTree.OpenComponent<CaptureSetParametersComponent>(0);
@@ -2172,12 +2195,19 @@ namespace Microsoft.AspNetCore.Components.Test
         {
             if (initializeFromFrames)
             {
-                var emptyFrames = new RenderTreeBuilder(renderer).GetFrames();
+                using var renderTreeBuilder = new RenderTreeBuilder(renderer);
+                using var initializeBatchBuilder = new RenderBatchBuilder();
+
+                var emptyFrames = renderTreeBuilder.GetFrames();
                 var oldFrames = from.GetFrames();
-                RenderTreeDiffBuilder.ComputeDiff(renderer, new RenderBatchBuilder(), 0, emptyFrames, oldFrames);
+
+                RenderTreeDiffBuilder.ComputeDiff(renderer, initializeBatchBuilder, 0, emptyFrames, oldFrames);
             }
 
-            var batchBuilder = new RenderBatchBuilder();
+            batchBuilder?.Dispose();
+            // This gets disposed as part of the test type's Dispose
+            batchBuilder = new RenderBatchBuilder();
+
             var diff = RenderTreeDiffBuilder.ComputeDiff(renderer, batchBuilder, 0, from.GetFrames(), to.GetFrames());
             batchBuilder.UpdatedComponentDiffs.Append(diff);
             return batchBuilder.ToBatch();

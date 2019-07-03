@@ -710,18 +710,17 @@ namespace Microsoft.AspNetCore.Components.Rendering
         {
             foreach (var componentState in _componentStateById.Values)
             {
-                if (componentState.Component is IDisposable disposable)
+                try
                 {
-                    try
-                    {
-                        disposable.Dispose();
-                    }
-                    catch (Exception exception)
-                    {
-                        HandleException(exception);
-                    }
+                    componentState.Dispose();
+                }
+                catch (Exception exception)
+                {
+                    HandleException(exception);
                 }
             }
+
+            _batchBuilder.Dispose();
         }
 
         /// <summary>
