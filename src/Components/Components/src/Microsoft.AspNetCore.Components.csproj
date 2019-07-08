@@ -9,8 +9,9 @@
     <RazorLangVersion>3.0</RazorLangVersion>
   </PropertyGroup>
 
-    <ItemGroup>
+  <ItemGroup>
     <Compile Include="..\..\Shared\src\JsonSerializerOptionsProvider.cs" />
+    <Compile Include="$(ComponentsSharedSourceRoot)src\ArrayBuilder.cs" LinkBase="RenderTree" />
   </ItemGroup>
 
   <ItemGroup>

@@ -150,22 +150,6 @@ namespace Microsoft.AspNetCore.Components.RenderTree
             Count = 0;
         }
 
-        /// <summary>
-        /// Produces an <see cref="ArrayRange{T}"/> structure describing the current contents.
-        /// </summary>
-        /// <returns>The <see cref="ArrayRange{T}"/>.</returns>
-        public ArrayRange<T> ToRange()
-            => new ArrayRange<T>(Buffer, Count);
-
-        /// <summary>
-        /// Produces an <see cref="ArrayBuilderSegment{T}"/> structure describing the selected contents.
-        /// </summary>
-        /// <param name="fromIndexInclusive">The index of the first item in the segment.</param>
-        /// <param name="toIndexExclusive">One plus the index of the last item in the segment.</param>
-        /// <returns>The <see cref="ArraySegment{T}"/>.</returns>
-        public ArrayBuilderSegment<T> ToSegment(int fromIndexInclusive, int toIndexExclusive)
-            => new ArrayBuilderSegment<T>(this, fromIndexInclusive, toIndexExclusive - fromIndexInclusive);
-
         private void GrowBuffer(int desiredCapacity)
         {
             var newCapacity = Math.Max(desiredCapacity, _minCapacity);

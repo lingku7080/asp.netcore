@@ -6,17 +6,18 @@ using System.Buffers;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Components.RenderTree;
 
 namespace Microsoft.AspNetCore.Components.Server.Circuits
 {
     /// <summary>
     /// Writeable memory stream backed by a an <see cref="ArrayPool{T}"/>.
     /// </summary>
-    internal sealed class ArrayPoolMemoryStream : Stream
+    internal sealed class ArrayBuilderMemoryStream : Stream
     {
-        public ArrayPoolMemoryStream()
+        public ArrayBuilderMemoryStream()
         {
-            PagedByteBuffer = new ArrayPool<byte>(ArrayPool<byte>.Shared);
+            ArrayBuilder = new ArrayBuilder<byte>(2048);
         }
 
         /// <inheritdoc />
@@ -29,18 +30,16 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
         public override bool CanWrite => true;
 
         /// <inheritdoc />
-        public override long Length => PagedByteBuffer.Length;
+        public override long Length => ArrayBuilder.Count;
 
         /// <inheritdoc />
         public override long Position
         {
-            get => throw new NotSupportedException();
+            get => ArrayBuilder.Count;
             set => throw new NotSupportedException();
         }
 
-        internal PagedByteBuffer PagedByteBuffer { get; }
-
-        internal bool Disposed { get; private set; }
+        public ArrayBuilder<byte> ArrayBuilder { get; }
 
         /// <inheritdoc />
         public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
@@ -57,18 +56,16 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
         public override void Write(byte[] buffer, int offset, int count)
         {
             ThrowArgumentException(buffer, offset, count);
-            ThrowIfDisposed();
 
-            PagedByteBuffer.Add(buffer, offset, count);
+            ArrayBuilder.Append(buffer, offset, count);
         }
 
         /// <inheritdoc />
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ThrowArgumentException(buffer, offset, count);
-            ThrowIfDisposed();
 
-            PagedByteBuffer.Add(buffer, offset, count);
+            ArrayBuilder.Append(buffer, offset, count);
             return Task.CompletedTask;
         }
 
@@ -87,32 +84,11 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
         /// <inheritdoc />
         protected override void Dispose(bool disposing)
         {
-            if (!Disposed)
-            {
-                Disposed = true;
-
-                PagedByteBuffer.Dispose();
-            }
+            // Do nothing. It's the responsibility of the consumer of this API to dispose the ArrayBuilder
         }
 
         /// <inheritdoc />
-        public override async ValueTask DisposeAsync()
-        {
-            if (!Disposed)
-            {
-                Disposed = true;
-
-                PagedByteBuffer.Dispose();
-            }
-        }
-
-        private void ThrowIfDisposed()
-        {
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(FileBufferingReadStream));
-            }
-        }
+        public override ValueTask DisposeAsync() => default;
 
         private static void ThrowArgumentException(byte[] buffer, int offset, int count)
         {

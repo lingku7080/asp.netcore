@@ -33,13 +33,13 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
     /// </summary>
     internal class RenderBatchWriter : IDisposable
     {
-        private readonly List<string> _strings;
+        private readonly ArrayBuilder<string> _strings;
         private readonly Dictionary<string, int> _deduplicatedStringIndices;
         private readonly BinaryWriter _binaryWriter;
 
         public RenderBatchWriter(Stream output, bool leaveOpen)
         {
-            _strings = new List<string>();
+            _strings = new ArrayBuilder<string>();
             _deduplicatedStringIndices = new Dictionary<string, int>();
             _binaryWriter = new BinaryWriter(output, Encoding.UTF8, leaveOpen);
         }
@@ -229,7 +229,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
                 if (!allowDeduplication || !_deduplicatedStringIndices.TryGetValue(value, out stringIndex))
                 {
                     stringIndex = _strings.Count;
-                    _strings.Add(value);
+                    _strings.Append(value);
 
                     if (allowDeduplication)
                     {
@@ -249,7 +249,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
 
             for (var i = 0; i < stringsCount; i++)
             {
-                var stringValue = _strings[i];
+                var stringValue = _strings.Buffer[i];
                 locations[i] = (int)_binaryWriter.BaseStream.Position;
                 _binaryWriter.Write(stringValue);
             }
@@ -281,6 +281,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
 
         public void Dispose()
         {
+            _strings.Dispose();
             _binaryWriter.Dispose();
         }
     }
