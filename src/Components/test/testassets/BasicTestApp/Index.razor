@@ -1,8 +1,10 @@
 @using Microsoft.AspNetCore.Components.RenderTree
 <div id="test-selector">
   Select test:
-    <select @bind=SelectedComponentTypeName>
+    @* The id below is needed for some Ignitor tests *@
+    <select id="test-selector-select" @bind=SelectedComponentTypeName>
         <option value="none">Choose...</option>
+        <option value="BasicTestApp.ReliabilityComponent">Server reliability component</option>
         <option value="BasicTestApp.InteropComponent">Interop component</option>
         <option value="BasicTestApp.LongRunningInterop">Long running interop</option>
         <option value="BasicTestApp.AsyncEventHandlerComponent">Async event handlers</option>
@@ -73,7 +75,7 @@
     @((RenderFragment)RenderSelectedComponent)
 </app>
 
-@code {
+@functions {
     string SelectedComponentTypeName { get; set; } = "none";
 
     Type SelectedComponentType
