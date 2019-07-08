@@ -9,10 +9,13 @@
 
 <button id="thecounter" @onclick="@IncrementCount">Click me</button>
 
-@code
-{
+<p>Expensive field to compute = @ComputeExpensiveField()</p>
+
+@code {
     int currentCount = 0;
     string error = "";
+    byte[] dataHolder = new byte[1024 * 1024];
+    RandomNumberGenerator rnd = RandomNumberGenerator.Create();
 
     void IncrementCount()
     {
@@ -31,5 +34,11 @@
         {
             error = e.Message;
         }
+    }
+
+    public string ComputeExpensiveField()
+    {
+        rnd.GetBytes(dataHolder);
+        return Convert.ToBase64String(dataHolder);
     }
 }

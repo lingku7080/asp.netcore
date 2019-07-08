@@ -284,6 +284,30 @@ namespace Microsoft.AspNetCore.Components.E2ETests.ServerExecutionTests
         }
 
         [Fact]
+        public async Task CannotGrowMemoryIndefinitely()
+        {
+            // Arrange
+            var client = new BlazorClient();
+            client.ConfirmRenderBatch = false;
+            var batchCount = 0;
+            client.RenderBatchReceived += (int rid, int bid, byte[] data) => batchCount++;
+
+            var rootUri = _serverFixture.RootUri;
+            var initialRender = client.PrepareForNextBatch();
+            Assert.True(await client.ConnectAsync(new Uri(rootUri, "/subdir"), prerendered: false), "Couldn't connect to the app");
+            await initialRender;
+
+            var selectComponentRender = client.PrepareForNextBatch();
+            await client.SelectAsync("test-selector-select", "BasicTestApp.ReliabilityComponent");
+            await selectComponentRender;
+
+            for (int i = 0; i < 1_000_000; i++)
+            {
+                await ValidateClientKeepsWorking(client, () => batchCount);
+            }
+        }
+
+        [Fact]
         public async Task CannotInvokeJSInvokableMethodsWithInvalidArgumentsPayload()
         {
             // Arrange
