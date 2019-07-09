@@ -8,10 +8,22 @@
     <DefineConstants>$(DefineConstants);DEMO</DefineConstants>
     <RuntimeIdentifiers>win-x86;win-x64;linux-x64;osx-x64</RuntimeIdentifiers>
     <InProcessTestSite>true</InProcessTestSite>
+    <ShowLinkerSizeComparison>true</ShowLinkerSizeComparison>
+    <PublishTrimmed>true</PublishTrimmed>
+    <LinkDuringPublish>true</LinkDuringPublish>
   </PropertyGroup>
 
   <ItemGroup>
     <Content Update="ForTesting\**\*" CopyToPublishDirectory="Never" Condition=" '$(PublishForTesting)' != 'true' " />
+  </ItemGroup>
+
+  <ItemGroup>
+    <TrimmerRootDescriptor Include="Linker.xml" />
+    <TrimmerRootAssembly Include="C:\git\aspnet\AspNetCore\artifacts\obj\MusicStore\release\netcoreapp3.0\win-x64\MusicStore.Views.dll" />
+    <ResolvedFileToPublish Include="C:\git\aspnet\AspNetCore\artifacts\obj\MusicStore\release\netcoreapp3.0\win-x64\MusicStore.Views.dll">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <RelativePath>MusicStore.Views.dll</RelativePath>
+    </ResolvedFileToPublish>
   </ItemGroup>
 
   <ItemGroup>

@@ -1,0 +1,6 @@
+<linker>
+  <assembly fullname="System.Resources.ResourceManager">
+  </assembly>
+    <assembly fullname="System.Threading.Tasks">
+  </assembly>
+</linker>
