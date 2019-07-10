@@ -88,6 +88,7 @@ namespace Ignitor
             HubConnection.On<int, string, string>("JS.BeginInvokeJS", OnBeginInvokeJS);
             HubConnection.On<int, int, byte[]>("JS.RenderBatch", OnRenderBatch);
             HubConnection.On<Error>("JS.OnError", OnError);
+            HubConnection.On<string>("JS.Error", (error) => Console.WriteLine(error));
             HubConnection.Closed += OnClosedAsync;
 
             // Now everything is registered so we can start the circuit.
