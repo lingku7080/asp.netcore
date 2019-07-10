@@ -5,11 +5,11 @@ namespace Ignitor
 {
     public class ComponentNode : ContainerNode
     {
-        private readonly int _componentId;
-
         public ComponentNode(int componentId)
         {
-            _componentId = componentId;
+            ComponentId = componentId;
         }
+
+        public int ComponentId { get; }
     }
 }

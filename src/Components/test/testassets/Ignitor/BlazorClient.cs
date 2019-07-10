@@ -196,5 +196,15 @@ namespace Ignitor
 
             return element;
         }
+
+        public Task ChangeAsync(string elementId, string value, string oldValue)
+        {
+            if (!Hive.TryFindElementById(elementId, out var elementNode))
+            {
+                throw new InvalidOperationException($"Could not find element with id {elementId}.");
+            }
+
+            return elementNode.ChangeAsync(HubConnection, value, oldValue);
+        }
     }
 }

@@ -1,7 +1,13 @@
+// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Security.Cryptography.Xml;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Ignitor;
 using Microsoft.AspNetCore.Components.E2ETest.Infrastructure;
@@ -10,7 +16,7 @@ using Microsoft.AspNetCore.E2ETesting;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Microsoft.AspNetCore.Components.E2ETests.ServerExecutionTests
+namespace Microsoft.AspNetCore.Components.E2ETest.ServerExecutionTests
 {
     public class InteropReliabilityTests : ServerTestBase<AspNetSiteServerFixture>
     {
@@ -284,7 +290,7 @@ namespace Microsoft.AspNetCore.Components.E2ETests.ServerExecutionTests
         }
 
         [Fact]
-        public async Task CannotGrowMemoryIndefinitely()
+        public async Task CannotGrowMemoryIndefinitelyWhenRendersAreNotAcknowledged()
         {
             // Arrange
             var client = new BlazorClient();
@@ -301,9 +307,95 @@ namespace Microsoft.AspNetCore.Components.E2ETests.ServerExecutionTests
             await client.SelectAsync("test-selector-select", "BasicTestApp.ReliabilityComponent");
             await selectComponentRender;
 
+            await client.ClickAsync("expensiveComputationsDisabled");
+            await Task.Delay(DefaultLatencyTimeout);
+
             for (int i = 0; i < 1_000_000; i++)
             {
                 await ValidateClientKeepsWorking(client, () => batchCount);
+            }
+        }
+
+        [Fact]
+        public async Task CannotGrowMemoryIndefinitelyBySpammingTheServerWithEvents()
+        {
+            // Arrange
+            await Task.WhenAll(Enumerable.Range(1, 100).Select(async i =>
+              {
+                  var client = new BlazorClient();
+                  var batchCount = 0;
+                  client.RenderBatchReceived += (int rid, int bid, byte[] data) => batchCount++;
+
+                  var rootUri = _serverFixture.RootUri;
+                  var initialRender = client.PrepareForNextBatch();
+                  Assert.True(await client.ConnectAsync(new Uri(rootUri, "/subdir"), prerendered: false), "Couldn't connect to the app");
+                  await initialRender;
+
+                  var selectComponentRender = client.PrepareForNextBatch();
+                  await client.SelectAsync("test-selector-select", "BasicTestApp.ReliabilityComponent");
+                  await selectComponentRender;
+
+                  for (int j = 0; j < 10000; j++)
+                  {
+                      await ValidateClientKeepsWorking(client, () => batchCount);
+                  }
+              }));
+        }
+
+        [Fact]
+        public async Task CannotGrowMemoryIndefinitelyBySpammingTheServerWithExpensiveEvents()
+        {
+            // Arrange
+            var rnd = RandomNumberGenerator.Create();
+            var data = new byte[1024];
+            rnd.GetBytes(data);
+            var alphabet = "abcdefghijklmnopqrstuvwxyz123456ABCDEFGHIJKLMNOPQRSTUVWXYZ7890+_";
+            var value = new string('0', 31 * 1024);
+            UpdateValueInPlace(value, data, alphabet);
+            var oldValue = "";
+            var client = new BlazorClient();
+            var batchCount = 0;
+            client.RenderBatchReceived += (int rid, int bid, byte[] data) => Interlocked.Increment(ref batchCount);
+
+            var rootUri = _serverFixture.RootUri;
+            var initialRender = client.PrepareForNextBatch();
+            Assert.True(await client.ConnectAsync(new Uri(rootUri, "/subdir"), prerendered: false), "Couldn't connect to the app");
+            await initialRender;
+
+            var selectComponentRender = client.PrepareForNextBatch();
+            await client.SelectAsync("test-selector-select", "BasicTestApp.ReliabilityComponent");
+            await selectComponentRender;
+
+            for (int j = 0; j < 1_000_000; j++)
+            {
+                var currentBatches = batchCount;
+                // Fire and forget mode
+                var _ = client.ChangeAsync("boundTextInput", value, oldValue);
+
+                rnd.GetBytes(data);
+                UpdateValueInPlace(value, data, alphabet);
+            }
+        }
+
+        private unsafe static void UpdateValueInPlace(string oldValue, string value)
+        {
+            fixed (char* ptr = oldValue)
+            {
+                for (int i = 0; i < 1024; i++)
+                {
+                    ptr[i] = value[i];
+                }
+            }
+        }
+
+        private unsafe static void UpdateValueInPlace(string value, byte[] data, string alphabet)
+        {
+            fixed (char* ptr = value)
+            {
+                for (int i = 0; i < 1024; i++)
+                {
+                    ptr[i] = alphabet[data[i] % 64];
+                }
             }
         }
 

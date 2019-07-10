@@ -83,7 +83,7 @@ namespace Ignitor
                 EventArgsType = "change",
                 EventFieldInfo = new EventFieldInfo
                 {
-                    ComponentId = 0,
+                    ComponentId = FindParentComponent().ComponentId,
                     FieldValue = value
                 }
             };
@@ -138,6 +138,61 @@ namespace Ignitor
             var dotNetObjectId = 0;
             var clickArgs = JsonSerializer.Serialize(argsObject, new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
             await connection.InvokeAsync("BeginInvokeDotNetFromJS", callId, assemblyName, methodIdentifier, dotNetObjectId, clickArgs);
+        }
+
+        internal async Task ChangeAsync(HubConnection connection, string value, string oldValue)
+        {
+            if (!Events.TryGetValue("change", out var changeDescriptor))
+            {
+                throw new InvalidOperationException("Element does not have a click event.");
+            }
+
+            var mouseEventArgs = new UIChangeEventArgs()
+            {
+                Type = changeDescriptor.EventName,
+                Value = value,
+            };
+            var browserDescriptor = new RendererRegistryEventDispatcher.BrowserEventDescriptor()
+            {
+                BrowserRendererId = 0,
+                EventHandlerId = changeDescriptor.EventId,
+                EventArgsType = "change",
+                EventFieldInfo = new EventFieldInfo
+                {
+                    ComponentId = FindParentComponent().ComponentId,
+                    FieldValue = oldValue
+                }
+            };
+            var serializedJson = JsonSerializer.Serialize(mouseEventArgs, new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+            var argsObject = new object[] { browserDescriptor, serializedJson };
+            var callId = "0";
+            var assemblyName = "Microsoft.AspNetCore.Components.Web";
+            var methodIdentifier = "DispatchEvent";
+            var dotNetObjectId = 0;
+            var clickArgs = JsonSerializer.Serialize(argsObject, new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+            await connection.InvokeAsync("BeginInvokeDotNetFromJS", callId, assemblyName, methodIdentifier, dotNetObjectId, clickArgs);
+        }
+
+        private ComponentNode FindParentComponent()
+        {
+            if (Parent == null)
+            {
+                throw new InvalidOperationException("This is a root component");
+            }
+
+            Node current = this;
+            while (current != null && !(current is ComponentNode))
+            {
+                current = current.Parent;
+            }
+            if (current != null)
+            {
+                return (ComponentNode)current;
+            }
+            else
+            {
+                throw new InvalidOperationException("Malformed tree, couldn't find parent component.");
+            }
         }
     }
 }
