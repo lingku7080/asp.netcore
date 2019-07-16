@@ -14,7 +14,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core
         private int _maxStreamsPerConnection = 100;
         private int _headerTableSize = (int)Http2PeerSettings.DefaultHeaderTableSize;
         private int _maxFrameSize = (int)Http2PeerSettings.DefaultMaxFrameSize;
-        private int _maxRequestHeaderFieldSize = 8192;
+        private int _maxRequestHeaderFieldSize = 32 * 1024; // 32KB
         private int _initialConnectionWindowSize = 1024 * 128; // Larger than the default 64kb, and larger than any one single stream.
         private int _initialStreamWindowSize = 1024 * 96; // Larger than the default 64kb
 
