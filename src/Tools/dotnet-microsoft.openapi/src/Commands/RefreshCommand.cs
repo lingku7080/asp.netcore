@@ -35,7 +35,7 @@ namespace Microsoft.DotNet.OpenApi.Commands
             }
             else
             {
-                throw new ArgumentException($"'dotnet openapi refresh' must be given a URL");
+                throw new ArgumentException($"'dotnet microsoft.openapi refresh' must be given a URL");
             }
 
             return 0;

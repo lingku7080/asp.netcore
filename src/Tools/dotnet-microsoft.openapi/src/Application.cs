@@ -30,14 +30,15 @@ namespace Microsoft.DotNet.OpenApi
 
             WorkingDirectory = workingDirectory;
 
-            Name = "openapi";
+            Name = "microsoft.openapi";
             FullName = "OpenApi reference management tool";
             Description = "OpenApi reference management operations.";
             ShortVersionGetter = GetInformationalVersion;
 
             HelpOption("-?|-h|--help");
 
-            Invoke = () => {
+            Invoke = () =>
+            {
                 ShowHelp();
                 return 0;
             };

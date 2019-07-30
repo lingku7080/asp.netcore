@@ -26,7 +26,7 @@ namespace Microsoft.DotNet.OpenApi.Add.Tests
             Assert.True(string.IsNullOrEmpty(_error.ToString()), $"Threw error: {_error.ToString()}");
             Assert.Equal(0, run);
 
-            Assert.Contains("Usage: openapi ", _output.ToString());
+            Assert.Contains("Usage: microsoft.openapi ", _output.ToString());
         }
 
         [Fact]
@@ -34,7 +34,7 @@ namespace Microsoft.DotNet.OpenApi.Add.Tests
         {
             var app = GetApplication();
             _tempDir.Create();
-            var run = app.Execute(new string[] { "add", "file", "randomfile.json"});
+            var run = app.Execute(new string[] { "add", "file", "randomfile.json" });
 
             Assert.Contains("No project files were found in the current directory", _error.ToString());
             Assert.DoesNotContain(":line ", _error.ToString());
@@ -62,7 +62,7 @@ namespace Microsoft.DotNet.OpenApi.Add.Tests
             Assert.True(string.IsNullOrEmpty(_error.ToString()), $"Threw error: {_error.ToString()}");
             Assert.Equal(0, run);
 
-            Assert.Contains("Usage: openapi ", _output.ToString());
+            Assert.Contains("Usage: microsoft.openapi ", _output.ToString());
         }
 
         [Fact]
@@ -110,7 +110,7 @@ namespace Microsoft.DotNet.OpenApi.Add.Tests
 
             app = GetApplication();
             var absolute = Path.GetFullPath(nswagJsonFile, project.Project.Dir().Root);
-            run = app.Execute(new[] { "add", "file", absolute});
+            run = app.Execute(new[] { "add", "file", absolute });
 
             Assert.True(string.IsNullOrEmpty(_error.ToString()), $"Threw error: {_error.ToString()}");
             Assert.Equal(0, run);
