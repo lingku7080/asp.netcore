@@ -1,6 +1,6 @@
 # dotnet-microsoft.openapi
 
-`dotnet-microsoft.openapi` is a tool which can be used to manage OpenAPI references within your project.
+`Microsoft.dotnet-openapi` is a tool which can be used to manage OpenAPI references within your project.
 
 ## Commands
 

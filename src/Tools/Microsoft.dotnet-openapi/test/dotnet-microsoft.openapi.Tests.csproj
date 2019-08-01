@@ -6,6 +6,10 @@
     <TestGroupName>DotNetAddServiceReferenceToolsTests</TestGroupName>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <OpenAPIToolCSProjPath>..\src\Microsoft.dotnet-openapi.csproj</OpenAPIToolCSProjPath>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="$(ToolSharedSourceRoot)TestHelpers\**\*.cs" />
     <Compile Include="$(SharedSourceRoot)test\SkipOnHelixAttribute.cs" />
@@ -15,7 +19,7 @@
 
   <ItemGroup>
     <Reference Include="Microsoft.Build" ExcludeAssets="runtime" />
-    <ProjectReference Include="..\src\dotnet-microsoft.openapi.csproj" />
+    <ProjectReference Include="$(OpenAPIToolCSProjPath)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -38,10 +42,10 @@
   </Target>
 
   <Target Name="PublishDotNetOpenApiOnBuild" BeforeTargets="Build">
-    <MSBuild Projects="..\src\dotnet-microsoft.openapi.csproj" Targets="Publish" Properties="PublishDir=$(OutputPath)\tool\;Configuration=$(Configuration)" />
+    <MSBuild Projects="$(OpenAPIToolCSProjPath)" Targets="Publish" Properties="PublishDir=$(OutputPath)\tool\;Configuration=$(Configuration)" />
   </Target>
 
   <Target Name="PublishDotNetOpenApiOnPublish" BeforeTargets="Publish">
-    <MSBuild Projects="..\src\dotnet-microsoft.openapi.csproj" Targets="Publish" Properties="PublishDir=$(PublishDir)\tool\;Configuration=$(Configuration)" />
+    <MSBuild Projects="$(OpenAPIToolCSProjPath)" Targets="Publish" Properties="PublishDir=$(PublishDir)\tool\;Configuration=$(Configuration)" />
   </Target>
 </Project>
