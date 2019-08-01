@@ -8,14 +8,14 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.AspNetCore.Components.Server.Circuits
 {
-    internal class CircuitClientProxy : IClientProxy
+    internal class CircuitClientConnection : IClientProxy
     {
-        public CircuitClientProxy()
+        public CircuitClientConnection()
         {
             Connected = false;
         }
 
-        public CircuitClientProxy(IClientProxy clientProxy, string connectionId)
+        public CircuitClientConnection(IClientProxy clientProxy, string connectionId)
         {
             Transfer(clientProxy, connectionId);
         }
@@ -36,6 +36,8 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
         public void SetDisconnected()
         {
             Connected = false;
+            Client = null;
+            ConnectionId = null;
         }
 
         public Task SendCoreAsync(string method, object[] args, CancellationToken cancellationToken = default)

@@ -37,23 +37,23 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
 
         public override CircuitHost CreateCircuitHost(
             HttpContext httpContext,
-            CircuitClientProxy client,
+            CircuitClientConnection connection,
             string uriAbsolute,
             string baseUriAbsolute,
             ClaimsPrincipal user)
         {
-            var components = ResolveComponentMetadata(httpContext, client);
+            var components = ResolveComponentMetadata(httpContext, connection);
 
             var scope = _scopeFactory.CreateScope();
             var encoder = scope.ServiceProvider.GetRequiredService<HtmlEncoder>();
             var jsRuntime = (RemoteJSRuntime)scope.ServiceProvider.GetRequiredService<IJSRuntime>();
             var componentContext = (RemoteComponentContext)scope.ServiceProvider.GetRequiredService<IComponentContext>();
-            jsRuntime.Initialize(client);
-            componentContext.Initialize(client);
+            jsRuntime.Initialize(connection);
+            componentContext.Initialize(connection);
 
             var uriHelper = (RemoteUriHelper)scope.ServiceProvider.GetRequiredService<IUriHelper>();
             var navigationInterception = (RemoteNavigationInterception)scope.ServiceProvider.GetRequiredService<INavigationInterception>();
-            if (client.Connected)
+            if (connection.Connected)
             {
                 uriHelper.AttachJsRuntime(jsRuntime);
                 uriHelper.InitializeState(
@@ -73,7 +73,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
                 _loggerFactory,
                 rendererRegistry,
                 jsRuntime,
-                client,
+                connection,
                 encoder,
                 _loggerFactory.CreateLogger<RemoteRenderer>());
 
@@ -84,7 +84,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
             var circuitHost = new CircuitHost(
                 _circuitIdFactory.CreateCircuitId(),
                 scope,
-                client,
+                connection,
                 rendererRegistry,
                 renderer,
                 components,
@@ -100,9 +100,9 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
             return circuitHost;
         }
 
-        internal static List<ComponentDescriptor> ResolveComponentMetadata(HttpContext httpContext, CircuitClientProxy client)
+        internal static List<ComponentDescriptor> ResolveComponentMetadata(HttpContext httpContext, CircuitClientConnection connection)
         {
-            if (!client.Connected)
+            if (!connection.Connected)
             {
                 // This is the prerendering case. Descriptors will be registered by the prerenderer.
                 return new List<ComponentDescriptor>();
@@ -134,9 +134,9 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
 
             internal static void CreatedCircuit(ILogger logger, CircuitHost circuitHost)
             {
-                if (circuitHost.Client.Connected)
+                if (circuitHost.Connection.Connected)
                 {
-                    _createdConnectedCircuit(logger, circuitHost.CircuitId, circuitHost.Client.ConnectionId, null);
+                    _createdConnectedCircuit(logger, circuitHost.CircuitId, circuitHost.Connection.ConnectionId, null);
                 }
                 else
                 {

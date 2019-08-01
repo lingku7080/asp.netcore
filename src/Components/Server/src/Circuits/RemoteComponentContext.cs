@@ -7,13 +7,13 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
 {
     internal class RemoteComponentContext : IComponentContext
     {
-        private CircuitClientProxy _clientProxy;
+        private CircuitClientConnection connection;
 
-        public bool IsConnected => _clientProxy != null && _clientProxy.Connected;
+        public bool IsConnected => connection != null && connection.Connected;
 
-        internal void Initialize(CircuitClientProxy clientProxy)
+        internal void Initialize(CircuitClientConnection clientProxy)
         {
-            _clientProxy = clientProxy ?? throw new ArgumentNullException(nameof(clientProxy));
+            connection = clientProxy ?? throw new ArgumentNullException(nameof(clientProxy));
         }
     }
 }

@@ -52,8 +52,8 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
 
             // Assert
             Assert.Same(circuitHost, result);
-            Assert.Same(newClient, circuitHost.Client.Client);
-            Assert.Same(newConnectionId, circuitHost.Client.ConnectionId);
+            Assert.Same(newClient, circuitHost.Connection.Client);
+            Assert.Same(newConnectionId, circuitHost.Connection.ConnectionId);
 
             var actual = Assert.Single(registry.ConnectedCircuits.Values);
             Assert.Same(circuitHost, actual);
@@ -77,8 +77,8 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
 
             // Assert
             Assert.Same(circuitHost, result);
-            Assert.Same(newClient, circuitHost.Client.Client);
-            Assert.Same(newConnectionId, circuitHost.Client.ConnectionId);
+            Assert.Same(newClient, circuitHost.Connection.Client);
+            Assert.Same(newConnectionId, circuitHost.Connection.ConnectionId);
 
             var actual = Assert.Single(registry.ConnectedCircuits.Values);
             Assert.Same(circuitHost, actual);
@@ -142,7 +142,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
             registry.DisconnectedCircuits.Set(circuitHost.CircuitId, circuitHost, new MemoryCacheEntryOptions { Size = 1 });
 
             // Act
-            await registry.DisconnectAsync(circuitHost, circuitHost.Client.ConnectionId);
+            await registry.DisconnectAsync(circuitHost, circuitHost.Connection.ConnectionId);
 
             // Assert
             Assert.Empty(registry.ConnectedCircuits.Values);
@@ -159,7 +159,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
             registry.Register(circuitHost);
 
             // Act
-            await registry.DisconnectAsync(circuitHost, circuitHost.Client.ConnectionId);
+            await registry.DisconnectAsync(circuitHost, circuitHost.Connection.ConnectionId);
 
             // Assert
             handler.Verify(v => v.OnCircuitOpenedAsync(It.IsAny<Circuit>(), It.IsAny<CancellationToken>()), Times.Never());
@@ -223,7 +223,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
             // Act
             var disconnect = Task.Run(() =>
             {
-                var task = registry.DisconnectAsync(circuitHost, circuitHost.Client.ConnectionId);
+                var task = registry.DisconnectAsync(circuitHost, circuitHost.Connection.ConnectionId);
                 tcs.SetResult(0);
                 return task;
             });
@@ -240,8 +240,8 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
             // We expect the disconnect to finish followed by a reconnect
             var actual = Assert.Single(registry.ConnectedCircuits.Values);
             Assert.Same(circuitHost, actual);
-            Assert.Same(client, circuitHost.Client.Client);
-            Assert.Equal(newId, circuitHost.Client.ConnectionId);
+            Assert.Same(client, circuitHost.Connection.Client);
+            Assert.Equal(newId, circuitHost.Connection.ConnectionId);
 
             Assert.False(registry.DisconnectedCircuits.TryGetValue(circuitHost.CircuitId, out _));
         }
@@ -266,7 +266,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
             // Act
             var disconnect = Task.Run(() =>
             {
-                var task = registry.DisconnectAsync(circuitHost, circuitHost.Client.ConnectionId);
+                var task = registry.DisconnectAsync(circuitHost, circuitHost.Connection.ConnectionId);
                 tcs.SetResult(0);
                 return task;
             });
@@ -297,7 +297,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
             var circuitHost = TestCircuitHost.Create(circuitIdFactory.CreateCircuitId());
             registry.Register(circuitHost);
             var client = Mock.Of<IClientProxy>();
-            var oldId = circuitHost.Client.ConnectionId;
+            var oldId = circuitHost.Connection.ConnectionId;
             var newId = "new-connection";
 
             // Act
@@ -310,8 +310,8 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
             // We expect the disconnect to fail since the client identifier has changed.
             var actual = Assert.Single(registry.ConnectedCircuits.Values);
             Assert.Same(circuitHost, actual);
-            Assert.Same(client, circuitHost.Client.Client);
-            Assert.Equal(newId, circuitHost.Client.ConnectionId);
+            Assert.Same(client, circuitHost.Connection.Client);
+            Assert.Equal(newId, circuitHost.Connection.ConnectionId);
 
             Assert.False(registry.DisconnectedCircuits.TryGetValue(circuitHost.CircuitId, out _));
         }

@@ -15,7 +15,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
     {
         private readonly CircuitOptions _options;
         private readonly ILogger<RemoteJSRuntime> _logger;
-        private CircuitClientProxy _clientProxy;
+        private CircuitClientConnection _connection;
 
         public RemoteJSRuntime(IOptions<CircuitOptions> options, ILogger<RemoteJSRuntime> logger)
         {
@@ -24,9 +24,9 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
             DefaultAsyncTimeout = _options.JSInteropDefaultCallTimeout;
         }
 
-        internal void Initialize(CircuitClientProxy clientProxy)
+        internal void Initialize(CircuitClientConnection connection)
         {
-            _clientProxy = clientProxy ?? throw new ArgumentNullException(nameof(clientProxy));
+            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
         }
 
         protected override void EndInvokeDotNet(string callId, bool success, object resultOrError, string assemblyName, string methodIdentifier, long dotNetObjectId)
@@ -56,14 +56,14 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
 
         private void EndInvokeDotNetCore(string callId, bool success, object resultOrError)
         {
-            _clientProxy.SendAsync(
+            _connection.SendAsync(
                 "JS.EndInvokeDotNet",
                 JsonSerializer.Serialize(new[] { callId, success, resultOrError }, JsonSerializerOptionsProvider.Options));
         }
 
         protected override void BeginInvokeJS(long asyncHandle, string identifier, string argsJson)
         {
-            if (!_clientProxy.Connected)
+            if (!_connection.Connected)
             {
                 throw new InvalidOperationException("JavaScript interop calls cannot be issued at this time. This is because the component is being " +
                     "prerendered and the page has not yet loaded in the browser or because the circuit is currently disconnected. " +
@@ -73,7 +73,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
 
             Log.BeginInvokeJS(_logger, asyncHandle, identifier);
 
-            _clientProxy.SendAsync("JS.BeginInvokeJS", asyncHandle, identifier, argsJson);
+            _connection.SendAsync("JS.BeginInvokeJS", asyncHandle, identifier, argsJson);
         }
 
         public static class Log

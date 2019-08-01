@@ -52,7 +52,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
         public CircuitHost(
             string circuitId,
             IServiceScope scope,
-            CircuitClientProxy client,
+            CircuitClientConnection connection,
             RendererRegistry rendererRegistry,
             RemoteRenderer renderer,
             IReadOnlyList<ComponentDescriptor> descriptors,
@@ -62,7 +62,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
         {
             CircuitId = circuitId;
             _scope = scope ?? throw new ArgumentNullException(nameof(scope));
-            Client = client;
+            Connection = connection;
             RendererRegistry = rendererRegistry ?? throw new ArgumentNullException(nameof(rendererRegistry));
             Descriptors = descriptors ?? throw new ArgumentNullException(nameof(descriptors));
             Renderer = renderer ?? throw new ArgumentNullException(nameof(renderer));
@@ -82,7 +82,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
 
         public Circuit Circuit { get; }
 
-        public CircuitClientProxy Client { get; set; }
+        public CircuitClientConnection Connection { get; set; }
 
         public RemoteJSRuntime JSRuntime { get; }
 
@@ -180,9 +180,9 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
             }
         }
 
-        public async Task InitializeAsync(CancellationToken cancellationToken)
+        public Task InitializeAsync(CancellationToken cancellationToken)
         {
-            await Renderer.Dispatcher.InvokeAsync(async () =>
+            return Renderer.Dispatcher.InvokeAsync(async () =>
             {
                 try
                 {
@@ -256,7 +256,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
 
         public async Task OnConnectionUpAsync(CancellationToken cancellationToken)
         {
-            Log.ConnectionUp(_logger, Circuit.Id, Client.ConnectionId);
+            Log.ConnectionUp(_logger, Circuit.Id, Connection.ConnectionId);
 
             try
             {
@@ -283,7 +283,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
 
         public async Task OnConnectionDownAsync(CancellationToken cancellationToken)
         {
-            Log.ConnectionDown(_logger, Circuit.Id, Client.ConnectionId);
+            Log.ConnectionDown(_logger, Circuit.Id, Connection.ConnectionId);
 
             try
             {

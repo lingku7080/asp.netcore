@@ -22,14 +22,14 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
     ///
     /// In the simplest of cases, the client disconnects e.g. the user is done with the application and closes the browser.
     /// The server (eventually) learns of the disconnect. The host is transitioned from <see cref="ConnectedCircuits"/> to
-    /// <see cref="DisconnectedCircuits"/> where it sits with an expiration time. We'll mark the associated <see cref="CircuitClientProxy"/> as disconnected
+    /// <see cref="DisconnectedCircuits"/> where it sits with an expiration time. We'll mark the associated <see cref="CircuitClientConnection"/> as disconnected
     /// so that consumers of the Circuit know of the current state.
     /// Once the entry for the host in <see cref="DisconnectedCircuits"/> expires, we'll dispose off the host.
     ///
     /// The alternate case is when the disconnect was transient, e.g. due to a network failure, and the client attempts to reconnect.
     /// We'll attempt to connect it back to the host and the preserved server state, when available. In this event, we do the opposite of
     /// what we did during disconnect - transition the host from <see cref="DisconnectedCircuits"/> to <see cref="ConnectedCircuits"/>, and transfer
-    /// the <see cref="CircuitClientProxy"/> to use the new client instance that attempted to reconnect to the server. Removing the entry from
+    /// the <see cref="CircuitClientConnection"/> to use the new client instance that attempted to reconnect to the server. Removing the entry from
     /// <see cref="DisconnectedCircuits"/> should ensure we no longer have to concern ourselves with entry expiration.
     ///
     /// Knowing when a client disconnected is not an exact science. There's a fair possiblity that a client may reconnect before the server realizes.
@@ -86,7 +86,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
             if (ConnectedCircuits.TryRemove(circuitHost.CircuitId, out _))
             {
                 Log.CircuitDisconnectedPermanently(_logger, circuitHost.CircuitId);
-                circuitHost.Client.SetDisconnected();
+                circuitHost.Connection.SetDisconnected();
             }
         }
 
@@ -125,9 +125,9 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
                 return false;
             }
 
-            if (!string.Equals(circuitHost.Client.ConnectionId, connectionId, StringComparison.Ordinal))
+            if (!string.Equals(circuitHost.Connection.ConnectionId, connectionId, StringComparison.Ordinal))
             {
-                Log.CircuitConnectedToDifferentConnection(_logger, circuitId, circuitHost.Client.ConnectionId);
+                Log.CircuitConnectedToDifferentConnection(_logger, circuitId, circuitHost.Connection.ConnectionId);
 
                 // The circuit is associated with a different connection. One way this could happen is when
                 // the client reconnects with a new connection before the OnDisconnect for the older
@@ -138,7 +138,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
             var result = ConnectedCircuits.TryRemove(circuitId, out circuitHost);
             Debug.Assert(result, "This operation operates inside of a lock. We expect the previously inspected value to be still here.");
 
-            circuitHost.Client.SetDisconnected();
+            circuitHost.Connection.SetDisconnected();
             RegisterDisconnectedCircuit(circuitHost);
 
             Log.CircuitMarkedDisconnected(_logger, circuitId);
@@ -226,7 +226,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
 
                 // The host is still active i.e. the server hasn't detected the client disconnect.
                 // However the client reconnected establishing a new connection.
-                connectedCircuitHost.Client.Transfer(clientProxy, connectionId);
+                connectedCircuitHost.Connection.Transfer(clientProxy, connectionId);
                 return (connectedCircuitHost, true);
             }
 
@@ -241,7 +241,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
                 DisconnectedCircuits.Remove(circuitId);
                 ConnectedCircuits.TryAdd(circuitId, disconnectedEntry.CircuitHost);
 
-                disconnectedEntry.CircuitHost.Client.Transfer(clientProxy, connectionId);
+                disconnectedEntry.CircuitHost.Connection.Transfer(clientProxy, connectionId);
                 return (disconnectedEntry.CircuitHost, false);
             }
 

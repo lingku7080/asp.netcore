@@ -23,7 +23,7 @@ namespace Microsoft.AspNetCore.Components.Web.Rendering
         {
             // Arrange
             var clientProxy = new FakeClientProxy();
-            var circuitProxy = new CircuitClientProxy(clientProxy, "test connection");
+            var circuitProxy = new CircuitClientConnection(clientProxy, "test connection");
             var remoteComponentContext = new RemoteComponentContext();
 
             // Act/Assert: Can observe connected state

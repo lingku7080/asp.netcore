@@ -26,7 +26,7 @@ namespace Microsoft.AspNetCore.Components.Web.Rendering
 
         protected override HtmlRenderer GetHtmlRenderer(IServiceProvider serviceProvider)
         {
-            return GetRemoteRenderer(serviceProvider, new CircuitClientProxy());
+            return GetRemoteRenderer(serviceProvider, new CircuitClientConnection());
         }
 
         [Fact]
@@ -67,7 +67,7 @@ namespace Microsoft.AspNetCore.Components.Web.Rendering
             initialClient.Setup(c => c.SendCoreAsync(It.IsAny<string>(), It.IsAny<object[]>(), It.IsAny<CancellationToken>()))
                 .Callback((string name, object[] value, CancellationToken token) => renderIds.Add((long)value[1]))
                 .Returns(firstBatchTCS.Task);
-            var circuitClient = new CircuitClientProxy(initialClient.Object, "connection0");
+            var circuitClient = new CircuitClientConnection(initialClient.Object, "connection0");
             var renderer = GetRemoteRenderer(serviceProvider, circuitClient);
             var component = new TestComponent(builder =>
             {
@@ -121,7 +121,7 @@ namespace Microsoft.AspNetCore.Components.Web.Rendering
             var serviceProvider = new ServiceCollection().BuildServiceProvider();
             var firstBatchTCS = new TaskCompletionSource<object>();
             var secondBatchTCS = new TaskCompletionSource<object>();
-            var offlineClient = new CircuitClientProxy(new Mock<IClientProxy>(MockBehavior.Strict).Object, "offline-client");
+            var offlineClient = new CircuitClientConnection(new Mock<IClientProxy>(MockBehavior.Strict).Object, "offline-client");
             offlineClient.SetDisconnected();
             var renderer = GetRemoteRenderer(serviceProvider, offlineClient);
             RenderFragment initialContent = (builder) =>
@@ -184,7 +184,7 @@ namespace Microsoft.AspNetCore.Components.Web.Rendering
             var serviceProvider = new ServiceCollection().BuildServiceProvider();
             var firstBatchTCS = new TaskCompletionSource<object>();
             var secondBatchTCS = new TaskCompletionSource<object>();
-            var offlineClient = new CircuitClientProxy(new Mock<IClientProxy>(MockBehavior.Strict).Object, "offline-client");
+            var offlineClient = new CircuitClientConnection(new Mock<IClientProxy>(MockBehavior.Strict).Object, "offline-client");
             offlineClient.SetDisconnected();
             var renderer = GetRemoteRenderer(serviceProvider, offlineClient);
             RenderFragment initialContent = (builder) =>
@@ -254,7 +254,7 @@ namespace Microsoft.AspNetCore.Components.Web.Rendering
                 .Callback((string name, object[] value, CancellationToken token) => renderIds.Add((long)value[1]))
                 .Returns<string, object[], CancellationToken>((n, v, t) => (long)v[1] == 2 ? firstBatchTCS.Task : secondBatchTCS.Task);
 
-            var renderer = GetRemoteRenderer(serviceProvider, new CircuitClientProxy(onlineClient.Object, "online-client"));
+            var renderer = GetRemoteRenderer(serviceProvider, new CircuitClientConnection(onlineClient.Object, "online-client"));
             RenderFragment initialContent = (builder) =>
             {
                 builder.OpenElement(0, "my element");
@@ -311,7 +311,7 @@ namespace Microsoft.AspNetCore.Components.Web.Rendering
                 .Callback((string name, object[] value, CancellationToken token) => renderIds.Add((long)value[1]))
                 .Returns<string, object[], CancellationToken>((n, v, t) => (long)v[1] == 2 ? firstBatchTCS.Task : secondBatchTCS.Task);
 
-            var renderer = GetRemoteRenderer(serviceProvider, new CircuitClientProxy(onlineClient.Object, "online-client"));
+            var renderer = GetRemoteRenderer(serviceProvider, new CircuitClientConnection(onlineClient.Object, "online-client"));
             RenderFragment initialContent = (builder) =>
             {
                 builder.OpenElement(0, "my element");
@@ -363,7 +363,7 @@ namespace Microsoft.AspNetCore.Components.Web.Rendering
 
             var renderer = GetRemoteRenderer(
                 serviceProvider,
-                new CircuitClientProxy());
+                new CircuitClientConnection());
 
             // Act
             var first = await renderer.RenderComponentAsync<TestComponent>(ParameterView.Empty);
@@ -375,7 +375,7 @@ namespace Microsoft.AspNetCore.Components.Web.Rendering
             Assert.Equal(2, renderer.UnacknowledgedRenderBatches.Count);
         }
 
-        private RemoteRenderer GetRemoteRenderer(IServiceProvider serviceProvider, CircuitClientProxy circuitClientProxy)
+        private RemoteRenderer GetRemoteRenderer(IServiceProvider serviceProvider, CircuitClientConnection connection)
         {
             var jsRuntime = new Mock<IJSRuntime>();
             jsRuntime.Setup(r => r.InvokeAsync<object>(
@@ -390,7 +390,7 @@ namespace Microsoft.AspNetCore.Components.Web.Rendering
                 NullLoggerFactory.Instance,
                 new RendererRegistry(),
                 jsRuntime.Object,
-                circuitClientProxy,
+                connection,
                 HtmlEncoder.Default,
                 NullLogger.Instance);
         }

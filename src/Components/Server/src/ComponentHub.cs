@@ -29,6 +29,7 @@ namespace Microsoft.AspNetCore.Components.Server
         /// this class directly.
         /// </summary>
         public ComponentHub(
+            IHubContext<ComponentHub> context,
             CircuitFactory circuitFactory,
             CircuitRegistry circuitRegistry,
             ILogger<ComponentHub> logger,
@@ -110,8 +111,8 @@ namespace Microsoft.AspNetCore.Components.Server
                 return null;
             }
 
-            var circuitClient = new CircuitClientProxy(Clients.Caller, Context.ConnectionId);
-            if (DefaultCircuitFactory.ResolveComponentMetadata(Context.GetHttpContext(), circuitClient).Count == 0)
+            var connection = new CircuitClientConnection(Clients.Caller, Context.ConnectionId);
+            if (DefaultCircuitFactory.ResolveComponentMetadata(Context.GetHttpContext(), connection).Count == 0)
             {
                 var endpointFeature = Context.GetHttpContext().Features.Get<IEndpointFeature>();
                 var endpoint = endpointFeature?.Endpoint;
@@ -124,7 +125,7 @@ namespace Microsoft.AspNetCore.Components.Server
 
             var circuitHost = _circuitFactory.CreateCircuitHost(
                 Context.GetHttpContext(),
-                circuitClient,
+                connection,
                 uriAbsolute,
                 baseUriAbsolute,
                 Context.User);
@@ -234,14 +235,14 @@ namespace Microsoft.AspNetCore.Components.Server
                 Log.UnhandledExceptionInCircuit(_logger, circuitId, (Exception)e.ExceptionObject);
                 if (_options.DetailedErrors)
                 {
-                    await NotifyClientError(circuitHost.Client, e.ExceptionObject.ToString());
+                    await NotifyClientError(circuitHost.Connection, e.ExceptionObject.ToString());
                 }
                 else
                 {
                     var message = $"There was an unhandled exception on the current circuit, so this circuit will be terminated. For more details turn on " +
                         $"detailed exceptions in '{typeof(CircuitOptions).Name}.{nameof(CircuitOptions.DetailedErrors)}'";
 
-                    await NotifyClientError(circuitHost.Client, message);
+                    await NotifyClientError(circuitHost.Connection, message);
                 }
 
                 // We generally can't abort the connection here since this is an async

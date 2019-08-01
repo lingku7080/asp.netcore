@@ -10,7 +10,7 @@ using Xunit;
 
 namespace Microsoft.AspNetCore.Components.Server.Circuits
 {
-    public class CircuitClientProxyTest
+    public class CircuitClientConnectionTest
     {
         [Fact]
         public async Task SendCoreAsync_WithoutTransfer()
@@ -24,7 +24,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
                     isCancelled = token.IsCancellationRequested;
                 })
                 .Returns(Task.CompletedTask);
-            var circuitClient = new CircuitClientProxy(clientProxy.Object, "connection0");
+            var circuitClient = new CircuitClientConnection(clientProxy.Object, "connection0");
 
             // Act
             var sendTask = circuitClient.SendCoreAsync("test", Array.Empty<object>());
@@ -40,7 +40,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
             // Arrange
             var clientProxy = Mock.Of<IClientProxy>(
                 c => c.SendCoreAsync(It.IsAny<string>(), It.IsAny<object[]>(), It.IsAny<CancellationToken>()) == Task.CompletedTask);
-            var circuitClient = new CircuitClientProxy(clientProxy, "connection0");
+            var circuitClient = new CircuitClientConnection(clientProxy, "connection0");
             circuitClient.SetDisconnected();
 
             // Act

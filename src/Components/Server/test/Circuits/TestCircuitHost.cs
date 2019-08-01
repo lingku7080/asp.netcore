@@ -18,7 +18,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
 {
     internal class TestCircuitHost : CircuitHost
     {
-        private TestCircuitHost(string circuitId, IServiceScope scope, CircuitClientProxy client, RendererRegistry rendererRegistry, RemoteRenderer renderer, IReadOnlyList<ComponentDescriptor> descriptors, RemoteJSRuntime jsRuntime, CircuitHandler[] circuitHandlers, ILogger logger)
+        private TestCircuitHost(string circuitId, IServiceScope scope, CircuitClientConnection client, RendererRegistry rendererRegistry, RemoteRenderer renderer, IReadOnlyList<ComponentDescriptor> descriptors, RemoteJSRuntime jsRuntime, CircuitHandler[] circuitHandlers, ILogger logger)
             : base(circuitId, scope, client, rendererRegistry, renderer, descriptors, jsRuntime, circuitHandlers, logger)
         {
         }
@@ -33,10 +33,10 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
             IServiceScope serviceScope = null,
             RemoteRenderer remoteRenderer = null,
             CircuitHandler[] handlers = null,
-            CircuitClientProxy clientProxy = null)
+            CircuitClientConnection clientProxy = null)
         {
             serviceScope = serviceScope ?? Mock.Of<IServiceScope>();
-            clientProxy = clientProxy ?? new CircuitClientProxy(Mock.Of<IClientProxy>(), Guid.NewGuid().ToString());
+            clientProxy = clientProxy ?? new CircuitClientConnection(Mock.Of<IClientProxy>(), Guid.NewGuid().ToString());
             var renderRegistry = new RendererRegistry();
             var jsRuntime = new RemoteJSRuntime(Options.Create(new CircuitOptions()), Mock.Of<ILogger<RemoteJSRuntime>>());
 

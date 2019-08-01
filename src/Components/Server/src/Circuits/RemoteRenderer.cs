@@ -22,7 +22,7 @@ namespace Microsoft.AspNetCore.Components.Web.Rendering
         private static readonly Task CanceledTask = Task.FromCanceled(new CancellationToken(canceled: true));
 
         private readonly IJSRuntime _jsRuntime;
-        private readonly CircuitClientProxy _client;
+        private readonly CircuitClientConnection _connection;
         private readonly RendererRegistry _rendererRegistry;
         private readonly ILogger _logger;
         private long _nextRenderId = 1;
@@ -41,14 +41,14 @@ namespace Microsoft.AspNetCore.Components.Web.Rendering
             ILoggerFactory loggerFactory,
             RendererRegistry rendererRegistry,
             IJSRuntime jsRuntime,
-            CircuitClientProxy client,
+            CircuitClientConnection connection,
             HtmlEncoder encoder,
             ILogger logger)
             : base(serviceProvider, loggerFactory, encoder.Encode)
         {
             _rendererRegistry = rendererRegistry;
             _jsRuntime = jsRuntime;
-            _client = client;
+            _connection = connection;
 
             Id = _rendererRegistry.Add(this);
             _logger = logger;
@@ -181,16 +181,16 @@ namespace Microsoft.AspNetCore.Components.Web.Rendering
 
             try
             {
-                if (!_client.Connected)
+                if (!_connection.Connected)
                 {
                     // If we detect that the client is offline. Simply stop trying to send the payload.
                     // When the client reconnects we'll resend it.
                     return;
                 }
 
-                Log.BeginUpdateDisplayAsync(_logger, _client.ConnectionId, pending.BatchId, pending.Data.Count);
+                Log.BeginUpdateDisplayAsync(_logger, _connection.ConnectionId, pending.BatchId, pending.Data.Count);
                 var segment = new ArraySegment<byte>(pending.Data.Buffer, 0, pending.Data.Count);
-                await _client.SendAsync("JS.RenderBatch", Id, pending.BatchId, segment);
+                await _connection.SendAsync("JS.RenderBatch", Id, pending.BatchId, segment);
             }
             catch (Exception e)
             {
