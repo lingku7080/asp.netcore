@@ -6,6 +6,7 @@
     "dotnet": "3.0.100-preview7-012821",
     "runtimes": {
       "dotnet/x64": [
+        "2.1.11",
         "$(MicrosoftNETCoreAppRuntimeVersion)"
       ],
       "dotnet/x86": [
