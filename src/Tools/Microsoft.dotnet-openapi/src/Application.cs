@@ -60,14 +60,7 @@ namespace Microsoft.DotNet.OpenApi
             }
             catch (AggregateException ex) when (ex.InnerException != null)
             {
-                foreach (var innerException in ex.Flatten().InnerExceptions)
-                {
-                    Error.WriteLine(innerException.Message);
-                    if (!(innerException is ArgumentException))
-                    {
-                        Error.WriteLine(innerException.StackTrace);
-                    }
-                }
+                Error.WriteLine(ex);
                 return 1;
             }
 
@@ -93,8 +86,7 @@ namespace Microsoft.DotNet.OpenApi
             }
             catch (Exception ex)
             {
-                Error.WriteLine(ex.Message);
-                Error.WriteLine(ex.StackTrace);
+                Error.WriteLine(ex);
                 return 1;
             }
         }

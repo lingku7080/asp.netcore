@@ -1,8 +1,9 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -41,32 +42,39 @@ namespace Microsoft.Extensions.Internal
 
         private static void GetAllChildIdsUnix(int parentId, ISet<int> children, TimeSpan timeout)
         {
-            RunProcessAndWaitForExit(
-                "pgrep",
-                $"-P {parentId}",
-                timeout,
-                out var stdout);
-
-            if (!string.IsNullOrEmpty(stdout))
+            try
             {
-                using (var reader = new StringReader(stdout))
-                {
-                    while (true)
-                    {
-                        var text = reader.ReadLine();
-                        if (text == null)
-                        {
-                            return;
-                        }
+                RunProcessAndWaitForExit(
+                    "pgrep",
+                    $"-P {parentId}",
+                    timeout,
+                    out var stdout);
 
-                        if (int.TryParse(text, out var id))
+                if (!string.IsNullOrEmpty(stdout))
+                {
+                    using (var reader = new StringReader(stdout))
+                    {
+                        while (true)
                         {
-                            children.Add(id);
-                            // Recursively get the children
-                            GetAllChildIdsUnix(id, children, timeout);
+                            var text = reader.ReadLine();
+                            if (text == null)
+                            {
+                                return;
+                            }
+
+                            if (int.TryParse(text, out var id))
+                            {
+                                children.Add(id);
+                                // Recursively get the children
+                                GetAllChildIdsUnix(id, children, timeout);
+                            }
                         }
                     }
                 }
+            }
+            catch(Win32Exception ex) when (ex.Message.Contains("No such file or directory"))
+            {
+                // This probably means that pgrep isn't installed. Nothing to be done?
             }
         }
 

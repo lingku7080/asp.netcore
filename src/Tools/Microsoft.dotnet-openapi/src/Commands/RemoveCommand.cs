@@ -14,9 +14,11 @@ namespace Microsoft.DotNet.OpenApi.Commands
     {
         private const string CommandName = "remove";
 
+        private const string SourceArgName = "soruce";
+
         public RemoveCommand(Application parent) : base(parent, CommandName)
         {
-            _sourceProjectArg = Argument(SourceProjectArgName, $"The openapi reference to remove. Must represent a reference which is already in this project", multipleValues: true);
+            _sourceProjectArg = Argument(SourceArgName, $"The OpenAPI reference to remove. Must represent a reference which is already in this project", multipleValues: true);
         }
 
         internal readonly CommandArgument _sourceProjectArg;
@@ -25,7 +27,7 @@ namespace Microsoft.DotNet.OpenApi.Commands
         {
             var projectFile = ResolveProjectFile(ProjectFileOption);
 
-            var sourceFile = Ensure.NotNullOrEmpty(_sourceProjectArg.Value, SourceProjectArgName);
+            var sourceFile = Ensure.NotNullOrEmpty(_sourceProjectArg.Value, SourceArgName);
 
             if (IsProjectFile(sourceFile))
             {
@@ -62,13 +64,13 @@ namespace Microsoft.DotNet.OpenApi.Commands
                 }
             }
 
-            Warning.Write($"No openapi reference was found with the file '{sourceFile}'");
+            Warning.Write($"No OpenAPI reference was found with the file '{sourceFile}'");
             return null;
         }
 
         protected override bool ValidateArguments()
         {
-            Ensure.NotNullOrEmpty(_sourceProjectArg.Value, SourceProjectArgName);
+            Ensure.NotNullOrEmpty(_sourceProjectArg.Value, SourceArgName);
             return true;
         }
     }

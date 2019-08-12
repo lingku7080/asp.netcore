@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <OutputType>exe</OutputType>
-    <Description>Command line tool to add an openapi service reference</Description>
+    <Description>Command line tool to add an OpenAPI service reference</Description>
     <RootNamespace>Microsoft.DotNet.Openapi.Tools</RootNamespace>
     <PackAsTool>true</PackAsTool>
     <!-- This package is for internal use only. It contains a CLI tool. -->

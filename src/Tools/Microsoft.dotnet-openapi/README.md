@@ -1,6 +1,6 @@
 # dotnet-microsoft.openapi
 
-`Microsoft.dotnet-openapi` is a tool which can be used to manage OpenAPI references within your project.
+`Microsoft.dotnet-openapi` is a tool for managing OpenAPI references within your project.
 
 ## Commands
 
@@ -28,14 +28,14 @@
 
 | Short option| Long option| Description | Example |
 |-------|------|-------|---------|
-| -v|--verbose | Show verbose output. |dotnet microsoft.openapi add file *-v* .\openapi.json |
-| -p|--project | The project to operate on. |dotnet microsoft.openapi add file *--project .\Ref.csproj* .\openapi.json |
+| -v|--verbose | Show verbose output. |dotnet microsoft.openapi add file *-v* .\OpenAPI.json |
+| -p|--updateProject | The project to operate on. |dotnet microsoft.openapi add file *--updateProject .\Ref.csproj* .\OpenAPI.json |
 
 ##### Arguments
 
 |  Argument  | Description | Example |
 |-------------|-------------|---------|
-| source-file | The source to create a reference from. Must be an openapi file. |dotnet microsoft.openapi add file *.\openapi.json* |
+| source-file | The source to create a reference from. Must be an OpenAPI file. |dotnet microsoft.openapi add file *.\OpenAPI.json* |
 
 #### Add URL
 
@@ -44,8 +44,8 @@
 | Short option| Long option| Description | Example |
 |-------|------|-------------|---------|
 | -v|--verbose | Show verbose output. |dotnet microsoft.openapi add url *-v* <http://contoso.com/openapi.json> |
-| -p|--project | The project to operate on. |dotnet microsoft.openapi add url *--project .\Ref.csproj* <http://contoso.com/openapi.json> |
-| -o|--output-file | The file to create a local copy of. |dotnet microsoft.openapi add url <https://contoso.com/openapi.json> *--output-file myclient.json* |
+| -p|--updateProject | The project to operate on. |dotnet microsoft.openapi add url *--updateProject .\Ref.csproj* <http://contoso.com/openapi.json> |
+| -o|--output-file | Where to place the local copy of the OpenAPI file. |dotnet microsoft.openapi add url <https://contoso.com/openapi.json> *--output-file myclient.json* |
 
 ##### Arguments
 
@@ -60,13 +60,13 @@
 | Short option| Long option| Description| Example |
 |-------|------|------------|---------|
 | -v|--verbose | Show verbose output. |dotnet microsoft.openapi remove *-v*|
-| -p|--project | The project to operate on. |dotnet microsoft.openapi remove *--project .\Ref.csproj* .\openapi.json |
+| -p|--updateProject | The project to operate on. |dotnet microsoft.openapi remove *--updateProject .\Ref.csproj* .\OpenAPI.json |
 
 #### Arguments
 
 |  Argument  | Description| Example |
 | ------------|------------|---------|
-| source-file | The source to remove the reference to. |dotnet microsoft.openapi remove *.\openapi.json* |
+| source-file | The source to remove the reference to. |dotnet microsoft.openapi remove *.\OpenAPI.json* |
 
 ### Refresh
 
@@ -75,7 +75,7 @@
 | Short option| Long option| Description | Example |
 |-------|------|-------------|---------|
 | -v|--verbose | Show verbose output. | dotnet microsoft.openapi refresh *-v* <https://contoso.com/openapi.json> |
-| -p|--project | The project to operate on. | dotnet microsoft.openapi refresh *--project .\Ref.csproj* <https://contoso.com/openapi.json> |
+| -p|--updateProject | The project to operate on. | dotnet microsoft.openapi refresh *--updateProject .\Ref.csproj* <https://contoso.com/openapi.json> |
 
 #### Arguments
 

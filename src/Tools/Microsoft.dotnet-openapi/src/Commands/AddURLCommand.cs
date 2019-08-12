@@ -15,12 +15,13 @@ namespace Microsoft.DotNet.OpenApi.Commands
         private const string DefaultOpenAPIFile = "openapi.json";
 
         private const string OutputFileName = "--output-file";
+        private const string SourceUrlArgName = "source-URL";
 
         public AddURLCommand(AddCommand parent)
             : base(parent, CommandName)
         {
-            _outputFileOption = Option(OutputFileName, "The destination to download the remote Open API file to.", CommandOptionType.SingleValue);
-            _sourceFileArg = Argument(SourceProjectArgName, $"The openapi file to add. This must be a URL to a remote openapi file.", multipleValues: true);
+            _outputFileOption = Option(OutputFileName, "The destination to download the remote OpenAPI file to.", CommandOptionType.SingleValue);
+            _sourceFileArg = Argument(SourceUrlArgName, $"The OpenAPI file to add. This must be a URL to a remote OpenAPI file.", multipleValues: true);
         }
 
         internal readonly CommandOption _outputFileOption;
@@ -31,7 +32,7 @@ namespace Microsoft.DotNet.OpenApi.Commands
         {
             var projectFilePath = ResolveProjectFile(ProjectFileOption);
 
-            var sourceFile = Ensure.NotNullOrEmpty(_sourceFileArg.Value, SourceProjectArgName);
+            var sourceFile = Ensure.NotNullOrEmpty(_sourceFileArg.Value, SourceUrlArgName);
 
             string outputFile;
             if (_outputFileOption.HasValue())
@@ -48,15 +49,14 @@ namespace Microsoft.DotNet.OpenApi.Commands
             if (IsUrl(sourceFile))
             {
                 var destination = GetFullPath(outputFile);
-                // We have to download the file from that URL, save it to a local file, then create a AddServiceLocalReference
-                // Use this task https://github.com/aspnet/AspNetCore/commit/91dcbd44c10af893374cfb36dc7a009caa4818d0#diff-ea7515a116529b85ad5aa8e06e4acc8e
+                // We have to download the file from that URL, save it to a local file, then create a OpenApiReference
                 await DownloadToFileAsync(sourceFile, destination, overwrite: false);
 
                 AddServiceReference(OpenApiReference, projectFilePath, outputFile, sourceFile);
             }
             else
             {
-                Error.Write($"{SourceProjectArgName} was not valid. Valid values are URLs");
+                Error.Write($"{SourceUrlArgName} was not valid. Valid values are URLs");
                 return 1;
             }
 
@@ -65,7 +65,7 @@ namespace Microsoft.DotNet.OpenApi.Commands
 
         protected override bool ValidateArguments()
         {
-            Ensure.NotNullOrEmpty(_sourceFileArg.Value, SourceProjectArgName);
+            Ensure.NotNullOrEmpty(_sourceFileArg.Value, SourceUrlArgName);
             return true;
         }
     }

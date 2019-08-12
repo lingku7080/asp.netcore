@@ -37,7 +37,6 @@ namespace Microsoft.DotNet.OpenApi.Add.Tests
             var run = app.Execute(new string[] { "add", "file", "randomfile.json" });
 
             Assert.Contains("No project files were found in the current directory", _error.ToString());
-            Assert.DoesNotContain(":line ", _error.ToString());
             Assert.Equal(1, run);
         }
 
@@ -47,7 +46,7 @@ namespace Microsoft.DotNet.OpenApi.Add.Tests
             var app = GetApplication();
             _tempDir.Create();
             var csproj = "fake.csproj";
-            var run = app.Execute(new string[] { "add", "file", "--project", csproj, "randomfile.json" });
+            var run = app.Execute(new string[] { "add", "file", "--updateProject", csproj, "randomfile.json" });
 
             Assert.Contains($"The project '{Path.Combine(_tempDir.Root, csproj)}' does not exist.", _error.ToString());
             Assert.Equal(1, run);
@@ -165,7 +164,7 @@ namespace Microsoft.DotNet.OpenApi.Add.Tests
             var nswagJsonFIle = project.NSwagJsonFile;
 
             var app = GetApplication();
-            var run = app.Execute(new[] { "add", "file", "--project", project.Project.Path, nswagJsonFIle });
+            var run = app.Execute(new[] { "add", "file", "--updateProject", project.Project.Path, nswagJsonFIle });
 
             Assert.True(string.IsNullOrEmpty(_error.ToString()), $"Threw error: {_error.ToString()}");
             Assert.Equal(0, run);

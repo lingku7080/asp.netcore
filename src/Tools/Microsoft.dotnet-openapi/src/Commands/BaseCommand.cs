@@ -18,7 +18,6 @@ namespace Microsoft.DotNet.OpenApi.Commands
     {
         protected string WorkingDirectory;
 
-        protected const string SourceProjectArgName = "source-file";
         public const string OpenApiReference = "OpenApiReference";
         public const string OpenApiProjectReference = "OpenApiProjectReference";
         protected const string SourceUrlAttrName = "SourceUrl";
@@ -30,7 +29,7 @@ namespace Microsoft.DotNet.OpenApi.Commands
             Out = parent.Out ?? Out;
             Error = parent.Error ?? Error;
 
-            ProjectFileOption = Option("-p|--project", "The project to add a reference to", CommandOptionType.SingleValue);
+            ProjectFileOption = Option("-p|--updateProject", "The project file update.", CommandOptionType.SingleValue);
 
             Help = HelpOption("-?|-h|--help");
             if (Parent is Application)
@@ -127,13 +126,11 @@ namespace Microsoft.DotNet.OpenApi.Commands
         {
             var project = LoadProject(projectFile);
             var items = project.GetItems(tagName);
-            var fileItems = items.Where((i) => {
-                return string.Equals(GetFullPath(i.EvaluatedInclude), GetFullPath(sourceFile), StringComparison.Ordinal);
-            });
+            var fileItems = items.Where(i => string.Equals(GetFullPath(i.EvaluatedInclude), GetFullPath(sourceFile), StringComparison.Ordinal));
 
-            if (fileItems.Count() > 1)
+            if (fileItems.Count() >= 1)
             {
-                Warning.Write($"More than one reference to {sourceFile} already exists. Duplicate references could lead to unexpected behavior.");
+                Warning.Write($"One or more references to {sourceFile} already exist. Duplicate references could lead to unexpected behavior.");
                 return;
             }
 
@@ -185,7 +182,7 @@ namespace Microsoft.DotNet.OpenApi.Commands
             var packages = GetServicePackages(codeGenerator);
             foreach (var (packageId, version) in packages)
             {
-                var args = new string[] {
+                var args = new [] {
                     "add",
                     "package",
                     packageId,
@@ -211,15 +208,16 @@ namespace Microsoft.DotNet.OpenApi.Commands
 
                 var process = Process.Start(startInfo);
 
-                if (!process.WaitForExit(20*1000))
+                var timeout = 20;
+                if (!process.WaitForExit(timeout*1000))
                 {
-                    throw new ArgumentException($"Adding package `{packageId}` to `{projectFile.Directory}` took too long.");
+                    throw new ArgumentException($"Adding package `{packageId}` to `{projectFile.Directory}` took longer than {timeout} seconds.");
                 }
 
                 if (process.ExitCode != 0)
                 {
+                    Out.Write(process.StandardOutput.ReadToEnd());
                     Error.Write(process.StandardError.ReadToEnd());
-                    Error.Write(process.StandardOutput.ReadToEnd());
                     throw new ArgumentException($"Could not add package `{packageId}` to `{projectFile.Directory}`");
                 }
             }
@@ -228,7 +226,7 @@ namespace Microsoft.DotNet.OpenApi.Commands
         internal string GetFullPath(string path)
         {
             return Path.IsPathFullyQualified(path)
-                ? Path.GetFullPath(path)
+                ? path
                 : Path.GetFullPath(path, WorkingDirectory);
         }
 
@@ -277,7 +275,7 @@ namespace Microsoft.DotNet.OpenApi.Commands
             var destinationExists = File.Exists(destinationPath);
             if (destinationExists && !overwrite)
             {
-                throw new ArgumentException($"File '{destinationPath}' already exists. Aborting to avoid interference.");
+                throw new ArgumentException($"File '{destinationPath}' already exists. Aborting to avoid conflicts.");
             }
 
             await Out.WriteLineAsync($"Downloading to '{destinationPath}'.");

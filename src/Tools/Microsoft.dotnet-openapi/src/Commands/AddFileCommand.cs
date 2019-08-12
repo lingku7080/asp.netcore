@@ -14,10 +14,12 @@ namespace Microsoft.DotNet.OpenApi.Commands
     {
         private const string CommandName = "file";
 
+        private const string SourceFileArgName = "source-file";
+
         public AddFileCommand(AddCommand parent)
             : base(parent, CommandName)
         {
-            _sourceFileArg = Argument(SourceProjectArgName, $"The openapi file to add. This must be a path to local openapi file(s)", multipleValues: true);
+            _sourceFileArg = Argument(SourceFileArgName, $"The OpenAPI file to add. This must be a path to local OpenAPI file(s)", multipleValues: true);
         }
 
         internal readonly CommandArgument _sourceFileArg;
@@ -28,7 +30,7 @@ namespace Microsoft.DotNet.OpenApi.Commands
         {
             var projectFilePath = ResolveProjectFile(ProjectFileOption);
 
-            Ensure.NotNullOrEmpty(_sourceFileArg.Value, SourceProjectArgName);
+            Ensure.NotNullOrEmpty(_sourceFileArg.Value, SourceFileArgName);
 
             foreach (var sourceFile in _sourceFileArg.Values)
             {
@@ -36,7 +38,7 @@ namespace Microsoft.DotNet.OpenApi.Commands
                 EnsurePackagesInProject(projectFilePath, codeGenerator);
                 if (IsLocalFile(sourceFile))
                 {
-                    if (ApprovedExtensions.Any(e => sourceFile.EndsWith(e)))
+                    if (!ApprovedExtensions.Any(e => sourceFile.EndsWith(e)))
                     {
                         await Warning.WriteLineAsync($"The extension for the given file '{sourceFile}' should have been one of: {string.Join(",", ApprovedExtensions)}.");
                         await Warning.WriteLineAsync($"The reference has been added, but may fail at build-time if the format is not correct.");
@@ -45,7 +47,7 @@ namespace Microsoft.DotNet.OpenApi.Commands
                 }
                 else
                 {
-                    throw new ArgumentException($"{SourceProjectArgName} of '{sourceFile}' was not valid. Valid values are a JSON file or a YAML file");
+                    throw new ArgumentException($"{SourceFileArgName} of '{sourceFile}' was not valid. Valid values are a JSON file or a YAML file");
                 }
             }
 
@@ -59,7 +61,7 @@ namespace Microsoft.DotNet.OpenApi.Commands
 
         protected override bool ValidateArguments()
         {
-            Ensure.NotNullOrEmpty(_sourceFileArg.Value, SourceProjectArgName);
+            Ensure.NotNullOrEmpty(_sourceFileArg.Value, SourceFileArgName);
             return true;
         }
     }

@@ -12,10 +12,12 @@ namespace Microsoft.DotNet.OpenApi.Commands
     {
         private const string CommandName = "project";
 
+        private const string SourceProjectArgName = "source-project";
+
         public AddProjectCommand(BaseCommand parent)
             : base(parent, CommandName)
         {
-            _sourceProjectArg = Argument(SourceProjectArgName, $"The openapi project to add. This must be the path to project file(s) containing openapi endpoints", multipleValues: true);
+            _sourceProjectArg = Argument(SourceProjectArgName, $"The OpenAPI project to add. This must be the path to project file(s) containing OpenAPI endpoints", multipleValues: true);
         }
 
         internal readonly CommandArgument _sourceProjectArg;
@@ -28,14 +30,8 @@ namespace Microsoft.DotNet.OpenApi.Commands
             {
                 var codeGenerator = CodeGenerator.NSwagCSharp;
                 EnsurePackagesInProject(projectFilePath, codeGenerator);
-                if (IsProjectFile(sourceFile))
-                {
-                    AddServiceReference(OpenApiProjectReference, projectFilePath, sourceFile);
-                }
-                else
-                {
-                    throw new ArgumentException($"{SourceProjectArgName} of '{sourceFile}' was not valid. Valid values must be project file(s)");
-                }
+
+                AddServiceReference(OpenApiProjectReference, projectFilePath, sourceFile);
             }
 
             return Task.FromResult(0);
@@ -43,6 +39,14 @@ namespace Microsoft.DotNet.OpenApi.Commands
 
         protected override bool ValidateArguments()
         {
+            foreach(var sourceFile in _sourceProjectArg.Values)
+            {
+                if(!IsProjectFile(sourceFile))
+                {
+                    throw new ArgumentException($"{SourceProjectArgName} of '{sourceFile}' was not valid. Valid values must be project file(s)");
+                }
+            }
+
             Ensure.NotNullOrEmpty(_sourceProjectArg.Value, SourceProjectArgName);
             return true;
         }

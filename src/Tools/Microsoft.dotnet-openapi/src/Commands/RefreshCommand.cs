@@ -14,9 +14,11 @@ namespace Microsoft.DotNet.OpenApi.Commands
     {
         private const string CommandName = "refresh";
 
+        private const string SourceURLArgName = "source-URL";
+
         public RefreshCommand(Application parent) : base(parent, CommandName)
         {
-            _sourceFileArg = Argument(SourceProjectArgName, $"The openapi reference to refresh.");
+            _sourceFileArg = Argument(SourceURLArgName, $"The OpenAPI reference to refresh.");
         }
 
         internal readonly CommandArgument _sourceFileArg;
@@ -25,7 +27,7 @@ namespace Microsoft.DotNet.OpenApi.Commands
         {
             var projectFile = ResolveProjectFile(ProjectFileOption);
 
-            var sourceFile = Ensure.NotNullOrEmpty(_sourceFileArg.Value, SourceProjectArgName);
+            var sourceFile = Ensure.NotNullOrEmpty(_sourceFileArg.Value, SourceURLArgName);
 
             if (IsUrl(sourceFile))
             {
@@ -55,12 +57,12 @@ namespace Microsoft.DotNet.OpenApi.Commands
                 }
             }
 
-            throw new ArgumentException("There was no openapi reference to refresh with the given URL.");
+            throw new ArgumentException("There was no OpenAPI reference to refresh with the given URL.");
         }
 
         protected override bool ValidateArguments()
         {
-            Ensure.NotNullOrEmpty(_sourceFileArg.Value, SourceProjectArgName);
+            Ensure.NotNullOrEmpty(_sourceFileArg.Value, SourceURLArgName);
             return true;
         }
     }
