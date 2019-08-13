@@ -270,7 +270,11 @@ namespace Microsoft.DotNet.OpenApi.Commands
 
         private async Task WriteToFileAsync(Stream content, string destinationPath, bool overwrite)
         {
-            content.Seek(0, SeekOrigin.Begin);
+            if(content.CanSeek)
+            {
+                content.Seek(0, SeekOrigin.Begin);
+            }
+
             destinationPath = GetFullPath(destinationPath);
             var destinationExists = File.Exists(destinationPath);
             if (destinationExists && !overwrite)
@@ -309,7 +313,7 @@ namespace Microsoft.DotNet.OpenApi.Commands
                 {
                     // May need to create directory to hold the file.
                     var destinationDirectory = Path.GetDirectoryName(destinationPath);
-                    if (!string.IsNullOrEmpty(destinationDirectory))
+                    if (!string.IsNullOrEmpty(destinationDirectory) && !Directory.Exists(destinationDirectory))
                     {
                         Directory.CreateDirectory(destinationDirectory);
                     }
@@ -320,7 +324,10 @@ namespace Microsoft.DotNet.OpenApi.Commands
                 using (var fileStream = new FileStream(destinationPath, FileMode.OpenOrCreate, FileAccess.Write))
                 {
                     fileStream.Seek(0, SeekOrigin.Begin);
-                    content.Seek(0, SeekOrigin.Begin);
+                    if (content.CanSeek)
+                    {
+                        content.Seek(0, SeekOrigin.Begin);
+                    }
                     await content.CopyToAsync(fileStream);
                 }
             }
