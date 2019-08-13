@@ -32,7 +32,6 @@ artifacts/
     $(Configuration)/
       $(TargetFramework)/
         *.pdb          = Loose symbol files for symbol server publication. Special cases where *.symbols.nupkg packaging is cumbersome.
-  tmp/
   VSSetup/
     $(Configuration)/
       *.vsix           = Visual Studio extensions. None currently exist.
