@@ -18,7 +18,4 @@ artifacts/
             *.tgz        = NPM packages which ship to npmjs.org
         NonShipping/
             *.nupkg      = NuGet packages for internal use only. Used to hand off bits to Microsoft partner teams. Not intended for use by customers.
-  VSSetup/
-    $(Configuration)/
-        *.vsix           = Visual Studio extensions
 ```
