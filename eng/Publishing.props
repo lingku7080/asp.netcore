@@ -1,0 +1,6 @@
+<Project>
+  <!-- The one use of ArtifactsDir in Publish.proj adds an additional slash, confusing itself. -->
+  <PropertyGroup Condition=" HasTrailingSlash('$(ArtifactsDir)') ">
+    <ArtifactsDir>$(ArtifactsDir.Substring(0, $(ArtifactsDir.Length))</ArtifactsDir>
+  </PropertyGroup>
+</Project>
