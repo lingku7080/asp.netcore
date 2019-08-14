@@ -33,6 +33,18 @@
 
   <!-- MicroBuild code-signing chains onto this target. -->
   <Target Name="AfterBuild" />
-  <Target Name="Build" DependsOnTargets="AfterBuild" />
+
+  <!-- Get signed files into the directory Publish.proj expects. -->
+  <Target Name="Build" DependsOnTargets="AfterBuild">
+    <Copy SourceFiles="@(FilesToSign)"
+        DestinationFolder="$(ArtifactsShippingPackagesDir)"
+        SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
+        OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
+        Retries="$(CopyRetryCount)"
+        RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
+        UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)"
+        UseSymboliclinksIfPossible="$(CreateSymbolicLinksForCopyFilesToOutputDirectoryIfPossible)" />
+  </Target>
+
   <Import Project="$(MicroBuildPluginDirectory)\MicroBuild.Plugins.*\**\build\MicroBuild.Plugins.*.targets" Condition=" '$(MicroBuildPluginDirectory)' != ''" />
 </Project>
