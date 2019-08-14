@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.OpenApi.Commands
@@ -9,12 +10,12 @@ namespace Microsoft.DotNet.OpenApi.Commands
     {
         private const string CommandName = "add";
 
-        public AddCommand(Application parent)
-            : base(parent, CommandName)
+        public AddCommand(Application parent, HttpClient httpClient)
+            : base(parent, CommandName, httpClient)
         {
-            Commands.Add(new AddFileCommand(this));
+            Commands.Add(new AddFileCommand(this, httpClient));
             //TODO: Add AddprojectComand here: https://github.com/aspnet/AspNetCore/issues/12738
-            Commands.Add(new AddURLCommand(this));
+            Commands.Add(new AddURLCommand(this, httpClient));
         }
 
         internal new Application Parent => (Application)base.Parent;

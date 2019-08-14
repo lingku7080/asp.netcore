@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Build.Locator;
@@ -21,6 +22,7 @@ namespace Microsoft.DotNet.OpenApi
         public Application(
             string workingDirectory,
             Func<string, Task<Stream>> downloadProvider,
+            HttpClient httpClient,
             TextWriter output = null,
             TextWriter error = null)
         {
@@ -43,9 +45,9 @@ namespace Microsoft.DotNet.OpenApi
                 return 0;
             };
 
-            Commands.Add(new AddCommand(this));
-            Commands.Add(new RemoveCommand(this));
-            Commands.Add(new RefreshCommand(this));
+            Commands.Add(new AddCommand(this, httpClient));
+            Commands.Add(new RemoveCommand(this, httpClient));
+            Commands.Add(new RefreshCommand(this, httpClient));
         }
 
         public Func<string, Task<Stream>> DownloadProvider { get; }

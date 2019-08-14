@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Tools.Internal;
@@ -14,27 +15,27 @@ namespace Microsoft.DotNet.OpenApi.Commands
 
         private const string SourceProjectArgName = "source-project";
 
-        public AddProjectCommand(BaseCommand parent)
-            : base(parent, CommandName)
+        public AddProjectCommand(BaseCommand parent, HttpClient httpClient)
+            : base(parent, CommandName, httpClient)
         {
             _sourceProjectArg = Argument(SourceProjectArgName, $"The OpenAPI project to add. This must be the path to project file(s) containing OpenAPI endpoints", multipleValues: true);
         }
 
         internal readonly CommandArgument _sourceProjectArg;
 
-        protected override Task<int> ExecuteCoreAsync()
+        protected override async Task<int> ExecuteCoreAsync()
         {
             var projectFilePath = ResolveProjectFile(ProjectFileOption);
 
             foreach (var sourceFile in _sourceProjectArg.Values)
             {
                 var codeGenerator = CodeGenerator.NSwagCSharp;
-                EnsurePackagesInProject(projectFilePath, codeGenerator);
+                await EnsurePackagesInProjectAsync(projectFilePath, codeGenerator);
 
                 AddServiceReference(OpenApiProjectReference, projectFilePath, sourceFile);
             }
 
-            return Task.FromResult(0);
+            return 0;
         }
 
         protected override bool ValidateArguments()

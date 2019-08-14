@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Tools.Internal;
@@ -51,7 +52,7 @@ namespace Microsoft.DotNet.OpenApi.Tests
 
             return new Application(
                 _tempDir.Root,
-                DownloadMock, _output, _error);
+                DownloadMock, new HttpClient(), _output, _error);
         }
 
         private void AnnounceTestStart()

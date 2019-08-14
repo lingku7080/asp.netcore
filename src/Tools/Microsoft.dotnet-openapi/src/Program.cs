@@ -19,9 +19,11 @@ namespace Microsoft.DotNet.OpenApi
 
             try
             {
+                using var httpClient = new HttpClient();
                 var application = new Application(
                     Directory.GetCurrentDirectory(),
                     DownloadAsync,
+                    httpClient,
                     outputWriter,
                     errorWriter);
 
@@ -51,10 +53,8 @@ namespace Microsoft.DotNet.OpenApi
 
         public static async Task<Stream> DownloadAsync(string url)
         {
-            using (var client = new HttpClient())
-            {
-                return await client.GetStreamAsync(url);
-            }
+            using var client = new HttpClient();
+            return await client.GetStreamAsync(url);
         }
     }
 }

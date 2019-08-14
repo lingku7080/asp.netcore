@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System.IO;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Tools.Internal;
@@ -17,8 +18,8 @@ namespace Microsoft.DotNet.OpenApi.Commands
         private const string OutputFileName = "--output-file";
         private const string SourceUrlArgName = "source-URL";
 
-        public AddURLCommand(AddCommand parent)
-            : base(parent, CommandName)
+        public AddURLCommand(AddCommand parent, HttpClient httpClient)
+            : base(parent, CommandName, httpClient)
         {
             _outputFileOption = Option(OutputFileName, "The destination to download the remote OpenAPI file to.", CommandOptionType.SingleValue);
             _sourceFileArg = Argument(SourceUrlArgName, $"The OpenAPI file to add. This must be a URL to a remote OpenAPI file.", multipleValues: true);
@@ -44,7 +45,7 @@ namespace Microsoft.DotNet.OpenApi.Commands
                 outputFile = Path.Combine(DefaultOpenAPIDir, DefaultOpenAPIFile);
             }
             var codeGenerator = CodeGenerator.NSwagCSharp;
-            EnsurePackagesInProject(projectFilePath, codeGenerator);
+            await EnsurePackagesInProjectAsync(projectFilePath, codeGenerator);
 
             if (IsUrl(sourceFile))
             {

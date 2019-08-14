@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Build.Evaluation;
 using Microsoft.Extensions.CommandLineUtils;
@@ -16,7 +17,7 @@ namespace Microsoft.DotNet.OpenApi.Commands
 
         private const string SourceURLArgName = "source-URL";
 
-        public RefreshCommand(Application parent) : base(parent, CommandName)
+        public RefreshCommand(Application parent, HttpClient httpClient) : base(parent, CommandName, httpClient)
         {
             _sourceFileArg = Argument(SourceURLArgName, $"The OpenAPI reference to refresh.");
         }

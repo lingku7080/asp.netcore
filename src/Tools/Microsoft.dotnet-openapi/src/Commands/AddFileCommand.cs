@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Tools.Internal;
@@ -16,8 +17,8 @@ namespace Microsoft.DotNet.OpenApi.Commands
 
         private const string SourceFileArgName = "source-file";
 
-        public AddFileCommand(AddCommand parent)
-            : base(parent, CommandName)
+        public AddFileCommand(AddCommand parent, HttpClient httpClient)
+            : base(parent, CommandName, httpClient)
         {
             _sourceFileArg = Argument(SourceFileArgName, $"The OpenAPI file to add. This must be a path to local OpenAPI file(s)", multipleValues: true);
         }
@@ -35,7 +36,7 @@ namespace Microsoft.DotNet.OpenApi.Commands
             foreach (var sourceFile in _sourceFileArg.Values)
             {
                 var codeGenerator = CodeGenerator.NSwagCSharp;
-                EnsurePackagesInProject(projectFilePath, codeGenerator);
+                await EnsurePackagesInProjectAsync(projectFilePath, codeGenerator);
                 if (IsLocalFile(sourceFile))
                 {
                     if (!ApprovedExtensions.Any(e => sourceFile.EndsWith(e)))

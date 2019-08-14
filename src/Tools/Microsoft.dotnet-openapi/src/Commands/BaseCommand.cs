@@ -6,8 +6,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Reflection;
 using System.Security.Cryptography;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Build.Evaluation;
 using Microsoft.Extensions.CommandLineUtils;
@@ -18,16 +20,21 @@ namespace Microsoft.DotNet.OpenApi.Commands
     {
         protected string WorkingDirectory;
 
+        private readonly HttpClient _httpClient;
+
         public const string OpenApiReference = "OpenApiReference";
         public const string OpenApiProjectReference = "OpenApiProjectReference";
         protected const string SourceUrlAttrName = "SourceUrl";
 
-        public BaseCommand(CommandLineApplication parent, string name)
+        internal const string PackageVersionUrl = "https://go.microsoft.com/fwlink/?linkid=2099561";
+
+        public BaseCommand(CommandLineApplication parent, string name, HttpClient httpClient)
         {
             Parent = parent;
             Name = name;
             Out = parent.Out ?? Out;
             Error = parent.Error ?? Error;
+            _httpClient = httpClient;
 
             ProjectFileOption = Option("-p|--updateProject", "The project file update.", CommandOptionType.SingleValue);
 
@@ -173,13 +180,13 @@ namespace Microsoft.DotNet.OpenApi.Commands
                 application = (Application)Parent.Parent;
             }
 
-            var content = await application.DownloadProvider(url);
+            using var content = await application.DownloadProvider(url);
             await WriteToFileAsync(content, destinationPath, overwrite);
         }
 
-        internal void EnsurePackagesInProject(FileInfo projectFile, CodeGenerator codeGenerator)
+        internal async Task EnsurePackagesInProjectAsync(FileInfo projectFile, CodeGenerator codeGenerator)
         {
-            var packages = GetServicePackages(codeGenerator);
+            var packages = await ResolvePackageVersionsAsync() ?? GetServicePackages(codeGenerator);
             foreach (var (packageId, version) in packages)
             {
                 var args = new [] {
@@ -230,19 +237,60 @@ namespace Microsoft.DotNet.OpenApi.Commands
                 : Path.GetFullPath(path, WorkingDirectory);
         }
 
-        private static IEnumerable<Tuple<string, string>> GetServicePackages(CodeGenerator type)
+        private async Task<IDictionary<string, string>> ResolvePackageVersionsAsync()
+        {
+            /* Example Json content
+             {
+              "Version" : "1.0",
+              "Packages"  :  {
+                "Microsoft.Azure.SignalR": "1.1.0-preview1-10442",
+                "Grpc.AspNetCore.Server": "0.1.22-pre2",
+                "Grpc.Net.ClientFactory": "0.1.22-pre2",
+                "Google.Protobuf": "3.8.0",
+                "Grpc.Tools": "1.22.0",
+                "NSwag.ApiDescription.Client": "13.0.3",
+                "Microsoft.Extensions.ApiDescription.Client": "0.3.0-preview7.19365.7",
+                "Newtonsoft.Json": "12.0.2"
+              }
+            }*/
+            try
+            {
+                using var packageVersionStream = await _httpClient.GetStreamAsync(PackageVersionUrl);
+                using var packageVersionDocument = await JsonDocument.ParseAsync(packageVersionStream);
+                var packageVersionsElement = packageVersionDocument.RootElement.GetProperty("Packages");
+                var packageVersionsDictionary = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var packageVersion in packageVersionsElement.EnumerateObject())
+                {
+                    packageVersionsDictionary[packageVersion.Name] = packageVersion.Value.GetString();
+                }
+
+                return packageVersionsDictionary;
+            }
+            catch 
+            {
+                // TODO (johluo): Consider logging a message indicating what went wrong and actions, if any, to be taken to resolve possible issues.
+                // Currently not logging anything since the fwlink is not published yet.
+                return null;
+            }
+        }
+
+        private static IDictionary<string, string> GetServicePackages(CodeGenerator type)
         {
             var name = Enum.GetName(typeof(CodeGenerator), type);
             var attributes = typeof(Program).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>();
             var attribute = attributes.Single(a => string.Equals(a.Key, name, StringComparison.OrdinalIgnoreCase));
 
-            var packages = attribute.Value.Split(';', StringSplitOptions.RemoveEmptyEntries);
-            var result = new List<Tuple<string, string>>();
-            foreach (var package in packages)
+            var packages = attribute?.Value?.Split(';', StringSplitOptions.RemoveEmptyEntries);
+            var result = new Dictionary<string, string>();
+            if(packages != null)
             {
-                var tmp = package.Split(':', StringSplitOptions.RemoveEmptyEntries);
-                Debug.Assert(tmp.Length == 2);
-                result.Add(new Tuple<string, string>(tmp[0], tmp[1]));
+                foreach (var package in packages)
+                {
+                    var tmp = package.Split(':', StringSplitOptions.RemoveEmptyEntries);
+                    Debug.Assert(tmp.Length == 2);
+                    result[tmp[0]] = tmp[1];
+                }
             }
 
             return result;
@@ -321,15 +369,13 @@ namespace Microsoft.DotNet.OpenApi.Commands
 
                 // Create or overwrite the destination file.
                 reachedCopy = true;
-                using (var fileStream = new FileStream(destinationPath, FileMode.OpenOrCreate, FileAccess.Write))
+                using var fileStream = new FileStream(destinationPath, FileMode.OpenOrCreate, FileAccess.Write);
+                fileStream.Seek(0, SeekOrigin.Begin);
+                if (content.CanSeek)
                 {
-                    fileStream.Seek(0, SeekOrigin.Begin);
-                    if (content.CanSeek)
-                    {
-                        content.Seek(0, SeekOrigin.Begin);
-                    }
-                    await content.CopyToAsync(fileStream);
+                    content.Seek(0, SeekOrigin.Begin);
                 }
+                await content.CopyToAsync(fileStream);
             }
             catch (Exception ex)
             {
