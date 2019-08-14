@@ -125,11 +125,6 @@
     <SymbolsOutputPath>$(ArtifactsDir)symbols\$(Configuration)\</SymbolsOutputPath>
   </PropertyGroup>
 
-  <!-- Include our "loose" PDBs when publishing. -->
-  <ItemGroup>
-    <FilesToPublishToSymbolServer Include="$(SymbolsOutputPath)**\*.pdb" />
-  </ItemGroup>
-
   <!-- Ensure these output paths exist. -->
   <ItemGroup>
     <CreateDirectory Include="$(InstallersOutputPath)" />

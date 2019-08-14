@@ -3,4 +3,9 @@
   <PropertyGroup Condition=" HasTrailingSlash('$(ArtifactsDir)') ">
     <ArtifactsDir>$(ArtifactsDir.Substring(0, $(ArtifactsDir.Length))</ArtifactsDir>
   </PropertyGroup>
+
+  <!-- Include our "loose" PDBs when publishing. -->
+  <ItemGroup>
+    <FilesToPublishToSymbolServer Include="$(SymbolsOutputPath)**\*.pdb" />
+  </ItemGroup>
 </Project>
