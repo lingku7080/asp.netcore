@@ -221,7 +221,7 @@ if [ "$build_deps" = false ]; then
     msbuild_args[${#msbuild_args[*]}]="-p:BuildProjectReferences=false"
 fi
 
-if [ "$build_managed" = true ] || (["$build_all" = true ] && [ "$build_managed" != false ]); then
+if [ "$build_managed" = true ] || ([ "$build_all" = true ] && [ "$build_managed" != false ]); then
     if [ -z "$build_nodejs" ]; then
         if [ -x "$(command -v node)" ]; then
             __warn "Building of C# project is enabled and has dependencies on NodeJS projects. Building of NodeJS projects is enabled since node is detected on PATH."
