@@ -108,7 +108,7 @@ async function initializeConnection(options: BlazorOptions, logger: Logger): Pro
 
   DotNet.attachDispatcher({
     beginInvokeDotNetFromJS: (callId, assemblyName, methodIdentifier, dotNetObjectId, argsJson): void => {
-      connection.send('BeginInvokeDotNetFromJS', callId ? callId.toString() : null, assemblyName, methodIdentifier, dotNetObjectId || 0, argsJson);
+      connection.send('BeginInvokeDotNetFromJS', callId, assemblyName, methodIdentifier, dotNetObjectId, argsJson);
     },
     endInvokeJSFromDotNet: (asyncHandle, succeeded, argsJson): void => {
       connection.send('EndInvokeJSFromDotNet', asyncHandle, succeeded, argsJson);

@@ -12,7 +12,6 @@ using Microsoft.AspNetCore.Components.Web.Rendering;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.JSInterop;
 using Microsoft.JSInterop.Infrastructure;
 
 namespace Microsoft.AspNetCore.Components.Server.Circuits
@@ -326,7 +325,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
 
         // BeginInvokeDotNetFromJS is used in a fire-and-forget context, so it's responsible for its own
         // error handling.
-        public async Task BeginInvokeDotNetFromJS(string callId, string assemblyName, string methodIdentifier, long dotNetObjectId, string argsJson)
+        public async Task BeginInvokeDotNetFromJS(long? callId, string methodIdentifier, string assemblyName, long? dotNetObjectId, string argsJson)
         {
             AssertInitialized();
             AssertNotDisposed();
@@ -335,15 +334,16 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
             {
                 await Renderer.Dispatcher.InvokeAsync(() =>
                 {
-                    Log.BeginInvokeDotNet(_logger, callId, assemblyName, methodIdentifier, dotNetObjectId);
-                    DotNetDispatcher.BeginInvokeDotNet(JSRuntime, callId, assemblyName, methodIdentifier, dotNetObjectId, argsJson);
+                    Log.BeginInvokeDotNet(_logger, methodIdentifier, assemblyName, dotNetObjectId, callId);
+                    var callInfo = new JSCallInfo(methodIdentifier, assemblyName, dotNetObjectId, callId);
+                    DotNetDispatcher.BeginInvokeDotNet(JSRuntime, callInfo, argsJson);
                 });
             }
             catch (Exception ex)
             {
                 // We don't expect any of this code to actually throw, because DotNetDispatcher.BeginInvoke doesn't throw
                 // however, we still want this to get logged if we do.
-                Log.BeginInvokeDotNetFailed(_logger, callId, assemblyName, methodIdentifier, dotNetObjectId, ex);
+                Log.BeginInvokeDotNetFailed(_logger, methodIdentifier, assemblyName, dotNetObjectId, callId, ex);
                 await TryNotifyClientErrorAsync(Client, GetClientErrorMessage(ex, "Interop call failed."));
                 UnhandledException?.Invoke(this, new UnhandledExceptionEventArgs(ex, isTerminating: false));
             }
@@ -591,10 +591,10 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
             private static readonly Action<ILogger, string, Exception> _circuitTransmitErrorFailed;
             private static readonly Action<ILogger, string, Exception> _unhandledExceptionClientDisconnected;
 
-            private static readonly Action<ILogger, string, string, string, Exception> _beginInvokeDotNetStatic;
-            private static readonly Action<ILogger, string, long, string, Exception> _beginInvokeDotNetInstance;
-            private static readonly Action<ILogger, string, string, string, Exception> _beginInvokeDotNetStaticFailed;
-            private static readonly Action<ILogger, string, long, string, Exception> _beginInvokeDotNetInstanceFailed;
+            private static readonly Action<ILogger, string, string, long?, Exception> _beginInvokeDotNetStatic;
+            private static readonly Action<ILogger, string, long, long?, Exception> _beginInvokeDotNetInstance;
+            private static readonly Action<ILogger, string, string, long?, Exception> _beginInvokeDotNetStaticFailed;
+            private static readonly Action<ILogger, string, long, long?, Exception> _beginInvokeDotNetInstanceFailed;
             private static readonly Action<ILogger, Exception> _endInvokeDispatchException;
             private static readonly Action<ILogger, long, string, Exception> _endInvokeJSFailed;
             private static readonly Action<ILogger, long, Exception> _endInvokeJSSucceeded;
@@ -724,22 +724,22 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
                     EventIds.UnhandledExceptionClientDisconnected,
                     "An exception ocurred on the circuit host '{CircuitId}' while the client is disconnected.");
 
-                _beginInvokeDotNetStatic = LoggerMessage.Define<string, string, string>(
+                _beginInvokeDotNetStatic = LoggerMessage.Define<string, string, long?>(
                     LogLevel.Debug,
                     EventIds.BeginInvokeDotNet,
                     "Invoking static method with identifier '{MethodIdentifier}' on assembly '{Assembly}' with callback id '{CallId}'.");
 
-                _beginInvokeDotNetInstance = LoggerMessage.Define<string, long, string>(
+                _beginInvokeDotNetInstance = LoggerMessage.Define<string, long, long?>(
                     LogLevel.Debug,
                     EventIds.BeginInvokeDotNet,
                     "Invoking instance method '{MethodIdentifier}' on instance '{DotNetObjectId}' with callback id '{CallId}'.");
 
-                _beginInvokeDotNetStaticFailed = LoggerMessage.Define<string, string, string>(
+                _beginInvokeDotNetStaticFailed = LoggerMessage.Define<string, string, long?>(
                     LogLevel.Debug,
                     EventIds.BeginInvokeDotNetFailed,
                     "Failed to invoke static method with identifier '{MethodIdentifier}' on assembly '{Assembly}' with callback id '{CallId}'.");
 
-                _beginInvokeDotNetInstanceFailed = LoggerMessage.Define<string, long, string>(
+                _beginInvokeDotNetInstanceFailed = LoggerMessage.Define<string, long, long?>(
                     LogLevel.Debug,
                     EventIds.BeginInvokeDotNetFailed,
                     "Failed to invoke instance method '{MethodIdentifier}' on instance '{DotNetObjectId}' with callback id '{CallId}'.");
@@ -824,7 +824,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
             public static void DispatchEventFailedToParseEventData(ILogger logger, Exception ex) => _dispatchEventFailedToParseEventData(logger, ex);
             public static void DispatchEventFailedToDispatchEvent(ILogger logger, string eventHandlerId, Exception ex) => _dispatchEventFailedToDispatchEvent(logger, eventHandlerId ?? "", ex);
 
-            public static void BeginInvokeDotNet(ILogger logger, string callId, string assemblyName, string methodIdentifier, long dotNetObjectId)
+            public static void BeginInvokeDotNet(ILogger logger, string methodIdentifier, string assemblyName, long? dotNetObjectId, long? callId)
             {
                 if (assemblyName != null)
                 {
@@ -832,11 +832,11 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
                 }
                 else
                 {
-                    _beginInvokeDotNetInstance(logger, methodIdentifier, dotNetObjectId, callId, null);
+                    _beginInvokeDotNetInstance(logger, methodIdentifier, dotNetObjectId.Value, callId, null);
                 }
             }
 
-            public static void BeginInvokeDotNetFailed(ILogger logger, string callId, string assemblyName, string methodIdentifier, long dotNetObjectId, Exception exception)
+            public static void BeginInvokeDotNetFailed(ILogger logger, string methodIdentifier, string assemblyName, long? dotNetObjectId, long? callId, Exception exception)
             {
                 if (assemblyName != null)
                 {
@@ -844,7 +844,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
                 }
                 else
                 {
-                    _beginInvokeDotNetInstanceFailed(logger, methodIdentifier, dotNetObjectId, callId, null);
+                    _beginInvokeDotNetInstanceFailed(logger, methodIdentifier, dotNetObjectId.Value, callId, null);
                 }
             }
 

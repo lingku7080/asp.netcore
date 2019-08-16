@@ -159,7 +159,7 @@ namespace Microsoft.AspNetCore.Components.Server
             return false;
         }
 
-        public async ValueTask BeginInvokeDotNetFromJS(string callId, string assemblyName, string methodIdentifier, long dotNetObjectId, string argsJson)
+        public async ValueTask BeginInvokeDotNetFromJS(long? callId, string assemblyName, string methodIdentifier, long? dotNetObjectId, string argsJson)
         {
             var circuitHost = await GetActiveCircuitAsync();
             if (circuitHost == null)
@@ -167,7 +167,7 @@ namespace Microsoft.AspNetCore.Components.Server
                 return;
             }
 
-             _ = circuitHost.BeginInvokeDotNetFromJS(callId, assemblyName, methodIdentifier, dotNetObjectId, argsJson);
+             _ = circuitHost.BeginInvokeDotNetFromJS(callId, methodIdentifier, assemblyName, dotNetObjectId, argsJson);
         }
 
         public async ValueTask EndInvokeJSFromDotNet(long asyncHandle, bool succeeded, string arguments)

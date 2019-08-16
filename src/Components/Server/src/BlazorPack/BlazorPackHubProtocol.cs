@@ -457,6 +457,10 @@ namespace Microsoft.AspNetCore.Components.Server.BlazorPack
                 {
                     return reader.ReadSingle();
                 }
+                else if (type == typeof(long?))
+                {
+                    return reader.TryReadNil() ? (long?)null : reader.ReadInt64();
+                }
             }
             catch (Exception ex)
             {

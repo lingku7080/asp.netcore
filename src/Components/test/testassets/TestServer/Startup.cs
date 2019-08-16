@@ -32,8 +32,8 @@ namespace TestServer
             services.AddServerSideBlazor()
                 .AddCircuitOptions(o =>
                 {
-                    var detailedErrors = Configuration.GetValue<bool>("circuit-detailed-errors");
-                    o.DetailedErrors = detailedErrors;
+                    //var detailedErrors = Configuration.GetValue<bool>("circuit-detailed-errors");
+                    o.DetailedErrors = true;
                 });
             services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie();
 
