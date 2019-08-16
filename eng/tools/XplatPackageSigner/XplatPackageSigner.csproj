@@ -11,6 +11,7 @@
     <IsPackable>false</IsPackable>
     <IsProjectReferenceProvider>false</IsProjectReferenceProvider>
     <IsShipping>false</IsShipping>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
   </PropertyGroup>
 
   <Import Project="..\..\..\Directory.Build.props" />
