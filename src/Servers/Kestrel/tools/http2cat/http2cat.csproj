@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <Compile Include="$(KestrelSharedSourceRoot)\DuplexPipe.cs" Link="Internal\DuplexPipe.cs" />
+    <Compile Include="$(KestrelSharedSourceRoot)test\TaskTimeoutExtensions.cs" LinkBase="shared" />
   </ItemGroup>
 
   <ItemGroup>
