@@ -116,8 +116,6 @@ namespace http2cat
         public readonly TaskCompletionSource<object> _closingStateReached = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
         public readonly TaskCompletionSource<object> _closedStateReached = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        private Timer _timer;
-
         internal DuplexPipe.DuplexPipePair _pair;
         public long _bytesReceived;
 
