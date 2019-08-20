@@ -18,7 +18,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http2;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http2.HPack;
 using Microsoft.Net.Http.Headers;
 
-namespace Microsoft.AspNetCore.Server.Kestrel.Core.Tests
+namespace http2cat
 {
     public class Http2Utilities
     {
