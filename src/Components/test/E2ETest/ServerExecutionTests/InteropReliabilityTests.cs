@@ -9,8 +9,10 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Ignitor;
 using Microsoft.AspNetCore.Components.E2ETest.Infrastructure.ServerFixtures;
+using Microsoft.AspNetCore.Components.RenderTree;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.AspNetCore.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
@@ -19,6 +21,7 @@ using Xunit.Abstractions;
 
 namespace Microsoft.AspNetCore.Components.E2ETest.ServerExecutionTests
 {
+    [Flaky("https://github.com/aspnet/AspNetCore/issues/13086", FlakyOn.All)]
     public class InteropReliabilityTests : IClassFixture<AspNetSiteServerFixture>, IDisposable
     {
         private static readonly TimeSpan DefaultLatencyTimeout = TimeSpan.FromSeconds(30);
@@ -191,7 +194,7 @@ namespace Microsoft.AspNetCore.Components.E2ETest.ServerExecutionTests
             var expectedDotNetObjectRef = "[\"1\",true,{\"__dotNetObject\":1}]";
             var expectedError = "[\"1\"," +
                 "false," +
-                "\"There was an exception invoking \\u0027Reverse\\u0027 on assembly \\u0027\\u0027. For more details turn on detailed exceptions in \\u0027CircuitOptions.DetailedErrors\\u0027\"]";
+                "\"There was an exception invoking \\u0027Reverse\\u0027. For more details turn on detailed exceptions in \\u0027CircuitOptions.DetailedErrors\\u0027\"]";
 
             await GoToTestComponent(Batches);
 
@@ -260,6 +263,7 @@ namespace Microsoft.AspNetCore.Components.E2ETest.ServerExecutionTests
         }
 
         [Fact]
+        [Flaky("https://github.com/aspnet/AspNetCore/issues/13086", FlakyOn.AzP.Windows)]
         public async Task ContinuesWorkingAfterInvalidAsyncReturnCallback()
         {
             // Arrange
@@ -500,8 +504,8 @@ namespace Microsoft.AspNetCore.Components.E2ETest.ServerExecutionTests
             // Arrange
             await GoToTestComponent(Batches);
             var sink = _serverFixture.Host.Services.GetRequiredService<TestSink>();
-            var logEvents = new List<(LogLevel logLevel, string)>();
-            sink.MessageLogged += (wc) => logEvents.Add((wc.LogLevel, wc.EventId.Name));
+            var logEvents = new List<(LogLevel logLevel, string eventIdName, Exception exception)>();
+            sink.MessageLogged += (wc) => logEvents.Add((wc.LogLevel, wc.EventId.Name, wc.Exception));
 
             // Act
             var browserDescriptor = new WebEventDescriptor()
@@ -520,8 +524,9 @@ namespace Microsoft.AspNetCore.Components.E2ETest.ServerExecutionTests
             });
 
             Assert.Contains(
-                (LogLevel.Debug, "DispatchEventFailedToParseEventData"),
-                logEvents);
+                logEvents,
+                e => e.eventIdName == "DispatchEventFailedToParseEventData" && e.logLevel == LogLevel.Debug &&
+                     e.exception.Message == "There was an error parsing the event arguments. EventId: '6'.");
 
             // Taking any other action will fail because the circuit is disposed.
             await Client.ExpectCircuitErrorAndDisconnect(async () =>
@@ -540,7 +545,7 @@ namespace Microsoft.AspNetCore.Components.E2ETest.ServerExecutionTests
             sink.MessageLogged += (wc) => logEvents.Add((wc.LogLevel, wc.EventId.Name, wc.Exception));
 
             // Act
-            var mouseEventArgs = new UIMouseEventArgs()
+            var mouseEventArgs = new MouseEventArgs()
             {
                 Type = "click",
                 Detail = 1
@@ -563,7 +568,7 @@ namespace Microsoft.AspNetCore.Components.E2ETest.ServerExecutionTests
             Assert.Contains(
                 logEvents,
                 e => e.eventIdName == "DispatchEventFailedToDispatchEvent" && e.logLevel == LogLevel.Debug &&
-                     e.exception is ArgumentException ae && ae.Message.Contains("There is no event handler with ID 1"));
+                     e.exception is ArgumentException ae && ae.Message.Contains("There is no event handler associated with this event. EventId: '1'."));
 
             // Taking any other action will fail because the circuit is disposed.
             await Client.ExpectCircuitErrorAndDisconnect(async () =>
@@ -583,6 +588,8 @@ namespace Microsoft.AspNetCore.Components.E2ETest.ServerExecutionTests
 
             // Act
             await Client.ClickAsync("event-handler-throw-sync", expectRenderBatch: false);
+
+            await Task.Delay(1000);
 
             Assert.Contains(
                 logEvents,
@@ -612,7 +619,7 @@ namespace Microsoft.AspNetCore.Components.E2ETest.ServerExecutionTests
         private async Task GoToTestComponent(IList<Batch> batches)
         {
             var rootUri = _serverFixture.RootUri;
-            Assert.True(await Client.ConnectAsync(new Uri(rootUri, "/subdir"), prerendered: false), "Couldn't connect to the app");
+            Assert.True(await Client.ConnectAsync(new Uri(rootUri, "/subdir")), "Couldn't connect to the app");
             Assert.Single(batches);
 
             await Client.SelectAsync("test-selector-select", "BasicTestApp.ReliabilityComponent");

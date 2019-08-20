@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components.Rendering;
@@ -30,14 +31,18 @@ namespace Microsoft.AspNetCore.Components.Routing
 
         [Inject] private INavigationInterception NavigationInterception { get; set; }
 
-        [Inject] private IComponentContext ComponentContext { get; set; }
-
         [Inject] private ILoggerFactory LoggerFactory { get; set; }
 
         /// <summary>
         /// Gets or sets the assembly that should be searched for components matching the URI.
         /// </summary>
         [Parameter] public Assembly AppAssembly { get; set; }
+
+        /// <summary>
+        /// Gets or sets a collection of additional assemblies that should be searched for components
+        /// that can match URIs.
+        /// </summary>
+        [Parameter] public IEnumerable<Assembly> AdditionalAssemblies { get; set; }
 
         /// <summary>
         /// Gets or sets the content to display when no match is found for the requested route.
@@ -66,6 +71,11 @@ namespace Microsoft.AspNetCore.Components.Routing
         {
             parameters.SetParameterProperties(this);
 
+            if (AppAssembly == null)
+            {
+                throw new InvalidOperationException($"The {nameof(Router)} component requires a value for the parameter {nameof(AppAssembly)}.");
+            }
+
             // Found content is mandatory, because even though we could use something like <RouteView ...> as a
             // reasonable default, if it's not declared explicitly in the template then people will have no way
             // to discover how to customize this (e.g., to add authorization).
@@ -81,7 +91,9 @@ namespace Microsoft.AspNetCore.Components.Routing
                 throw new InvalidOperationException($"The {nameof(Router)} component requires a value for the parameter {nameof(NotFound)}.");
             }
 
-            Routes = RouteTableFactory.Create(AppAssembly);
+
+            var assemblies = AdditionalAssemblies == null ? new[] { AppAssembly } : new[] { AppAssembly }.Concat(AdditionalAssemblies);
+            Routes = RouteTableFactory.Create(assemblies);
             Refresh(isNavigationIntercepted: false);
             return Task.CompletedTask;
         }
@@ -152,7 +164,7 @@ namespace Microsoft.AspNetCore.Components.Routing
 
         Task IHandleAfterRender.OnAfterRenderAsync()
         {
-            if (!_navigationInterceptionEnabled && ComponentContext.IsConnected)
+            if (!_navigationInterceptionEnabled)
             {
                 _navigationInterceptionEnabled = true;
                 return NavigationInterception.EnableNavigationInterceptionAsync();

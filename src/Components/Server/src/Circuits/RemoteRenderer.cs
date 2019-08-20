@@ -6,21 +6,17 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Components.Rendering;
-using Microsoft.AspNetCore.Components.Server;
-using Microsoft.AspNetCore.Components.Server.Circuits;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 
-namespace Microsoft.AspNetCore.Components.Web.Rendering
+namespace Microsoft.AspNetCore.Components.Server.Circuits
 {
-    internal class RemoteRenderer : Renderer
+    internal class RemoteRenderer : Microsoft.AspNetCore.Components.RenderTree.Renderer
     {
         private static readonly Task CanceledTask = Task.FromCanceled(new CancellationToken(canceled: true));
 
-        private readonly IJSRuntime _jsRuntime;
         private readonly CircuitClientProxy _client;
         private readonly CircuitOptions _options;
         private readonly ILogger _logger;
@@ -40,12 +36,10 @@ namespace Microsoft.AspNetCore.Components.Web.Rendering
             IServiceProvider serviceProvider,
             ILoggerFactory loggerFactory,
             CircuitOptions options,
-            IJSRuntime jsRuntime,
             CircuitClientProxy client,
             ILogger logger)
             : base(serviceProvider, loggerFactory)
         {
-            _jsRuntime = jsRuntime;
             _client = client;
             _options = options;
             _logger = logger;
@@ -64,10 +58,7 @@ namespace Microsoft.AspNetCore.Components.Web.Rendering
             var component = InstantiateComponent(componentType);
             var componentId = AssignRootComponentId(component);
 
-            var attachComponentTask = _jsRuntime.InvokeAsync<object>(
-                "Blazor._internal.attachRootComponentToElement",
-                domElementSelector,
-                componentId);
+            var attachComponentTask = _client.SendAsync("JS.AttachComponent", componentId, domElementSelector);
             CaptureAsyncExceptions(attachComponentTask);
 
             return RenderRootComponentAsync(componentId);
@@ -132,7 +123,7 @@ namespace Microsoft.AspNetCore.Components.Web.Rendering
         }
 
         /// <inheritdoc />
-        protected override Task UpdateDisplayAsync(in RenderBatch batch)
+        protected override Task UpdateDisplayAsync(in Microsoft.AspNetCore.Components.RenderTree.RenderBatch batch)
         {
             if (_disposing)
             {
@@ -222,7 +213,7 @@ namespace Microsoft.AspNetCore.Components.Web.Rendering
             // disposed.
         }
 
-        public Task OnRenderCompleted(long incomingBatchId, string errorMessageOrNull)
+        public Task OnRenderCompletedAsync(long incomingBatchId, string errorMessageOrNull)
         {
             if (_disposing)
             {
@@ -273,9 +264,9 @@ namespace Microsoft.AspNetCore.Components.Web.Rendering
 
                 if (lastBatchId < incomingBatchId)
                 {
-                    HandleException(
-                        new InvalidOperationException($"Received an acknowledgement for batch with id '{incomingBatchId}' when the last batch produced was '{lastBatchId}'."));
-                    return Task.CompletedTask;
+                    // This exception is due to a bad client input, so we mark it as such to prevent loging it as a warning and
+                    // flooding the logs with warnings.
+                    throw new InvalidOperationException($"Received an acknowledgement for batch with id '{incomingBatchId}' when the last batch produced was '{lastBatchId}'.");
                 }
 
                 // Normally we will not have pending renders, but it might happen that we reached the limit of
@@ -320,7 +311,7 @@ namespace Microsoft.AspNetCore.Components.Web.Rendering
             }
             else
             {
-                pendingRenderInfo.TrySetException(new RemoteRendererException(errorMessageOrNull));
+                pendingRenderInfo.TrySetException(new InvalidOperationException(errorMessageOrNull));
             }
         }
 

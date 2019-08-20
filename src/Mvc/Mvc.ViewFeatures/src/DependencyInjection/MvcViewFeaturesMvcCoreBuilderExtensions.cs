@@ -175,6 +175,9 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services.TryAddSingleton<IJsonHelper, SystemTextJsonHelper>();
 
+            // Component services for Blazor server-side interop
+            services.TryAddSingleton<ServerComponentSerializer>();
+
             //
             // View Components
             //
@@ -208,7 +211,6 @@ namespace Microsoft.Extensions.DependencyInjection
             services.TryAddScoped<StaticComponentRenderer>();
             services.TryAddScoped<NavigationManager, HttpNavigationManager>();
             services.TryAddScoped<IJSRuntime, UnsupportedJavaScriptRuntime>();
-            services.TryAddScoped<IComponentContext, UnsupportedComponentContext>();
             services.TryAddScoped<INavigationInterception, UnsupportedNavigationInterception>();
 
             services.TryAddTransient<ControllerSaveTempDataPropertyFilter>();

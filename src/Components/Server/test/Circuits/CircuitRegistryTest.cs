@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Testing;
-using Microsoft.AspNetCore.Testing.xunit;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -163,14 +162,14 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
             // Arrange
             var registry = CreateRegistry();
             var circuitHost = TestCircuitHost.Create();
-            registry.DisconnectedCircuits.Set(circuitHost.CircuitId, circuitHost, new MemoryCacheEntryOptions { Size = 1 });
+            registry.DisconnectedCircuits.Set(circuitHost.CircuitId.Secret, circuitHost, new MemoryCacheEntryOptions { Size = 1 });
 
             // Act
             await registry.DisconnectAsync(circuitHost, circuitHost.Client.ConnectionId);
 
             // Assert
             Assert.Empty(registry.ConnectedCircuits.Values);
-            Assert.True(registry.DisconnectedCircuits.TryGetValue(circuitHost.CircuitId, out _));
+            Assert.True(registry.DisconnectedCircuits.TryGetValue(circuitHost.CircuitId.Secret, out _));
         }
 
         [Fact]
@@ -267,47 +266,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
             Assert.Same(client, circuitHost.Client.Client);
             Assert.Equal(newId, circuitHost.Client.ConnectionId);
 
-            Assert.False(registry.DisconnectedCircuits.TryGetValue(circuitHost.CircuitId, out _));
-        }
-
-        [Fact]
-        public async Task Connect_WhileDisconnectIsInProgress_SeriallyExecutesCircuitHandlers()
-        {
-            // Arrange
-            var circuitIdFactory = TestCircuitIdFactory.CreateTestFactory();
-
-            var registry = new TestCircuitRegistry(circuitIdFactory);
-            registry.BeforeDisconnect = new ManualResetEventSlim();
-            // This verifies that connection up \ down events on a circuit handler are always invoked serially.
-            var circuitHandler = new SerialCircuitHandler();
-            var tcs = new TaskCompletionSource<int>();
-
-            var circuitHost = TestCircuitHost.Create(circuitIdFactory.CreateCircuitId(), handlers: new[] { circuitHandler });
-            registry.Register(circuitHost);
-            var client = Mock.Of<IClientProxy>();
-            var newId = "new-connection";
-
-            // Act
-            var disconnect = Task.Run(() =>
-            {
-                var task = registry.DisconnectAsync(circuitHost, circuitHost.Client.ConnectionId);
-                tcs.SetResult(0);
-                return task;
-            });
-            var connect = Task.Run(async () =>
-            {
-                registry.BeforeDisconnect.Set();
-                await tcs.Task;
-                await registry.ConnectAsync(circuitHost.CircuitId, client, newId, default);
-            });
-            await Task.WhenAll(disconnect, connect);
-
-            // Assert
-            Assert.Single(registry.ConnectedCircuits.Values);
-            Assert.False(registry.DisconnectedCircuits.TryGetValue(circuitHost.CircuitId, out _));
-
-            Assert.True(circuitHandler.OnConnectionDownExecuted, "OnConnectionDownAsync should have been executed.");
-            Assert.True(circuitHandler.OnConnectionUpExecuted, "OnConnectionUpAsync should have been executed.");
+            Assert.False(registry.DisconnectedCircuits.TryGetValue(circuitHost.CircuitId.Secret, out _));
         }
 
         [Fact]
@@ -337,7 +296,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
             Assert.Same(client, circuitHost.Client.Client);
             Assert.Equal(newId, circuitHost.Client.ConnectionId);
 
-            Assert.False(registry.DisconnectedCircuits.TryGetValue(circuitHost.CircuitId, out _));
+            Assert.False(registry.DisconnectedCircuits.TryGetValue(circuitHost.CircuitId.Secret, out _));
         }
 
         [Fact]
@@ -362,9 +321,9 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
 
             // Act
             // Verify it's present in the dictionary.
-            Assert.True(registry.DisconnectedCircuits.TryGetValue(circuitHost.CircuitId, out var _));
+            Assert.True(registry.DisconnectedCircuits.TryGetValue(circuitHost.CircuitId.Secret, out var _));
             await Task.Run(() => tcs.Task.TimeoutAfter(TimeSpan.FromSeconds(10)));
-            Assert.False(registry.DisconnectedCircuits.TryGetValue(circuitHost.CircuitId, out var _));
+            Assert.False(registry.DisconnectedCircuits.TryGetValue(circuitHost.CircuitId.Secret, out var _));
         }
 
         [Fact]
@@ -395,7 +354,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
             Assert.True(registry.ConnectedCircuits.TryGetValue(circuitHost.CircuitId, out var cacheValue));
             Assert.Same(circuitHost, cacheValue);
             // Nothing should be disconnected.
-            Assert.False(registry.DisconnectedCircuits.TryGetValue(circuitHost.CircuitId, out var _));
+            Assert.False(registry.DisconnectedCircuits.TryGetValue(circuitHost.CircuitId.Secret, out var _));
         }
 
         private class TestCircuitRegistry : CircuitRegistry
@@ -410,7 +369,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
 
             public Action OnAfterEntryEvicted { get; set; }
 
-            protected override (CircuitHost, bool) ConnectCore(string circuitId, IClientProxy clientProxy, string connectionId)
+            protected override (CircuitHost, bool) ConnectCore(CircuitId circuitId, IClientProxy clientProxy, string connectionId)
             {
                 if (BeforeConnect != null)
                 {
@@ -443,38 +402,6 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
                 Options.Create(new CircuitOptions()),
                 NullLogger<CircuitRegistry>.Instance,
                 factory ?? TestCircuitIdFactory.CreateTestFactory());
-        }
-
-        private class SerialCircuitHandler : CircuitHandler
-        {
-            private readonly SemaphoreSlim _sempahore = new SemaphoreSlim(1);
-
-            public bool OnConnectionUpExecuted { get; private set; }
-            public bool OnConnectionDownExecuted { get; private set; }
-
-            public override async Task OnConnectionUpAsync(Circuit circuit, CancellationToken cancellationToken)
-            {
-                Assert.True(await _sempahore.WaitAsync(0), "This should be serialized and consequently without contention");
-                await Task.Delay(10);
-
-                Assert.False(OnConnectionUpExecuted);
-                Assert.True(OnConnectionDownExecuted);
-                OnConnectionUpExecuted = true;
-
-                _sempahore.Release();
-            }
-
-            public override async Task OnConnectionDownAsync(Circuit circuit, CancellationToken cancellationToken)
-            {
-                Assert.True(await _sempahore.WaitAsync(0), "This should be serialized and consequently without contention");
-                await Task.Delay(10);
-
-                Assert.False(OnConnectionUpExecuted);
-                Assert.False(OnConnectionDownExecuted);
-                OnConnectionDownExecuted = true;
-
-                _sempahore.Release();
-            }
         }
     }
 }

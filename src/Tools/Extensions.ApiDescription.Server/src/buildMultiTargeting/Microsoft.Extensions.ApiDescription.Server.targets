@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<Project>
+  <ItemGroup>
+    <_OpenApiGenerateDocumentsTFMs Remove="@(_OpenApiGenerateDocumentsTFMs)" />
+    <_OpenApiGenerateDocumentsTFMs Include="$(TargetFrameworks)" Exclude="netcoreapp1.0;netcoreapp1.1;netcoreapp2.0" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!-- Default value may lead to an inner build error if $(OpenApiGenerateDocuments) is explicitly set to 'true'. -->
+    <_OpenApiGenerateDocumentsTFM>$(TargetFrameworks.Trim(';').Split(';')[0])</_OpenApiGenerateDocumentsTFM>
+
+    <!-- Prefer first TFM of those the tool supports. -->
+    <_Temporary>$(@(_OpenApiGenerateDocumentsTFMs).Trim(';'))</_Temporary>
+    <_OpenApiGenerateDocumentsTFM
+        Condition=" '$(_Temporary)' != '' ">$(_Temporary.Split(';')[0])</_OpenApiGenerateDocumentsTFM>
+
+    <OpenApiGenerateDocuments
+        Condition=" '$(OpenApiGenerateDocuments)' == '' AND '$(_Temporary)' != '' ">true</OpenApiGenerateDocuments>
+    <OpenApiGenerateDocumentsOnBuild
+        Condition=" '$(OpenApiGenerateDocumentsOnBuild)' == '' ">$(OpenApiGenerateDocuments)</OpenApiGenerateDocumentsOnBuild>
+
+    <_Temporary />
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(OpenApiGenerateDocuments)' == 'true' ">
+    <ProjectCapability Include="OpenApiGenerateDocuments" />
+  </ItemGroup>
+
+  <Target Name="GenerateOpenApiDocuments">
+    <MSBuild Projects="$(MSBuildProjectFile)"
+        Targets="GenerateOpenApiDocuments"
+        Properties="TargetFramework=$(_OpenApiGenerateDocumentsTFM)"
+        RemoveProperties="RuntimeIdentifier" />
+  </Target>
+
+  <Target Name="_GenerateOpenApiDocuments"
+      AfterTargets="Build"
+      Condition=" '$(OpenApiGenerateDocumentsOnBuild)' == 'true' "
+      DependsOnTargets="GenerateOpenApiDocuments" />
+
+  <Target Name="OpenApiGetDocuments" Returns="@(_OpenApiProjectDocuments)">
+    <MSBuild Projects="$(MSBuildProjectFile)"
+        Targets="OpenApiGetDocuments"
+        Properties="TargetFramework=$(_OpenApiGenerateDocumentsTFM)"
+        RemoveProperties="RuntimeIdentifier">
+      <Output TaskParameter="TargetOutputs" ItemName="_OpenApiProjectDocuments" />
+    </MSBuild>
+  </Target>
+</Project>
