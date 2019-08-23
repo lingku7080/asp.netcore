@@ -313,10 +313,10 @@ restore=true
 InitializeToolset
 
 __warn "Testing dockerbuild.sh filesystem at $DIR/AssetsTmpDir/*/:"
-ls $DIR/AssetsTmpDir/*/ 2> /dev/null
+[ ! -d $DIR/AssetsTmpDir/ ] || ls $DIR/AssetsTmpDir/*/ 2> /dev/null
 
 __warn "Testing dockerbuild.sh filesystem at $DIR/artifacts/../AssetsTmpDir/*/:"
-ls $DIR/artifacts/../AssetsTmpDir/*/ 2> /dev/null
+[ ! -d $DIR/AssetsTmpDir/ ] || ls $DIR/artifacts/../AssetsTmpDir/*/ 2> /dev/null
 
 
 restore=$_tmp_restore=
