@@ -312,6 +312,13 @@ restore=true
 
 InitializeToolset
 
+__warn "Testing dockerbuild.sh filesystem at $DIR/AssetsTmpDir/*/:"
+ls $DIR/AssetsTmpDir/*/
+
+__warn "Testing dockerbuild.sh filesystem at $DIR/artifacts/../AssetsTmpDir/*/:"
+ls $DIR/artifacts/../AssetsTmpDir/*/
+
+
 restore=$_tmp_restore=
 
 if [ "$build_repo_tasks" = true ]; then
