@@ -266,6 +266,9 @@ if [ -z "$configuration" ]; then
 fi
 msbuild_args[${#msbuild_args[*]}]="-p:Configuration=$configuration"
 
+# Set verbosity to quiet
+msbuild_args[${#msbuild_args[*]}]="-verbosity:quiet"
+
 # Initialize global variables need to be set before the import of Arcade is imported
 restore=$run_restore
 
@@ -311,13 +314,6 @@ _tmp_restore=$restore
 restore=true
 
 InitializeToolset
-
-__warn "Testing dockerbuild.sh filesystem at $DIR/AssetsTmpDir/*/:"
-[ ! -d $DIR/AssetsTmpDir/ ] || ls $DIR/AssetsTmpDir/*/ 2> /dev/null
-
-__warn "Testing dockerbuild.sh filesystem at $DIR/artifacts/../AssetsTmpDir/*/:"
-[ ! -d $DIR/AssetsTmpDir/ ] || ls $DIR/artifacts/../AssetsTmpDir/*/ 2> /dev/null
-
 
 restore=$_tmp_restore=
 
