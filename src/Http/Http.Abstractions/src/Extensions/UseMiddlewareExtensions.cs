@@ -75,7 +75,8 @@ namespace Microsoft.AspNetCore.Builder
                 }
 
                 var methodInfo = invokeMethods[0];
-                if (!typeof(Task).IsAssignableFrom(methodInfo.ReturnType))
+                if (!typeof(Task).IsAssignableFrom(methodInfo.ReturnType) &&
+                    typeof(ValueTask) != methodInfo.ReturnType)
                 {
                     throw new InvalidOperationException(Resources.FormatException_UseMiddlewareNonTaskReturnType(InvokeMethodName, InvokeAsyncMethodName, nameof(Task)));
                 }
@@ -90,7 +91,7 @@ namespace Microsoft.AspNetCore.Builder
                 ctorArgs[0] = next;
                 Array.Copy(args, 0, ctorArgs, 1, args.Length);
                 var instance = ActivatorUtilities.CreateInstance(app.ApplicationServices, middleware, ctorArgs);
-                if (parameters.Length == 1)
+                if (parameters.Length == 1 && methodInfo.ReturnType == typeof(ValueTask))
                 {
                     return (RequestDelegate)methodInfo.CreateDelegate(typeof(RequestDelegate), instance);
                 }
@@ -142,7 +143,7 @@ namespace Microsoft.AspNetCore.Builder
             });
         }
 
-        private static Func<T, HttpContext, IServiceProvider, Task> Compile<T>(MethodInfo methodInfo, ParameterInfo[] parameters)
+        private static Func<T, HttpContext, IServiceProvider, ValueTask> Compile<T>(MethodInfo methodInfo, ParameterInfo[] parameters)
         {
             // If we call something like
             //
@@ -205,7 +206,7 @@ namespace Microsoft.AspNetCore.Builder
 
             var body = Expression.Call(middlewareInstanceArg, methodInfo, methodArguments);
 
-            var lambda = Expression.Lambda<Func<T, HttpContext, IServiceProvider, Task>>(body, instanceArg, httpContextArg, providerArg);
+            var lambda = Expression.Lambda<Func<T, HttpContext, IServiceProvider, ValueTask>>(body, instanceArg, httpContextArg, providerArg);
 
             return lambda.Compile();
         }

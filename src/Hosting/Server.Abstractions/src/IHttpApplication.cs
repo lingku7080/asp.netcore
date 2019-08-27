@@ -24,7 +24,7 @@ namespace Microsoft.AspNetCore.Hosting.Server
         /// Asynchronously processes an TContext.
         /// </summary>
         /// <param name="context">The TContext that the operation will process.</param>
-        Task ProcessRequestAsync(TContext context);
+        ValueTask ProcessRequestAsync(TContext context);
 
         /// <summary>
         /// Dispose a given TContext.

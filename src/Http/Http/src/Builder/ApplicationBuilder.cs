@@ -97,7 +97,7 @@ namespace Microsoft.AspNetCore.Builder
                 }
 
                 context.Response.StatusCode = 404;
-                return Task.CompletedTask;
+                return default;
             };
 
             foreach (var component in _components.Reverse())

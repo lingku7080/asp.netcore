@@ -82,7 +82,7 @@ namespace Microsoft.AspNetCore.Hosting
         }
 
         // Execute the request
-        public Task ProcessRequestAsync(Context context)
+        public ValueTask ProcessRequestAsync(Context context)
         {
             return _application(context.HttpContext);
         }

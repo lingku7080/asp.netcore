@@ -19,7 +19,7 @@ namespace PlaintextApp
 
         public void Configure(IApplicationBuilder app)
         {
-            app.Run((httpContext) =>
+            app.Run(async (httpContext) =>
             {
                 var payload = _helloWorldBytes;
                 var response = httpContext.Response;
@@ -28,7 +28,7 @@ namespace PlaintextApp
                 response.ContentType = "text/plain";
                 response.ContentLength = payload.Length;
 
-                return response.BodyWriter.WriteAsync(payload).GetAsTask();
+                await response.BodyWriter.WriteAsync(payload);
             });
         }
 
@@ -50,17 +50,17 @@ namespace PlaintextApp
     internal static class ValueTaskExtensions
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Task GetAsTask(this in ValueTask<FlushResult> valueTask)
+        public static ValueTask GetAsTask(this in ValueTask<FlushResult> valueTask)
         {
             if (valueTask.IsCompletedSuccessfully)
             {
                 // Signal consumption to the IValueTaskSource
                 valueTask.GetAwaiter().GetResult();
-                return Task.CompletedTask;
+                return default;
             }
             else
             {
-                return valueTask.AsTask();
+                return new ValueTask(valueTask.AsTask());
             }
         }
     }

@@ -41,7 +41,7 @@ namespace Microsoft.AspNetCore.Builder.Extensions
         /// </summary>
         /// <param name="context">The <see cref="HttpContext"/> for the current request.</param>
         /// <returns>A task that represents the execution of this middleware.</returns>
-        public async Task Invoke(HttpContext context)
+        public async ValueTask Invoke(HttpContext context)
         {
             if (context == null)
             {
