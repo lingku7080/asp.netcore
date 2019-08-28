@@ -1,9 +1,14 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-import { DefaultHttpClient, FetchHttpClient, HttpClient, HttpTransportType, IHubProtocol, JsonHubProtocol, XhrHttpClient } from "@microsoft/signalr";
+import { HttpClient, HttpTransportType, IHubProtocol, JsonHubProtocol } from "@microsoft/signalr";
 import { MessagePackHubProtocol } from "@microsoft/signalr-protocol-msgpack";
 import { TestLogger } from "./TestLogger";
+
+import { FetchHttpClient } from "@microsoft/signalr/dist/esm/FetchHttpClient";
+import { NodeHttpClient } from "@microsoft/signalr/dist/esm/NodeHttpClient";
+import { Platform } from "@microsoft/signalr/dist/esm/Utils";
+import { XhrHttpClient } from "@microsoft/signalr/dist/esm/XhrHttpClient";
 
 // On slower CI machines, these tests sometimes take longer than 5s
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 20 * 1000;
@@ -103,7 +108,16 @@ export function getGlobalObject(): any {
 }
 
 export function eachHttpClient(action: (transport: HttpClient) => void) {
-    const httpClients: HttpClient[] = [new FetchHttpClient(TestLogger.instance), new XhrHttpClient(TestLogger.instance), new DefaultHttpClient(TestLogger.instance)];
+    const httpClients: HttpClient[] = [];
+    if (typeof XMLHttpRequest !== "undefined") {
+        httpClients.push(new XhrHttpClient(TestLogger.instance));
+    }
+    if (typeof fetch !== "undefined") {
+        httpClients.push(new FetchHttpClient(TestLogger.instance));
+    }
+    if (Platform.isNode) {
+        httpClients.push(new NodeHttpClient(TestLogger.instance));
+    }
 
     return httpClients.forEach((t) => {
         return action(t);
