@@ -89,7 +89,7 @@ namespace System.IO.Pipelines
         // Exposed for testing
         internal object MemoryOwner => _memoryOwner;
 
-        public Memory<byte> AvailableMemory { get; private set; }
+        public Memory<byte> AvailableMemory { get; set; }
 
         public int Length => End;
 

@@ -44,7 +44,7 @@ namespace System.Buffers
         /// Thread-safe collection of blocks which are currently in the pool. A slab will pre-allocate all of the block tracking objects
         /// and add them to this collection. When memory is requested it is taken from here first, and when it is returned it is re-added.
         /// </summary>
-        private readonly ConcurrentQueue<MemoryPoolBlock> _blocks = new ConcurrentQueue<MemoryPoolBlock>();
+        private readonly ConcurrentStack<MemoryPoolBlock> _blocks = new ConcurrentStack<MemoryPoolBlock>();
 
         /// <summary>
         /// Thread-safe collection of slabs which have been allocated by this pool. As long as a slab is in this collection and slab.IsActive,
@@ -88,7 +88,7 @@ namespace System.Buffers
                 MemoryPoolThrowHelper.ThrowObjectDisposedException(MemoryPoolThrowHelper.ExceptionArgument.MemoryPool);
             }
 
-            if (_blocks.TryDequeue(out MemoryPoolBlock block))
+            if (_blocks.TryPop(out MemoryPoolBlock block))
             {
                 // block successfully taken from the stack - return it
 
@@ -157,7 +157,7 @@ namespace System.Buffers
 
             if (!_isDisposed)
             {
-                _blocks.Enqueue(block);
+                _blocks.Push(block);
             }
             else
             {
@@ -201,7 +201,7 @@ namespace System.Buffers
                 }
 
                 // Discard blocks in pool
-                while (_blocks.TryDequeue(out MemoryPoolBlock block))
+                while (_blocks.TryPop(out MemoryPoolBlock block))
                 {
                     GC.SuppressFinalize(block);
                 }

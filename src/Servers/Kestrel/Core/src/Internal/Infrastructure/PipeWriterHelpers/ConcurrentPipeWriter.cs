@@ -30,7 +30,6 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure.PipeW
 
         private BufferSegment _head;
         private BufferSegment _tail;
-        private Memory<byte> _tailMemory;
         private int _tailBytesBuffered;
         private long _bytesBuffered;
 
@@ -67,7 +66,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure.PipeW
             }
 
             AllocateMemoryUnsynchronized(sizeHint);
-            return _tailMemory;
+            return _tail.AvailableMemory;
         }
 
         public override Span<byte> GetSpan(int sizeHint = 0)
@@ -78,7 +77,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure.PipeW
             }
 
             AllocateMemoryUnsynchronized(sizeHint);
-            return _tailMemory.Span;
+            return _tail.AvailableMemory.Span;
         }
 
         public override void Advance(int bytes)
@@ -89,14 +88,14 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure.PipeW
                 return;
             }
 
-            if ((uint)bytes > (uint)_tailMemory.Length)
+            if ((uint)bytes > (uint)_tail.AvailableMemory.Length)
             {
                 ThrowArgumentOutOfRangeException(nameof(bytes));
             }
 
             _tailBytesBuffered += bytes;
             _bytesBuffered += bytes;
-            _tailMemory = _tailMemory.Slice(bytes);
+            _tail.AvailableMemory = _tail.AvailableMemory.Slice(bytes);
             _bufferedWritePending = false;
         }
 
@@ -224,7 +223,6 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure.PipeW
 
             _head = null;
             _tail = null;
-            _tailMemory = null;
         }
 
         private void CopyAndReturnSegmentsUnsynchronized()
@@ -311,7 +309,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure.PipeW
             }
             else
             {
-                int bytesLeftInBuffer = _tailMemory.Length;
+                int bytesLeftInBuffer = _tail.AvailableMemory.Length;
 
                 if (bytesLeftInBuffer == 0 || bytesLeftInBuffer < sizeHint)
                 {
@@ -344,8 +342,6 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure.PipeW
                 // We can't use the pool so allocate an array
                 newSegment.SetUnownedMemory(new byte[sizeHint]);
             }
-
-            _tailMemory = newSegment.AvailableMemory;
 
             return newSegment;
         }
