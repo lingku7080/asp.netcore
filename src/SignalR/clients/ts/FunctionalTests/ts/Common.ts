@@ -103,11 +103,19 @@ export function eachTransportAndProtocol(action: (transport: HttpTransportType, 
     });
 }
 
+export function eachTransportAndProtocolAndHttpClient(action: (transport: HttpTransportType, protocol: IHubProtocol, httpClient: HttpClient) => void) {
+    eachTransportAndProtocol((transport, protocol) => {
+        getHttpClients().forEach((httpClient) => {
+            action(transport, protocol, httpClient);
+        });
+    });
+}
+
 export function getGlobalObject(): any {
     return typeof window !== "undefined" ? window : global;
 }
 
-export function eachHttpClient(action: (transport: HttpClient) => void) {
+export function getHttpClients(): HttpClient[] {
     const httpClients: HttpClient[] = [];
     if (typeof XMLHttpRequest !== "undefined") {
         httpClients.push(new XhrHttpClient(TestLogger.instance));
@@ -118,8 +126,11 @@ export function eachHttpClient(action: (transport: HttpClient) => void) {
     if (Platform.isNode) {
         httpClients.push(new NodeHttpClient(TestLogger.instance));
     }
+    return httpClients;
+}
 
-    return httpClients.forEach((t) => {
+export function eachHttpClient(action: (transport: HttpClient) => void) {
+    return getHttpClients().forEach((t) => {
         return action(t);
     });
 }
