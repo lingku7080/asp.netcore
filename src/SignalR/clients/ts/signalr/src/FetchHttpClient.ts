@@ -40,6 +40,7 @@ export class FetchHttpClient extends HttpClient {
             },
             method: request.method!,
             mode: "cors",
+            redirect: "manual",
             signal: abortController.signal,
         });
 
@@ -83,47 +84,41 @@ export class FetchHttpClient extends HttpClient {
         }
 
         if (!response.ok) {
-            return Promise.reject(new Error(`${response.status}: ${response.statusText}.`));
+            return new HttpError(response.statusText, response.status);
         } else {
             if (request.abortSignal) {
                 request.abortSignal.onabort = null;
             }
 
-            const content = deserializeContent(response, request.responseType);
-
             try {
+                const content = deserializeContent(response, request.responseType);
                 const payload = await content;
 
                 return new HttpResponse(
-                        response.status,
-                        response.statusText,
-                        payload,
+                    response.status,
+                    response.statusText,
+                    payload,
                 );
-            } catch {
-                return Promise.reject(new HttpError(response.statusText, response.status));
+            } catch (e) {
+                return Promise.reject(e);
             }
         }
     }
 }
 
-function deserializeContent(response: Response, responseType?: XMLHttpRequestResponseType): Promise<any> {
+function deserializeContent(response: Response, responseType?: XMLHttpRequestResponseType): Promise<string | ArrayBuffer> {
     let content;
     switch (responseType) {
         case "arraybuffer":
             content = response.arrayBuffer();
             break;
-        case "blob":
-            content = response.blob();
-            break;
-        case "document":
-            content = response.json();
-            break;
-        case "json":
-            content = response.json();
-            break;
         case "text":
             content = response.text();
             break;
+        case "blob":
+        case "document":
+        case "json":
+            throw new Error(`${responseType} is not supported.`);
         default:
             content = response.text();
             break;
