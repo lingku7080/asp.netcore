@@ -29,12 +29,14 @@ export class FetchHttpClient extends HttpClient {
 
         const abortController = new AbortController();
 
+        const contentType = request.stream ? "application/bedrock-streaming;charset=UTF-8" : "text/plain;charset=UTF-8";
+
         const fetchRequest = new Request(request.url!, {
             body: request.content!,
             cache: "no-cache",
             credentials: "include",
             headers: {
-                "Content-Type": "application/bedrock-streaming;charset=UTF-8",
+                "Content-Type": contentType,
                 "X-Requested-With": "XMLHttpRequest",
                 ...request.headers,
             },

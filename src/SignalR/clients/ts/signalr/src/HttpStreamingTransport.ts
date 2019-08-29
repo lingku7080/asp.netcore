@@ -50,6 +50,9 @@ export class HttpStreamingTransport implements ITransport {
                 // @ts-ignore
                 const result = await reader.read();
                 this.logger.log(LogLevel.Information, result.value);
+                if (this.onreceive) {
+                    this.onreceive(new TextDecoder("utf-8").decode((result.value as Uint8Array).buffer));
+                }
                 if (result.done) {
                     break;
                 }
