@@ -168,7 +168,7 @@ namespace Microsoft.AspNetCore.Http.Connections.Internal
 
                 await DoPersistentConnection(connectionDelegate, sse, context, connection);
             }
-            else if (context.Request.Protocol == "HTTP/2")
+            else if (context.Request.ContentType == "application/bedrock-streaming;charset=UTF-8")
             {
                 // Support HTTP/2 Streaming
 

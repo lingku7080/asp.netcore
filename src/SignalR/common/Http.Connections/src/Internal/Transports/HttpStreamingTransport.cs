@@ -5,7 +5,9 @@ using System;
 using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Logging;
+using Microsoft.Net.Http.Headers;
 
 namespace Microsoft.AspNetCore.Http.Connections.Internal.Transports
 {
@@ -26,6 +28,12 @@ namespace Microsoft.AspNetCore.Http.Connections.Internal.Transports
 
         public async Task ProcessRequestAsync(HttpContext context, CancellationToken token)
         {
+            context.Response.ContentType = "text/plain";
+            context.Response.Headers[HeaderNames.CacheControl] = "no-cache";
+
+            // Make sure we disable all response buffering
+            var bufferingFeature = context.Features.Get<IHttpResponseBodyFeature>();
+            bufferingFeature.DisableBuffering();
             // Flush headers immediately so we can start streaming
             await context.Response.Body.FlushAsync();
 
