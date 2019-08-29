@@ -3,6 +3,7 @@
 
 import { DefaultHttpClient } from "./DefaultHttpClient";
 import { HttpClient } from "./HttpClient";
+import { HttpStreamingTransport } from "./HttpStreamingTransport";
 import { IConnection } from "./IConnection";
 import { IHttpConnectionOptions } from "./IHttpConnectionOptions";
 import { ILogger, LogLevel } from "./ILogger";
@@ -400,6 +401,8 @@ export class HttpConnection implements IConnection {
                 return new ServerSentEventsTransport(this.httpClient, this.accessTokenFactory, this.logger, this.options.logMessageContent || false, this.options.EventSource);
             case HttpTransportType.LongPolling:
                 return new LongPollingTransport(this.httpClient, this.accessTokenFactory, this.logger, this.options.logMessageContent || false);
+            case HttpTransportType.HttpStreaming:
+                return new HttpStreamingTransport(this.httpClient, this.accessTokenFactory, this.logger, this.options.logMessageContent || false);
             default:
                 throw new Error(`Unknown transport: ${transport}.`);
         }

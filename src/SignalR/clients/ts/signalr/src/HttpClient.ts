@@ -25,6 +25,9 @@ export interface HttpRequest {
 
     /** The time to wait for the request to complete before throwing a TimeoutError. Measured in milliseconds. */
     timeout?: number;
+
+    /** Stream response. */
+    stream?: boolean;
 }
 
 /** Represents an HTTP response. */
@@ -62,13 +65,21 @@ export class HttpResponse {
      *
      * @param {number} statusCode The status code of the response.
      * @param {string} statusText The status message of the response.
-     * @param {string | ArrayBuffer} content The content of the response.
+     * @param {ReadableStream} content The content of the response.
      */
-    constructor(statusCode: number, statusText: string, content: string | ArrayBuffer);
+    constructor(statusCode: number, statusText: string, content: ReadableStream);
+
+    /** Constructs a new instance of {@link @microsoft/signalr.HttpResponse} with the specified status code, message and binary content.
+     *
+     * @param {number} statusCode The status code of the response.
+     * @param {string} statusText The status message of the response.
+     * @param {string | ArrayBuffer | ReadableStream} content The content of the response.
+     */
+    constructor(statusCode: number, statusText: string, content: string | ArrayBuffer | ReadableStream);
     constructor(
         public readonly statusCode: number,
         public readonly statusText?: string,
-        public readonly content?: string | ArrayBuffer) {
+        public readonly content?: string | ArrayBuffer | ReadableStream) {
     }
 }
 
@@ -158,5 +169,9 @@ export abstract class HttpClient {
     // @ts-ignore
     public getCookieString(url: string): string {
         return "";
+    }
+
+    get supportsStreaming(): boolean {
+        return false;
     }
 }

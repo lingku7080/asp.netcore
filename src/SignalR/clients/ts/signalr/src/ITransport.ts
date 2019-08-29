@@ -12,6 +12,8 @@ export enum HttpTransportType {
     ServerSentEvents = 2,
     /** Specifies the Long Polling transport. */
     LongPolling = 4,
+    /** Specifies the Streaming transport. */
+    HttpStreaming = 8,
 }
 
 /** Specifies the transfer format for a connection. */

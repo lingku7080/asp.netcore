@@ -91,6 +91,9 @@ export class FetchHttpClient extends HttpClient {
             }
 
             try {
+                if (request.stream && response.body) {
+                    return new HttpResponse(response.status, response.statusText, response.body);
+                }
                 const content = deserializeContent(response, request.responseType);
                 const payload = await content;
 

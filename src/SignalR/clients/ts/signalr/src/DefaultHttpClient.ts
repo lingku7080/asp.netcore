@@ -45,4 +45,8 @@ export class DefaultHttpClient extends HttpClient {
     public getCookieString(url: string): string {
         return this.httpClient.getCookieString(url);
     }
+
+    get supportsStreaming(): boolean {
+        return this.httpClient instanceof FetchHttpClient;
+    }
 }
