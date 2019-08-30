@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace System.Buffers
@@ -32,6 +33,8 @@ namespace System.Buffers
         /// Back-reference to the memory pool which this block was allocated from. It may only be returned to this pool.
         /// </summary>
         public SlabMemoryPool Pool { get; }
+
+        public List<int> StreamIds { get; set; } = new List<int>();
 
         /// <summary>
         /// Back-reference to the slab from which this block was taken, or null if it is one-time-use memory.

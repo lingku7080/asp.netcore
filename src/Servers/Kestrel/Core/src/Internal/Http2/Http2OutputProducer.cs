@@ -58,7 +58,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http2
 
             var pipe = CreateDataPipe(pool);
 
-            _pipeWriter = new ConcurrentPipeWriter(pipe.Writer, pool, _dataWriterLock);
+            _pipeWriter = pipe.Writer;
             _pipeReader = pipe.Reader;
 
             // No need to pass in timeoutControl here, since no minDataRates are passed to the TimingPipeFlusher.
@@ -195,8 +195,18 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http2
                 }
 
                 _startedWritingDataFrames = true;
-
                 _pipeWriter.Write(data);
+
+                if (data.Length == 1)
+                {
+                    var firstChar = data[0];
+                    if (firstChar == 'x')
+                    {
+                        _log.LogError("Bad x WOAHHHHHHHHH");
+                        //throw new Exception("Bad x.");
+                    }
+                }
+
                 return _flusher.FlushAsync(this, cancellationToken).GetAsTask();
             }
         }
@@ -308,8 +318,20 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http2
                 }
 
                 _startedWritingDataFrames = true;
+                SlabMemoryPool._local.Value = _streamId;
 
                 _pipeWriter.Write(data);
+
+                if (data.Length == 1)
+                {
+                    var firstChar = data[0];
+                    if (firstChar == 'x')
+                    {
+                        _log.LogError("Bad x WOAHHHHHHHHH");
+                        //throw new Exception("Bad x.");
+                    }
+                }
+
                 return _flusher.FlushAsync(this, cancellationToken);
             }
         }
@@ -369,6 +391,17 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http2
                 {
                     readResult = await _pipeReader.ReadAsync();
 
+                    if (readResult.Buffer.Length == 1)
+                    {
+                        // Check if the write length is an x.
+                        if (readResult.Buffer.FirstSpan[0] == 'x')
+                        {
+                            Debugger.Launch();
+                            Debugger.Break();
+                            _log.LogError("Woah an x as the first character 1");
+                        }
+                    }
+
                     if (readResult.IsCompleted && _stream.ResponseTrailers?.Count > 0)
                     {
                         // Output is ending and there are trailers to write
@@ -389,6 +422,15 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http2
                             ThrowUnexpectedState();
                         }
 
+                        if (readResult.Buffer.Length == 1)
+                        {
+                            // Check if the write length is an x.
+                            if (readResult.Buffer.FirstSpan[0] == 'x')
+                            {
+                                _log.LogError("Woah an x as the first character");
+                            }
+                        }
+
                         // Headers have already been written and there is no other content to write
                         flushResult = await _frameWriter.FlushAsync(outputAborter: null, cancellationToken: default);
                     }
@@ -399,6 +441,18 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http2
                         {
                             _stream.DecrementActiveClientStreamCount();
                         }
+
+                        if (readResult.Buffer.Length == 1)
+                        {
+                            // Check if the write length is an x.
+                            if (readResult.Buffer.FirstSpan[0] == 'x')
+                            {
+                                Debugger.Launch();
+                                Debugger.Break();
+                                _log.LogError("Woah an x as the first character");
+                            }
+                        }
+
                         flushResult = await _frameWriter.WriteDataAsync(_streamId, _flowControl, readResult.Buffer, endStream);
                     }
 

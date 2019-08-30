@@ -16,6 +16,8 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal
     {
         private bool _disposed;
         private readonly object _disposeLock = new object();
+        private readonly Pipe _output;
+        private Task _outputTask;
 
         public DuplexPipeStreamAdapter(IDuplexPipe duplexPipe, Func<Stream, TStream> createStream) :
             this(duplexPipe, new StreamPipeReaderOptions(leaveOpen: true), new StreamPipeWriterOptions(leaveOpen: true), createStream)
@@ -28,14 +30,90 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal
             var stream = createStream(this);
             Stream = stream;
             Input = PipeReader.Create(stream, readerOptions);
-            Output = PipeWriter.Create(stream, writerOptions);
+            var outputOptions = new PipeOptions(pool: writerOptions.Pool,
+                                                readerScheduler: PipeScheduler.Inline,
+                                                writerScheduler: PipeScheduler.Inline,
+                                                pauseWriterThreshold: 1,
+                                                resumeWriterThreshold: 1,
+                                                minimumSegmentSize: writerOptions.MinimumBufferSize,
+                                                useSynchronizationContext: false);
+            var pipe = new Pipe();
+            // We're using a pipe here because the HTTP/2 stack in Kestrel currently makes assumptions	
+            // about when it is ok to write to the PipeWriter. This should be reverted back to PipeWriter.Create once	
+            // those patterns are fixed.	
+            _output = new Pipe(outputOptions);
+        }
+
+        public PipeWriter Output
+        {
+            get
+            {
+                if (_outputTask == null)
+                {
+                    RunAsync();
+                }
+
+                return _output.Writer;
+            }
+        }
+
+        public void RunAsync()
+        {
+            _outputTask = WriteOutputAsync();
+        }
+
+        private async Task WriteOutputAsync()
+        {
+            try
+            {
+                while (true)
+                {
+                    var result = await _output.Reader.ReadAsync();
+                    var buffer = result.Buffer;
+
+                    try
+                    {
+                        if (buffer.IsEmpty)
+                        {
+                            if (result.IsCompleted)
+                            {
+                                break;
+                            }
+
+                            await Stream.FlushAsync();
+                        }
+                        else if (buffer.IsSingleSegment)
+                        {
+                            await Stream.WriteAsync(buffer.First);
+                        }
+                        else
+                        {
+                            foreach (var memory in buffer)
+                            {
+                                await Stream.WriteAsync(memory);
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        _output.Reader.AdvanceTo(buffer.End);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                //Log?.LogCritical(0, ex, $"{GetType().Name}.{nameof(WriteOutputAsync)}");
+            }
+            finally
+            {
+                _output.Reader.Complete();
+            }
         }
 
         public TStream Stream { get; }
 
         public PipeReader Input { get; }
 
-        public PipeWriter Output { get; }
 
         public override async ValueTask DisposeAsync()
         {
@@ -48,8 +126,19 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal
                 _disposed = true;
             }
 
-            await Input.CompleteAsync();
             await Output.CompleteAsync();
+
+            if (_outputTask == null)
+            {
+                return;
+            }
+
+            if (_outputTask != null)
+            {
+                await _outputTask;
+            }
+
+            await Input.CompleteAsync();
         }
 
         protected override void Dispose(bool disposing)

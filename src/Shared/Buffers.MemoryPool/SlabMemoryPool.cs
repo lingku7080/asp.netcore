@@ -3,6 +3,7 @@
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Text;
 using System.Threading;
 
 namespace System.Buffers
@@ -61,6 +62,8 @@ namespace System.Buffers
 
         private readonly object _disposeSync = new object();
 
+        public static AsyncLocal<int> _local = new AsyncLocal<int>();
+
         /// <summary>
         /// This default value passed in to Rent to use the default value for the pool.
         /// </summary>
@@ -91,13 +94,18 @@ namespace System.Buffers
             if (_blocks.TryPop(out MemoryPoolBlock block))
             {
                 // block successfully taken from the stack - return it
-
                 block.Lease();
+                block.StreamIds.Add(_local.Value);
+                PoundArray.AsMemory().Slice(0, block.Memory.Length).CopyTo(block.Memory);
                 return block;
             }
+
             // no blocks available - grow the pool
             block = AllocateSlab();
             block.Lease();
+            block.StreamIds.Add(_local.Value);
+
+            PoundArray.AsMemory().Slice(0, block.Memory.Length).CopyTo(block.Memory);
             return block;
         }
 
@@ -139,6 +147,9 @@ namespace System.Buffers
             return block;
         }
 
+        internal static byte[] PoundArray = Encoding.ASCII.GetBytes(new string('#', 10000000));
+        internal static byte[] PercentArray = Encoding.ASCII.GetBytes(new string('%', 10000000));
+
         /// <summary>
         /// Called to return a block to the pool. Once Return has been called the memory no longer belongs to the caller, and
         /// Very Bad Things will happen if the memory is read of modified subsequently. If a caller fails to call Return and the
@@ -154,6 +165,9 @@ namespace System.Buffers
             Debug.Assert(block.IsLeased, $"Block being returned to pool twice: {block.Leaser}{Environment.NewLine}");
             block.IsLeased = false;
 #endif
+            block.StreamIds.Add(_local.Value);
+
+            PercentArray.AsMemory().Slice(0, block.Memory.Length).CopyTo(block.Memory);
 
             if (!_isDisposed)
             {

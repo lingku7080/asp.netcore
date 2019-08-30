@@ -16,6 +16,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http2.FlowControl;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http2.HPack;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure.PipeWriterHelpers;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http2
 {
@@ -120,7 +121,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http2
                 {
                     return default;
                 }
-                
+
                 var bytesWritten = _unflushedBytes;
                 _unflushedBytes = 0;
 
@@ -239,7 +240,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http2
             }
         }
 
-        public ValueTask<FlushResult> WriteDataAsync(int streamId, StreamOutputFlowControl flowControl, in ReadOnlySequence<byte> data, bool endStream)
+        public ValueTask<FlushResult> WriteDataAsync(int streamId, StreamOutputFlowControl flowControl, ReadOnlySequence<byte> data, bool endStream)
         {
             // The Length property of a ReadOnlySequence can be expensive, so we cache the value.
             var dataLength = data.Length;
@@ -249,6 +250,18 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http2
                 if (_completed || flowControl.IsAborted)
                 {
                     return default;
+                }
+
+                if (data.Length == 1)
+                {
+                    var firstChar = data.FirstSpan[0];
+                    if (firstChar == 'x')
+                    {
+                        Debugger.Launch();
+                        Debugger.Break();
+                        _log.LogError($"Bad x WOAHHHHHHHHH {Environment.StackTrace}");
+                        //throw new Exception("Bad x.");
+                    }
                 }
 
                 // Zero-length data frames are allowed to be sent immediately even if there is no space available in the flow control window.
@@ -296,13 +309,21 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http2
 
             WriteHeaderUnsynchronized();
 
+            if (data.Length == 1)
+            {
+                var firstChar = data.FirstSpan[0];
+                if (firstChar == 'x')
+                {
+                    Debugger.Launch();
+                    Debugger.Break();
+                    _log.LogError("bad x");
+                }
+            }
+
             foreach (var buffer in data)
             {
                 _outputWriter.Write(buffer.Span);
             }
-
-            // Plus padding
-            return;
 
             void TrimAndWriteDataUnsynchronized(in ReadOnlySequence<byte> data, long dataLength, bool endStream)
             {
@@ -347,7 +368,12 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http2
 
                 // Plus padding
             }
+
+            // Plus padding
+            return;
         }
+
+
 
         private async ValueTask<FlushResult> WriteDataAsync(int streamId, StreamOutputFlowControl flowControl, ReadOnlySequence<byte> data, long dataLength, bool endStream)
         {
@@ -611,6 +637,10 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http2
         internal static void WriteHeader(Http2Frame frame, PipeWriter output)
         {
             var buffer = output.GetSpan(Http2FrameReader.HeaderLength);
+            if (buffer[0] != '#')
+            {
+                throw new Exception("Should always have a pound on rent");
+            }
 
             Bitshifter.WriteUInt24BigEndian(buffer, (uint)frame.PayloadLength);
             buffer = buffer.Slice(3);

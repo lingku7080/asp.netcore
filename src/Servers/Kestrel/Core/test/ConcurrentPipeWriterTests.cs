@@ -3,7 +3,10 @@
 
 using System;
 using System.Buffers;
+using System.Collections.Generic;
+using System.IO;
 using System.IO.Pipelines;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure.PipeWriterHelpers;
@@ -58,6 +61,130 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Tests
                 var completeEx = new Exception();
                 await concurrentPipeWriter.CompleteAsync(completeEx).DefaultTimeout();
                 Assert.Same(completeEx, mockPipeWriter.CompleteException);
+            }
+        }
+
+        [Fact]
+        public async Task MultipleWritesAtAtTimeAllDataInsertedCorrectly()
+        {
+            using (var slabPool = new SlabMemoryPool())
+            using (var diagnosticPool = new DiagnosticMemoryPool(slabPool))
+            {
+                var stream = new MemoryStream();
+                var writer = PipeWriter.Create(stream);
+
+                var random = new Random();
+                var lock1 = new object();
+                // No need to pass in az real sync object since all the calls in this test are passthrough.
+                var concurrentPipeWriter = new ConcurrentPipeWriter(writer, diagnosticPool, lock1);
+                long index = 0;
+                var indexList = new List<long>();
+                var cindexList = new List<long>();
+                var t1 = Task.Run(async () =>
+                {
+                    for (var i = 0; i < 1000000; i++)
+                    {
+                        ValueTask<FlushResult> fr;
+                        lock (lock1)
+                        {
+                            var memory = concurrentPipeWriter.GetMemory();
+                            memory.Span[0] = (byte)'a';
+                            index++;
+                            concurrentPipeWriter.Advance(1);
+                            fr = concurrentPipeWriter.FlushAsync();
+                        }
+                        await fr;
+                    }
+                });
+
+                var arr2 = Encoding.ASCII.GetBytes(new string('c', 10000));
+
+                var t4 = Task.Run(async () =>
+                {
+                    for (var i = 0; i < 1000000; i++)
+                    {
+                        ValueTask<FlushResult> fr;
+                        lock (lock1)
+                        {
+                            var memory = concurrentPipeWriter.GetMemory();
+                            var memoryIndex = random.Next(1, memory.Length);
+                            arr2.AsSpan().Slice(0, memoryIndex).CopyTo(memory.Span);
+                            cindexList.Add(index);
+                            index += memoryIndex;
+                            concurrentPipeWriter.Advance(memoryIndex);
+                            fr = concurrentPipeWriter.FlushAsync();
+                        }
+                        await fr;
+                    }
+                });
+
+                var arr = Encoding.ASCII.GetBytes(new string('b', 10000));
+                var t2 = Task.Run(async () =>
+                {
+                    for (var i = 0; i < 10000; i++)
+                    {
+                        ValueTask<FlushResult> fr;
+                        lock (lock1)
+                        {
+                            var memory = concurrentPipeWriter.GetMemory();
+                            var memoryIndex = random.Next(1, memory.Length);
+                            arr.AsSpan().Slice(0, memoryIndex).CopyTo(memory.Span);
+                            indexList.Add(index);
+                            index += memoryIndex;
+                            concurrentPipeWriter.Advance(memoryIndex);
+                            fr = concurrentPipeWriter.FlushAsync();
+                        }
+                        await fr;
+
+                    }
+                });
+
+                //var t3 = Task.Run(async () =>
+                //{
+                //    while (true)
+                //    {
+                //        //var entireResult = await pipe.Reader.ReadAsync();
+                //        var bytes = stream.ToArray();
+                //        //pipe.Reader.AdvanceTo(entireResult.Buffer.Start, entireResult.Buffer.End);
+                //        if (entireResult.IsCompleted)
+                //        {
+                //            // Find all segments that start with b.
+                //            foreach (var i in indexList)
+                //            {
+                //                if (entireResult.Buffer.Slice(i, 1).FirstSpan[0] != (byte)'b')
+                //                {
+                //                    // wow.
+                //                    throw new Exception();
+                //                }
+                //            }
+                //            break;
+                //        }
+                //    }
+
+                //});
+
+                try
+                {
+                    await t1;
+                    await t2.DefaultTimeout();
+                    await t4;
+                }
+                catch (Exception ex)
+                {
+                    throw ex;
+                }
+
+
+                concurrentPipeWriter.Complete();
+                var bytes = stream.ToArray();
+                foreach (var i in indexList)
+                {
+                    if (bytes.AsMemory().Slice((int)i, 1).Span[0] != (byte)'b')
+                    {
+                        // wow.
+                        throw new Exception();
+                    }
+                }
             }
         }
 

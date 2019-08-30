@@ -934,6 +934,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http2
                 // Server is getting hit hard with connection resets.
                 // Tell client to calm down.
                 // TODO consider making when to send ENHANCE_YOUR_CALM configurable?
+
                 throw new Http2StreamErrorException(_currentHeadersStream.StreamId, CoreStrings.Http2TellClientToCalmDown, Http2ErrorCode.ENHANCE_YOUR_CALM);
             }
             // This must be initialized before we offload the request or else we may start processing request body frames without it.
