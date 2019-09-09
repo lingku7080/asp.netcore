@@ -227,7 +227,7 @@
     <IdentityServer4PackageVersion>3.0.0-preview7.33</IdentityServer4PackageVersion>
     <IdentityServer4StoragePackageVersion>3.0.0-preview7.33</IdentityServer4StoragePackageVersion>
     <IdentityServer4EntityFrameworkStoragePackageVersion>3.0.0-preview7.33</IdentityServer4EntityFrameworkStoragePackageVersion>
-    <MessagePackPackageVersion>1.7.3.7</MessagePackPackageVersion>
+    <MessagePackPackageVersion>2.0.123-beta</MessagePackPackageVersion>
     <MoqPackageVersion>4.10.0</MoqPackageVersion>
     <MonoCecilPackageVersion>0.10.1</MonoCecilPackageVersion>
     <NewtonsoftJsonBsonPackageVersion>1.0.2</NewtonsoftJsonBsonPackageVersion>
