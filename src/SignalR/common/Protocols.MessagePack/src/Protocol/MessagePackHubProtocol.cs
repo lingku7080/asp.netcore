@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using MessagePack;
 using MessagePack.Formatters;
 using Microsoft.AspNetCore.Connections;
@@ -361,310 +362,318 @@ namespace Microsoft.AspNetCore.SignalR.Protocol
         /// <inheritdoc />
         public void WriteMessage(HubMessage message, IBufferWriter<byte> output)
         {
-            var writer = MemoryBufferWriter.Get();
+            var memoryWriter = MemoryBufferWriter.Get();
 
             try
             {
+                var writer = new MessagePackWriter(output);
                 // Write message to a buffer so we can get its length
-                WriteMessageCore(message, writer);
+                WriteMessageCore(message, ref writer);
 
                 // Write length then message to output
-                BinaryMessageFormatter.WriteLengthPrefix(writer.Length, output);
-                writer.CopyTo(output);
+                BinaryMessageFormatter.WriteLengthPrefix(memoryWriter.Length, output);
+                memoryWriter.CopyTo(output);
             }
             finally
             {
-                MemoryBufferWriter.Return(writer);
+                MemoryBufferWriter.Return(memoryWriter);
             }
         }
 
         /// <inheritdoc />
         public ReadOnlyMemory<byte> GetMessageBytes(HubMessage message)
         {
-            var writer = MemoryBufferWriter.Get();
+            var memoryWriter = MemoryBufferWriter.Get();
 
             try
             {
+                var writer = new MessagePackWriter();
                 // Write message to a buffer so we can get its length
-                WriteMessageCore(message, writer);
+                WriteMessageCore(message, ref writer);
 
-                var dataLength = writer.Length;
-                var prefixLength = BinaryMessageFormatter.LengthPrefixLength(writer.Length);
+                var dataLength = memoryWriter.Length;
+                var prefixLength = BinaryMessageFormatter.LengthPrefixLength(memoryWriter.Length);
 
                 var array = new byte[dataLength + prefixLength];
                 var span = array.AsSpan();
 
                 // Write length then message to output
-                var written = BinaryMessageFormatter.WriteLengthPrefix(writer.Length, span);
+                var written = BinaryMessageFormatter.WriteLengthPrefix(memoryWriter.Length, span);
                 Debug.Assert(written == prefixLength);
-                writer.CopyTo(span.Slice(prefixLength));
+                memoryWriter.CopyTo(span.Slice(prefixLength));
 
                 return array;
             }
             finally
             {
-                MemoryBufferWriter.Return(writer);
+                MemoryBufferWriter.Return(memoryWriter);
             }
         }
 
-        private void WriteMessageCore(HubMessage message, Stream packer)
+        private void WriteMessageCore(HubMessage message, ref MessagePackWriter writer)
         {
             switch (message)
             {
                 case InvocationMessage invocationMessage:
-                    WriteInvocationMessage(invocationMessage, packer);
+                    WriteInvocationMessage(invocationMessage, ref writer);
                     break;
                 case StreamInvocationMessage streamInvocationMessage:
-                    WriteStreamInvocationMessage(streamInvocationMessage, packer);
+                    WriteStreamInvocationMessage(streamInvocationMessage, ref writer);
                     break;
                 case StreamItemMessage streamItemMessage:
-                    WriteStreamingItemMessage(streamItemMessage, packer);
+                    WriteStreamingItemMessage(streamItemMessage, ref writer);
                     break;
                 case CompletionMessage completionMessage:
-                    WriteCompletionMessage(completionMessage, packer);
+                    WriteCompletionMessage(completionMessage, ref writer);
                     break;
                 case CancelInvocationMessage cancelInvocationMessage:
-                    WriteCancelInvocationMessage(cancelInvocationMessage, packer);
+                    WriteCancelInvocationMessage(cancelInvocationMessage, ref writer);
                     break;
                 case PingMessage pingMessage:
-                    WritePingMessage(pingMessage, packer);
+                    WritePingMessage(pingMessage, ref writer);
                     break;
                 case CloseMessage closeMessage:
-                    WriteCloseMessage(closeMessage, packer);
+                    WriteCloseMessage(closeMessage, ref writer);
                     break;
                 default:
                     throw new InvalidDataException($"Unexpected message type: {message.GetType().Name}");
             }
         }
 
-        private void WriteInvocationMessage(InvocationMessage message, Stream packer)
+        private void WriteInvocationMessage(InvocationMessage message, ref MessagePackWriter writer)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 6);
+            writer.WriteArrayHeader(6);
 
-            MessagePackBinary.WriteInt32(packer, HubProtocolConstants.InvocationMessageType);
-            PackHeaders(packer, message.Headers);
+            writer.WriteInt32(HubProtocolConstants.InvocationMessageType);
+            PackHeaders(ref writer, message.Headers);
             if (string.IsNullOrEmpty(message.InvocationId))
             {
-                MessagePackBinary.WriteNil(packer);
+                writer.WriteNil();
             }
             else
             {
-                MessagePackBinary.WriteString(packer, message.InvocationId);
+                writer.WriteString(Encoding.UTF8.GetBytes(message.InvocationId));
             }
-            MessagePackBinary.WriteString(packer, message.Target);
-            MessagePackBinary.WriteArrayHeader(packer, message.Arguments.Length);
+            writer.WriteString(Encoding.UTF8.GetBytes(message.Target));
+            writer.WriteArrayHeader(message.Arguments.Length);
             foreach (var arg in message.Arguments)
             {
-                WriteArgument(arg, packer);
+                WriteArgument(arg, ref writer);
             }
 
-            WriteStreamIds(message.StreamIds, packer);
+            WriteStreamIds(message.StreamIds, ref writer);
         }
 
-        private void WriteStreamInvocationMessage(StreamInvocationMessage message, Stream packer)
+        private void WriteStreamInvocationMessage(StreamInvocationMessage message, ref MessagePackWriter writer)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 6);
+            writer.WriteArrayHeader(6);
 
-            MessagePackBinary.WriteInt16(packer, HubProtocolConstants.StreamInvocationMessageType);
-            PackHeaders(packer, message.Headers);
-            MessagePackBinary.WriteString(packer, message.InvocationId);
-            MessagePackBinary.WriteString(packer, message.Target);
+            writer.WriteInt16(HubProtocolConstants.StreamInvocationMessageType);
+            PackHeaders(ref writer, message.Headers);
+            writer.WriteString(Encoding.UTF8.GetBytes(message.InvocationId));
+            writer.WriteString(Encoding.UTF8.GetBytes(message.Target));
 
-            MessagePackBinary.WriteArrayHeader(packer, message.Arguments.Length);
+            writer.WriteArrayHeader(message.Arguments.Length);
             foreach (var arg in message.Arguments)
             {
-                WriteArgument(arg, packer);
+                WriteArgument(arg, ref writer);
             }
 
-            WriteStreamIds(message.StreamIds, packer);
+            WriteStreamIds(message.StreamIds, ref writer);
         }
 
-        private void WriteStreamingItemMessage(StreamItemMessage message, Stream packer)
+        private void WriteStreamingItemMessage(StreamItemMessage message, ref MessagePackWriter writer)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 4);
-            MessagePackBinary.WriteInt16(packer, HubProtocolConstants.StreamItemMessageType);
-            PackHeaders(packer, message.Headers);
-            MessagePackBinary.WriteString(packer, message.InvocationId);
-            WriteArgument(message.Item, packer);
+            writer.WriteArrayHeader(4);
+            writer.WriteInt16(HubProtocolConstants.StreamItemMessageType);
+            PackHeaders(ref writer, message.Headers);
+            writer.WriteString(Encoding.UTF8.GetBytes(message.InvocationId));
+            WriteArgument(message.Item, ref writer);
         }
 
-        private void WriteArgument(object argument, Stream stream)
+        private void WriteArgument(object argument, ref MessagePackWriter writer)
         {
             if (argument == null)
             {
-                MessagePackBinary.WriteNil(stream);
+                writer.WriteNil();
             }
             else
             {
+                // TODO
                 MessagePackSerializer.NonGeneric.Serialize(argument.GetType(), stream, argument, _resolver);
             }
         }
 
-        private void WriteStreamIds(string[] streamIds, Stream packer)
+        private void WriteStreamIds(string[] streamIds, ref MessagePackWriter writer)
         {
             if (streamIds != null)
             {
-                MessagePackBinary.WriteArrayHeader(packer, streamIds.Length);
+                writer.WriteArrayHeader(streamIds.Length);
                 foreach (var streamId in streamIds)
                 {
-                    MessagePackBinary.WriteString(packer, streamId);
+                    writer.WriteString(Encoding.UTF8.GetBytes(streamId));
                 }
             }
             else
             {
-                MessagePackBinary.WriteArrayHeader(packer, 0);
+                writer.WriteArrayHeader(0);
             }
         }
 
-        private void WriteCompletionMessage(CompletionMessage message, Stream packer)
+        private void WriteCompletionMessage(CompletionMessage message, ref MessagePackWriter writer)
         {
             var resultKind =
                 message.Error != null ? ErrorResult :
                 message.HasResult ? NonVoidResult :
                 VoidResult;
 
-            MessagePackBinary.WriteArrayHeader(packer, 4 + (resultKind != VoidResult ? 1 : 0));
-            MessagePackBinary.WriteInt32(packer, HubProtocolConstants.CompletionMessageType);
-            PackHeaders(packer, message.Headers);
-            MessagePackBinary.WriteString(packer, message.InvocationId);
-            MessagePackBinary.WriteInt32(packer, resultKind);
+            writer.WriteArrayHeader(4 + (resultKind != VoidResult ? 1 : 0));
+            writer.WriteInt32(HubProtocolConstants.CompletionMessageType);
+            PackHeaders(ref writer, message.Headers);
+            writer.WriteString(Encoding.UTF8.GetBytes(message.InvocationId));
+            writer.WriteInt32(resultKind);
             switch (resultKind)
             {
                 case ErrorResult:
-                    MessagePackBinary.WriteString(packer, message.Error);
+                    writer.WriteString(Encoding.UTF8.GetBytes(message.Error));
                     break;
                 case NonVoidResult:
-                    WriteArgument(message.Result, packer);
+                    WriteArgument(message.Result, ref writer);
                     break;
             }
         }
 
-        private void WriteCancelInvocationMessage(CancelInvocationMessage message, Stream packer)
+        private void WriteCancelInvocationMessage(CancelInvocationMessage message, ref MessagePackWriter writer)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 3);
-            MessagePackBinary.WriteInt16(packer, HubProtocolConstants.CancelInvocationMessageType);
-            PackHeaders(packer, message.Headers);
-            MessagePackBinary.WriteString(packer, message.InvocationId);
+            writer.WriteArrayHeader(3);
+            writer.WriteInt16(HubProtocolConstants.CancelInvocationMessageType);
+            PackHeaders(ref writer, message.Headers);
+            writer.WriteString(Encoding.UTF8.GetBytes(message.InvocationId));
         }
 
-        private void WriteCloseMessage(CloseMessage message, Stream packer)
+        private void WriteCloseMessage(CloseMessage message, ref MessagePackWriter writer)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 2);
-            MessagePackBinary.WriteInt16(packer, HubProtocolConstants.CloseMessageType);
+            writer.WriteArrayHeader(2);
+            //MessagePackBinary.WriteArrayHeader(packer, 2);
+            //MessagePackBinary.WriteInt16(packer, HubProtocolConstants.CloseMessageType);
+            writer.WriteInt16(HubProtocolConstants.CloseMessageType);
             if (string.IsNullOrEmpty(message.Error))
             {
-                MessagePackBinary.WriteNil(packer);
+                //MessagePackBinary.WriteNil(packer);
+                writer.WriteNil();
             }
             else
             {
-                MessagePackBinary.WriteString(packer, message.Error);
+                //MessagePackBinary.WriteString(packer, message.Error);
+                writer.WriteString(Encoding.UTF8.GetBytes(message.Error));
             }
         }
 
-        private void WritePingMessage(PingMessage pingMessage, Stream packer)
+        private void WritePingMessage(PingMessage pingMessage, ref MessagePackWriter writer)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 1);
-            MessagePackBinary.WriteInt32(packer, HubProtocolConstants.PingMessageType);
+            writer.WriteArrayHeader(1);
+            writer.WriteInt32(HubProtocolConstants.PingMessageType);
         }
 
-        private void PackHeaders(Stream packer, IDictionary<string, string> headers)
+        private void PackHeaders(ref MessagePackWriter writer, IDictionary<string, string> headers)
         {
             if (headers != null)
             {
-                MessagePackBinary.WriteMapHeader(packer, headers.Count);
+                writer.WriteMapHeader(headers.Count);
                 if (headers.Count > 0)
                 {
                     foreach (var header in headers)
                     {
-                        MessagePackBinary.WriteString(packer, header.Key);
-                        MessagePackBinary.WriteString(packer, header.Value);
+                        writer.WriteString(Encoding.UTF8.GetBytes(header.Key));
+                        writer.WriteString(Encoding.UTF8.GetBytes(header.Value));
                     }
                 }
             }
             else
             {
-                MessagePackBinary.WriteMapHeader(packer, 0);
+                writer.WriteMapHeader(0);
             }
         }
 
-        private static string ReadInvocationId(byte[] input, ref int offset)
-        {
-            return ReadString(input, ref offset, "invocationId");
-        }
+        //private static string ReadInvocationId(byte[] input, ref int offset)
+        //{
+        //    return ReadString(input, ref offset, "invocationId");
+        //}
 
-        private static int ReadInt32(byte[] input, ref int offset, string field)
-        {
-            Exception msgPackException = null;
-            try
-            {
-                var readInt = MessagePackBinary.ReadInt32(input, offset, out var readSize);
-                offset += readSize;
-                return readInt;
-            }
-            catch (Exception e)
-            {
-                msgPackException = e;
-            }
+        //private static int ReadInt32(byte[] input, ref int offset, string field)
+        //{
+        //    Exception msgPackException = null;
+        //    try
+        //    {
+        //        var readInt = MessagePackBinary.ReadInt32(input, offset, out var readSize);
+        //        offset += readSize;
+        //        return readInt;
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        msgPackException = e;
+        //    }
 
-            throw new InvalidDataException($"Reading '{field}' as Int32 failed.", msgPackException);
-        }
+        //    throw new InvalidDataException($"Reading '{field}' as Int32 failed.", msgPackException);
+        //}
 
-        private static string ReadString(byte[] input, ref int offset, string field)
-        {
-            Exception msgPackException = null;
-            try
-            {
-                var readString = MessagePackBinary.ReadString(input, offset, out var readSize);
-                offset += readSize;
-                return readString;
-            }
-            catch (Exception e)
-            {
-                msgPackException = e;
-            }
+        //private static string ReadString(byte[] input, ref int offset, string field)
+        //{
+        //    Exception msgPackException = null;
+        //    try
+        //    {
+        //        var readString = MessagePackBinary.ReadString(input, offset, out var readSize);
+        //        offset += readSize;
+        //        return readString;
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        msgPackException = e;
+        //    }
 
-            throw new InvalidDataException($"Reading '{field}' as String failed.", msgPackException);
-        }
+        //    throw new InvalidDataException($"Reading '{field}' as String failed.", msgPackException);
+        //}
 
-        private static long ReadMapLength(byte[] input, ref int offset, string field)
-        {
-            Exception msgPackException = null;
-            try
-            {
-                var readMap = MessagePackBinary.ReadMapHeader(input, offset, out var readSize);
-                offset += readSize;
-                return readMap;
-            }
-            catch (Exception e)
-            {
-                msgPackException = e;
-            }
+        //private static long ReadMapLength(byte[] input, ref int offset, string field)
+        //{
+        //    Exception msgPackException = null;
+        //    try
+        //    {
+        //        var readMap = MessagePackBinary.ReadMapHeader(input, offset, out var readSize);
+        //        offset += readSize;
+        //        return readMap;
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        msgPackException = e;
+        //    }
 
-            throw new InvalidDataException($"Reading map length for '{field}' failed.", msgPackException);
-        }
+        //    throw new InvalidDataException($"Reading map length for '{field}' failed.", msgPackException);
+        //}
 
-        private static long ReadArrayLength(byte[] input, ref int offset, string field)
-        {
-            Exception msgPackException = null;
-            try
-            {
-                var readArray = MessagePackBinary.ReadArrayHeader(input, offset, out var readSize);
-                offset += readSize;
-                return readArray;
-            }
-            catch (Exception e)
-            {
-                msgPackException = e;
-            }
+        //private static long ReadArrayLength(byte[] input, ref int offset, string field)
+        //{
+        //    Exception msgPackException = null;
+        //    try
+        //    {
+        //        var readArray = MessagePackBinary.ReadArrayHeader(input, offset, out var readSize);
+        //        offset += readSize;
+        //        return readArray;
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        msgPackException = e;
+        //    }
 
-            throw new InvalidDataException($"Reading array length for '{field}' failed.", msgPackException);
-        }
+        //    throw new InvalidDataException($"Reading array length for '{field}' failed.", msgPackException);
+        //}
 
         private static object DeserializeObject(ref MessagePackReader reader, Type type, string field, IFormatterResolver resolver)
         {
             Exception msgPackException = null;
             try
             {
+                // TODO
                 var obj = MessagePackSerializer.NonGeneric.Deserialize(type, new ArraySegment<byte>(input, offset, input.Length - offset), resolver);
                 offset += MessagePackBinary.ReadNextBlock(input, offset);
                 return obj;
@@ -687,7 +696,7 @@ namespace Microsoft.AspNetCore.SignalR.Protocol
         {
             public static readonly IFormatterResolver Instance = new SignalRResolver();
 
-            public static readonly IList<IFormatterResolver> Resolvers = new[]
+            public static readonly IList<IFormatterResolver> Resolvers = new IFormatterResolver[]
             {
                 MessagePack.Resolvers.DynamicEnumAsStringResolver.Instance,
                 MessagePack.Resolvers.ContractlessStandardResolver.Instance,
