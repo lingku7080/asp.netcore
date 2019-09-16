@@ -37,7 +37,7 @@ namespace Microsoft.AspNetCore.SignalR.Microbenchmarks
             _dispatcher = new DefaultHubDispatcher<TestHub>(
                 serviceScopeFactory,
                 new HubContext<TestHub>(new DefaultHubLifetimeManager<TestHub>(NullLogger<DefaultHubLifetimeManager<TestHub>>.Instance)),
-                Options.Create(new HubOptions<TestHub>()),
+                Options.Create(new HubOptions<TestHub>() { EnableDetailedErrors = true }),
                 Options.Create(new HubOptions()),
                 new Logger<DefaultHubDispatcher<TestHub>>(NullLoggerFactory.Instance));
 
@@ -47,6 +47,7 @@ namespace Microsoft.AspNetCore.SignalR.Microbenchmarks
             var contextOptions = new HubConnectionContextOptions()
             {
                 KeepAliveInterval = TimeSpan.Zero,
+                StreamBufferCapacity = 10,
             };
             _connectionContext = new NoErrorHubConnectionContext(connection, contextOptions, NullLoggerFactory.Instance);
 
@@ -365,9 +366,10 @@ namespace Microsoft.AspNetCore.SignalR.Microbenchmarks
         public async Task UploadStream_Thousand()
         {
             await _dispatcher.DispatchMessageAsync(_connectionContext, new InvocationMessage("123", nameof(TestHub.UploadStream), Array.Empty<object>(), streamIds: new string[] { "1" }));
+            var streamItem = new StreamItemMessage("1", "test");
             for (var i = 0; i < 1000; ++i)
             {
-                await _dispatcher.DispatchMessageAsync(_connectionContext, new StreamItemMessage("1", "test"));
+                await _dispatcher.DispatchMessageAsync(_connectionContext, streamItem);
             }
             await _dispatcher.DispatchMessageAsync(_connectionContext, CompletionMessage.Empty("1"));
 
@@ -379,9 +381,10 @@ namespace Microsoft.AspNetCore.SignalR.Microbenchmarks
         public async Task UploadStreamIAsyncEnumerable_Thousand()
         {
             await _dispatcher.DispatchMessageAsync(_connectionContext, new InvocationMessage("123", nameof(TestHub.UploadStreamIAsynEnumerable), Array.Empty<object>(), streamIds: new string[] { "1" }));
+            var streamItem = new StreamItemMessage("1", "test");
             for (var i = 0; i < 1000; ++i)
             {
-                await _dispatcher.DispatchMessageAsync(_connectionContext, new StreamItemMessage("1", "test"));
+                await _dispatcher.DispatchMessageAsync(_connectionContext, streamItem);
             }
             await _dispatcher.DispatchMessageAsync(_connectionContext, CompletionMessage.Empty("1"));
 

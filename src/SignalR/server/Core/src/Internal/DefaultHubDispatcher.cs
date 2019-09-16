@@ -41,6 +41,7 @@ namespace Microsoft.AspNetCore.SignalR.Internal
         public override async Task OnConnectedAsync(HubConnectionContext connection)
         {
             IServiceScope scope = null;
+            connection.HubCallerClients = new HubCallerClients(_hubContext.Clients, connection.ConnectionId);
 
             try
             {
@@ -412,10 +413,12 @@ namespace Microsoft.AspNetCore.SignalR.Internal
 
             try
             {
+                var streamItemMessage = new StreamItemMessage(invocationId, null);
                 await foreach (var streamItem in enumerable)
                 {
+                    streamItemMessage.Item = streamItem;
                     // Send the stream item
-                    await connection.WriteAsync(new StreamItemMessage(invocationId, streamItem));
+                    await connection.WriteAsync(streamItemMessage);
                 }
             }
             catch (ChannelClosedException ex)
@@ -482,7 +485,7 @@ namespace Microsoft.AspNetCore.SignalR.Internal
 
         private void InitializeHub(THub hub, HubConnectionContext connection)
         {
-            hub.Clients = new HubCallerClients(_hubContext.Clients, connection.ConnectionId);
+            hub.Clients = connection.HubCallerClients;
             hub.Context = connection.HubCallerContext;
             hub.Groups = _hubContext.Groups;
         }

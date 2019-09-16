@@ -18,6 +18,7 @@ namespace Microsoft.AspNetCore.SignalR
         private static readonly MethodInfo _buildConverterMethod = typeof(StreamTracker).GetMethods(BindingFlags.NonPublic | BindingFlags.Static).Single(m => m.Name.Equals("BuildStream"));
         private readonly object[] _streamConverterArgs;
         private ConcurrentDictionary<string, IStreamConverter> _lookup = new ConcurrentDictionary<string, IStreamConverter>();
+        private ConcurrentDictionary<Type, MethodInfo> _streamMethods = new ConcurrentDictionary<Type, MethodInfo>();
 
         public StreamTracker(int streamBufferCapacity)
         {
@@ -29,7 +30,8 @@ namespace Microsoft.AspNetCore.SignalR
         /// </summary>
         public object AddStream(string streamId, Type itemType, Type targetType)
         {
-            var newConverter = (IStreamConverter)_buildConverterMethod.MakeGenericMethod(itemType).Invoke(null, _streamConverterArgs);
+            var method = _streamMethods.GetOrAdd(itemType, t => _buildConverterMethod.MakeGenericMethod(t));
+            var newConverter = (IStreamConverter)method.Invoke(null, _streamConverterArgs);
             _lookup[streamId] = newConverter;
             return newConverter.GetReaderAsObject(targetType);
         }
