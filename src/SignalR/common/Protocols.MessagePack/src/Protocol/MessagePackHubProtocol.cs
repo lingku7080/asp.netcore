@@ -366,9 +366,10 @@ namespace Microsoft.AspNetCore.SignalR.Protocol
 
             try
             {
-                var writer = new MessagePackWriter(output);
+                var writer = new MessagePackWriter(memoryWriter);
                 // Write message to a buffer so we can get its length
                 WriteMessageCore(message, ref writer);
+                writer.Flush();
 
                 // Write length then message to output
                 BinaryMessageFormatter.WriteLengthPrefix(memoryWriter.Length, output);
@@ -444,7 +445,7 @@ namespace Microsoft.AspNetCore.SignalR.Protocol
         {
             writer.WriteArrayHeader(6);
 
-            writer.WriteInt32(HubProtocolConstants.InvocationMessageType);
+            writer.Write(HubProtocolConstants.InvocationMessageType);
             PackHeaders(ref writer, message.Headers);
             if (string.IsNullOrEmpty(message.InvocationId))
             {
@@ -468,7 +469,7 @@ namespace Microsoft.AspNetCore.SignalR.Protocol
         {
             writer.WriteArrayHeader(6);
 
-            writer.WriteInt16(HubProtocolConstants.StreamInvocationMessageType);
+            writer.Write(HubProtocolConstants.StreamInvocationMessageType);
             PackHeaders(ref writer, message.Headers);
             writer.WriteString(Encoding.UTF8.GetBytes(message.InvocationId));
             writer.WriteString(Encoding.UTF8.GetBytes(message.Target));
@@ -485,7 +486,7 @@ namespace Microsoft.AspNetCore.SignalR.Protocol
         private void WriteStreamingItemMessage(StreamItemMessage message, ref MessagePackWriter writer)
         {
             writer.WriteArrayHeader(4);
-            writer.WriteInt16(HubProtocolConstants.StreamItemMessageType);
+            writer.Write(HubProtocolConstants.StreamItemMessageType);
             PackHeaders(ref writer, message.Headers);
             writer.WriteString(Encoding.UTF8.GetBytes(message.InvocationId));
             WriteArgument(message.Item, ref writer);
@@ -500,7 +501,7 @@ namespace Microsoft.AspNetCore.SignalR.Protocol
             else
             {
                 // TODO
-                MessagePackSerializer.NonGeneric.Serialize(argument.GetType(), stream, argument, _resolver);
+                MessagePackSerializer.Serialize(argument.GetType(), ref writer, argument, MessagePackSerializerOptions.Standard.WithResolver(_resolver));
             }
         }
 
@@ -528,10 +529,10 @@ namespace Microsoft.AspNetCore.SignalR.Protocol
                 VoidResult;
 
             writer.WriteArrayHeader(4 + (resultKind != VoidResult ? 1 : 0));
-            writer.WriteInt32(HubProtocolConstants.CompletionMessageType);
+            writer.Write(HubProtocolConstants.CompletionMessageType);
             PackHeaders(ref writer, message.Headers);
             writer.WriteString(Encoding.UTF8.GetBytes(message.InvocationId));
-            writer.WriteInt32(resultKind);
+            writer.Write(resultKind);
             switch (resultKind)
             {
                 case ErrorResult:
@@ -546,7 +547,7 @@ namespace Microsoft.AspNetCore.SignalR.Protocol
         private void WriteCancelInvocationMessage(CancelInvocationMessage message, ref MessagePackWriter writer)
         {
             writer.WriteArrayHeader(3);
-            writer.WriteInt16(HubProtocolConstants.CancelInvocationMessageType);
+            writer.Write(HubProtocolConstants.CancelInvocationMessageType);
             PackHeaders(ref writer, message.Headers);
             writer.WriteString(Encoding.UTF8.GetBytes(message.InvocationId));
         }
@@ -554,17 +555,13 @@ namespace Microsoft.AspNetCore.SignalR.Protocol
         private void WriteCloseMessage(CloseMessage message, ref MessagePackWriter writer)
         {
             writer.WriteArrayHeader(2);
-            //MessagePackBinary.WriteArrayHeader(packer, 2);
-            //MessagePackBinary.WriteInt16(packer, HubProtocolConstants.CloseMessageType);
-            writer.WriteInt16(HubProtocolConstants.CloseMessageType);
+            writer.Write(HubProtocolConstants.CloseMessageType);
             if (string.IsNullOrEmpty(message.Error))
             {
-                //MessagePackBinary.WriteNil(packer);
                 writer.WriteNil();
             }
             else
             {
-                //MessagePackBinary.WriteString(packer, message.Error);
                 writer.WriteString(Encoding.UTF8.GetBytes(message.Error));
             }
         }
@@ -572,7 +569,7 @@ namespace Microsoft.AspNetCore.SignalR.Protocol
         private void WritePingMessage(PingMessage pingMessage, ref MessagePackWriter writer)
         {
             writer.WriteArrayHeader(1);
-            writer.WriteInt32(HubProtocolConstants.PingMessageType);
+            writer.Write(HubProtocolConstants.PingMessageType);
         }
 
         private void PackHeaders(ref MessagePackWriter writer, IDictionary<string, string> headers)
@@ -674,8 +671,7 @@ namespace Microsoft.AspNetCore.SignalR.Protocol
             try
             {
                 // TODO
-                var obj = MessagePackSerializer.NonGeneric.Deserialize(type, new ArraySegment<byte>(input, offset, input.Length - offset), resolver);
-                offset += MessagePackBinary.ReadNextBlock(input, offset);
+                var obj = MessagePackSerializer.Deserialize(type, ref reader, MessagePackSerializerOptions.Standard.WithResolver(resolver));
                 return obj;
             }
             catch (Exception ex)
