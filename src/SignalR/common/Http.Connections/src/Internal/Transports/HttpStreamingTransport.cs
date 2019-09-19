@@ -37,6 +37,8 @@ namespace Microsoft.AspNetCore.Http.Connections.Internal.Transports
             // Flush headers immediately so we can start streaming
             await context.Response.Body.FlushAsync();
 
+            await context.Response.WriteAsync("He");
+
             try
             {
                 while (true)

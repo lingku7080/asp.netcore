@@ -32,7 +32,7 @@ export class FetchHttpClient extends HttpClient {
         const contentType = request.stream ? "application/bedrock-streaming;charset=UTF-8" : "text/plain;charset=UTF-8";
 
         const fetchRequest = new Request(request.url!, {
-            body: request.content!,
+            body: request.content,
             cache: "no-cache",
             credentials: "include",
             headers: {

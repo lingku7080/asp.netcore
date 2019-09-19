@@ -46,9 +46,14 @@ export class HttpStreamingTransport implements ITransport {
     private async stream(response: HttpResponse): Promise<void> {
         if (response.content instanceof ReadableStream) {
             const reader = response.content!.getReader();
+            let first = false;
             while (true) {
                 // @ts-ignore
                 const result = await reader.read();
+                if (!first) {
+                    first = true;
+                    continue;
+                }
                 this.logger.log(LogLevel.Information, result.value);
                 if (this.onreceive) {
                     this.onreceive(new TextDecoder("utf-8").decode((result.value as Uint8Array).buffer));
