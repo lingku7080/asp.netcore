@@ -10,17 +10,18 @@ using System.IO;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http2;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http2.HPack;
+using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure;
 using Microsoft.Net.Http.Headers;
 
 namespace http2cat
 {
-    public class Http2Utilities
+    public class Http2Utilities : IHttpHeadersHandler
     {
         public static readonly int MaxRequestHeaderFieldSize = 16 * 1024;
         public static readonly string _4kHeaderValue = new string('a', 4096);
@@ -107,27 +108,26 @@ namespace http2cat
         internal readonly HPackDecoder _hpackDecoder;
         private readonly byte[] _headerEncodingBuffer = new byte[Http2PeerSettings.MinAllowedMaxFrameSize];
 
-        public readonly ConcurrentDictionary<int, TaskCompletionSource<object>> _runningStreams = new ConcurrentDictionary<int, TaskCompletionSource<object>>();
-        public readonly Dictionary<string, string> _receivedHeaders = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        public readonly Dictionary<string, string> _receivedTrailers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         public readonly Dictionary<string, string> _decodedHeaders = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        public readonly HashSet<int> _abortedStreamIds = new HashSet<int>();
-        public readonly object _abortedStreamIdsLock = new object();
-        public readonly TaskCompletionSource<object> _closingStateReached = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-        public readonly TaskCompletionSource<object> _closedStateReached = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         internal DuplexPipe.DuplexPipePair _pair;
         public long _bytesReceived;
 
-        public Http2Utilities()
+        public Http2Utilities(ConnectionContext clientConnectionContext)
         {
             _hpackDecoder = new HPackDecoder((int)_clientSettings.HeaderTableSize, MaxRequestHeaderFieldSize);
+            _pair = new DuplexPipe.DuplexPipePair(transport: null, application: clientConnectionContext.Transport);
         }
 
-        public async Task InitializeConnectionAsync(ConnectionContext clientConnectionContext, int expectedSettingsCount = 3)
+        void IHttpHeadersHandler.OnHeader(Span<byte> name, Span<byte> value)
         {
-            _pair = new DuplexPipe.DuplexPipePair(transport: null, application: clientConnectionContext.Transport);
+            _decodedHeaders[name.GetAsciiStringNonNullCharacters()] = value.GetAsciiOrUTF8StringNonNullCharacters();
+        }
 
+        void IHttpHeadersHandler.OnHeadersComplete() { }
+
+        public async Task InitializeConnectionAsync(int expectedSettingsCount = 3)
+        {
             await SendPreambleAsync().ConfigureAwait(false);
             await SendSettingsAsync();
 
@@ -151,7 +151,6 @@ namespace http2cat
         {
             var writableBuffer = _pair.Application.Output;
             var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-            _runningStreams[streamId] = tcs;
 
             var frame = new Http2Frame();
             frame.PrepareHeaders(Http2HeadersFrameFlags.NONE, streamId);
@@ -192,6 +191,13 @@ namespace http2cat
             return FlushAsync(writableBuffer);
         }
 
+        internal Dictionary<string, string> DecodeHeaders(Http2FrameWithPayload frame, bool endHeaders = false)
+        {
+            Assert.Equal(Http2FrameType.HEADERS, frame.Type);
+            _hpackDecoder.Decode(frame.PayloadSequence, endHeaders, handler: this);
+            return _decodedHeaders;
+        }
+
         /* https://tools.ietf.org/html/rfc7540#section-6.2
             +---------------+
             |Pad Length? (8)|
@@ -205,7 +211,6 @@ namespace http2cat
         {
             var writableBuffer = _pair.Application.Output;
             var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-            _runningStreams[streamId] = tcs;
 
             var frame = new Http2Frame();
 
@@ -247,7 +252,6 @@ namespace http2cat
         {
             var writableBuffer = _pair.Application.Output;
             var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-            _runningStreams[streamId] = tcs;
 
             var frame = new Http2Frame();
             frame.PrepareHeaders(Http2HeadersFrameFlags.END_HEADERS | Http2HeadersFrameFlags.PRIORITY, streamId);
@@ -292,7 +296,6 @@ namespace http2cat
         {
             var writableBuffer = _pair.Application.Output;
             var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-            _runningStreams[streamId] = tcs;
 
             var frame = new Http2Frame();
             frame.PrepareHeaders(Http2HeadersFrameFlags.END_HEADERS | Http2HeadersFrameFlags.PADDED | Http2HeadersFrameFlags.PRIORITY, streamId);
@@ -322,11 +325,6 @@ namespace http2cat
             Http2FrameWriter.WriteHeader(frame, writableBuffer);
             writableBuffer.Write(buffer.Slice(0, frame.PayloadLength));
             return FlushAsync(writableBuffer);
-        }
-
-        public Task WaitForAllStreamsAsync()
-        {
-            return Task.WhenAll(_runningStreams.Values.Select(tcs => tcs.Task)).DefaultTimeout();
         }
 
         public Task SendAsync(ReadOnlySpan<byte> span)
@@ -771,7 +769,7 @@ namespace http2cat
                 {
                     Assert.True(buffer.Length > 0);
 
-                    if (Http2FrameReader.ReadFrame(buffer, frame, maxFrameSize, out var framePayload))
+                    if (Http2FrameReader.TryReadFrame(ref buffer, frame, maxFrameSize, out var framePayload))
                     {
                         consumed = examined = framePayload.End;
                         frame.Payload = framePayload.ToArray();
@@ -807,11 +805,12 @@ namespace http2cat
             return frame;
         }
 
-        public Task StopConnectionAsync(int expectedLastStreamId, bool ignoreNonGoAwayFrames)
+        public async Task StopConnectionAsync(int expectedLastStreamId, bool ignoreNonGoAwayFrames)
         {
-            _pair.Application.Output.Complete();
+            await SendGoAwayAsync();
+            await WaitForConnectionStopAsync(expectedLastStreamId, ignoreNonGoAwayFrames);
 
-            return WaitForConnectionStopAsync(expectedLastStreamId, ignoreNonGoAwayFrames);
+            _pair.Application.Output.Complete();
         }
 
         public Task WaitForConnectionStopAsync(int expectedLastStreamId, bool ignoreNonGoAwayFrames)
@@ -861,15 +860,6 @@ namespace http2cat
             Assert.Equal(0, frame.Flags);
             Assert.Equal(expectedStreamId, frame.StreamId);
             Assert.Equal(expectedErrorCode, frame.RstStreamErrorCode);
-        }
-
-        public void VerifyDecodedRequestHeaders(IEnumerable<KeyValuePair<string, string>> expectedHeaders)
-        {
-            foreach (var header in expectedHeaders)
-            {
-                Assert.True(_receivedHeaders.TryGetValue(header.Key, out var value), header.Key);
-                Assert.Equal(header.Value, value, ignoreCase: true);
-            }
         }
 
         internal class Http2FrameWithPayload : Http2Frame

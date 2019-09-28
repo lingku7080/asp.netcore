@@ -23,12 +23,13 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets.Internal
 
         private readonly Socket _socket;
         private readonly ISocketsTrace _trace;
+        private readonly bool _supportHalfClose;
         private readonly SocketReceiver _receiver;
         private readonly SocketSender _sender;
         private readonly CancellationTokenSource _connectionClosedTokenSource = new CancellationTokenSource();
 
         private readonly object _shutdownLock = new object();
-        private volatile bool _socketDisposed;
+        private volatile SocketState _socketState;
         private volatile Exception _shutdownReason;
         private Task _processingTask;
         private readonly TaskCompletionSource<object> _waitForConnectionClosedTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -39,7 +40,8 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets.Internal
                                   PipeScheduler scheduler,
                                   ISocketsTrace trace,
                                   long? maxReadBufferSize = null,
-                                  long? maxWriteBufferSize = null)
+                                  long? maxWriteBufferSize = null,
+                                  bool supportHalfClose = false)
         {
             Debug.Assert(socket != null);
             Debug.Assert(memoryPool != null);
@@ -48,6 +50,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets.Internal
             _socket = socket;
             MemoryPool = memoryPool;
             _trace = trace;
+            _supportHalfClose = supportHalfClose;
 
             LocalEndPoint = _socket.LocalEndPoint;
             RemoteEndPoint = _socket.RemoteEndPoint;
@@ -145,7 +148,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets.Internal
 
                 // There's still a small chance that both DoReceive() and DoSend() can log the same connection reset.
                 // Both logs will have the same ConnectionId. I don't think it's worthwhile to lock just to avoid this.
-                if (!_socketDisposed)
+                if (_socketState != SocketState.Disposed)
                 {
                     _trace.ConnectionReset(ConnectionId);
                 }
@@ -157,7 +160,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets.Internal
                 // This exception should always be ignored because _shutdownReason should be set.
                 error = ex;
 
-                if (!_socketDisposed)
+                if (_socketState != SocketState.Disposed)
                 {
                     // This is unexpected if the socket hasn't been disposed yet.
                     _trace.ConnectionError(ConnectionId, error);
@@ -171,6 +174,11 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets.Internal
             }
             finally
             {
+                if (_supportHalfClose)
+                {
+                    ShutdownReceive();
+                }
+
                 // If Shutdown() has already bee called, assume that was the reason ProcessReceives() exited.
                 Input.Complete(_shutdownReason ?? error);
 
@@ -256,13 +264,20 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets.Internal
             }
             finally
             {
-                Shutdown(shutdownReason);
+                if (!_supportHalfClose)
+                {
+                    Shutdown(shutdownReason);
+
+                    // Cancel any pending flushes so that the input loop is un-paused
+                    Input.CancelPendingFlush();
+                }
+                else
+                {
+                    ShutdownSend();
+                }
 
                 // Complete the output after disposing the socket
                 Output.Complete(unexpectedError);
-
-                // Cancel any pending flushes so that the input loop is un-paused
-                Input.CancelPendingFlush();
             }
         }
 
@@ -321,7 +336,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets.Internal
         {
             lock (_shutdownLock)
             {
-                if (_socketDisposed)
+                if (_socketState == SocketState.Disposed)
                 {
                     return;
                 }
@@ -329,7 +344,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets.Internal
                 // Make sure to close the connection only after the _aborted flag is set.
                 // Without this, the RequestsCanBeAbortedMidRead test will sometimes fail when
                 // a BadHttpRequestException is thrown instead of a TaskCanceledException.
-                _socketDisposed = true;
+                _socketState = SocketState.Disposed;
 
                 // shutdownReason should only be null if the output was completed gracefully, so no one should ever
                 // ever observe the nondescript ConnectionAbortedException except for connection middleware attempting
@@ -349,6 +364,54 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets.Internal
                 }
 
                 _socket.Dispose();
+            }
+        }
+
+        private void ShutdownReceive()
+        {
+            lock (_shutdownLock)
+            {
+                if (_socketState == SocketState.Disposed)
+                {
+                    return;
+                }
+
+                _socket.Shutdown(SocketShutdown.Receive);
+
+                if (_socketState == SocketState.ShutdownSend)
+                {
+                    _socketState = SocketState.Disposed;
+                    _socket.Dispose();
+                }
+                else
+                {
+                    _socketState = SocketState.ShutdownReceive;
+                }
+            }
+        }
+
+        private void ShutdownSend()
+        {
+            lock (_shutdownLock)
+            {
+                if (_socketState == SocketState.Disposed)
+                {
+                    return;
+                }
+
+                _trace.ConnectionWriteFin(ConnectionId, "The Socket transport's send loop completed gracefully.");
+
+                _socket.Shutdown(SocketShutdown.Send);
+
+                if (_socketState == SocketState.ShutdownReceive)
+                {
+                    _socketState = SocketState.Disposed;
+                    _socket.Dispose();
+                }
+                else
+                {
+                    _socketState = SocketState.ShutdownSend;
+                }
             }
         }
 
@@ -380,6 +443,14 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets.Internal
             return errorCode == SocketError.OperationAborted ||
                    errorCode == SocketError.Interrupted ||
                    (errorCode == SocketError.InvalidArgument && !IsWindows);
+        }
+
+        private enum SocketState
+        {
+            Open,
+            ShutdownReceive,
+            ShutdownSend,
+            Disposed
         }
     }
 }

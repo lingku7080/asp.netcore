@@ -55,7 +55,17 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets.Client
 
             await socket.ConnectAsync(ipEndPoint);
 
-            return new SocketConnection(socket, _memoryPool, PipeScheduler.ThreadPool, _trace, _options.MaxReadBufferSize, _options.MaxWriteBufferSize);
+            var socketConnection = new SocketConnection(
+                socket,
+                _memoryPool,
+                PipeScheduler.ThreadPool,
+                _trace,
+                _options.MaxReadBufferSize,
+                _options.MaxWriteBufferSize,
+                supportHalfClose: true);
+
+            socketConnection.Start();
+            return socketConnection;
         }
 
         public ValueTask DisposeAsync()
