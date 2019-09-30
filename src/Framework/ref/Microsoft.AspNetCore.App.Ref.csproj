@@ -176,10 +176,16 @@ This package is an internal implementation of the .NET Core SDK and is not meant
       DestinationFile="$(ZipArchiveOutputPath)"
       Overwrite="true" />
     <!-- Requires Windows 10 version 1803 or newer -->
-    <Exec
-      Command="tar -czf $(TarArchiveOutputPath) ."
-      WorkingDirectory="$(TargetingPackLayoutRoot)" />
-    <Message Importance="High" Text="$(MSBuildProjectName) -> $(TarArchiveOutputPath)" />
+    <Exec Command="$(RepositoryEngineeringDir)tar.exe -czf $(_TarArchiveOutputPath) ."
+      WorkingDirectory="$(TargetingPackLayoutRoot)"
+      IgnoreExitCode="true"
+      Condition="'$(OS)' == 'Windows_NT'">
+      <Output TaskParameter="ExitCode" PropertyName="_TarExitCode" />
+    </Exec>
+
+    <Exec Command="tar -czf $(_TarArchiveOutputPath) ."
+      WorkingDirectory="$(TargetingPackLayoutRoot)"
+      Condition="'$(OS)' != 'Windows_NT'" />
   </Target>
 
   <Target Name="IncludeFrameworkListFile"
