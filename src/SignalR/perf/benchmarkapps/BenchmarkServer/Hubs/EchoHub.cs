@@ -45,5 +45,10 @@ namespace BenchmarkServer.Hubs
         {
             // Dump the payload, we don't care
         }
+        
+        public DateTime GetCurrentTime()
+        {
+            return DateTime.UtcNow;
+        }
     }
 }
