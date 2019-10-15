@@ -161,5 +161,6 @@
   <Import Project="eng\targets\Wix.Common.targets"  Condition="'$(MSBuildProjectExtension)' == '.wixproj'" />
   <Import Project="eng\targets\Npm.Common.targets"  Condition="'$(MSBuildProjectExtension)' == '.npmproj'" />
   <Import Project="eng\targets\ReferenceAssembly.targets" Condition=" '$(HasReferenceAssembly)' == 'true' " />
+  <Import Project="eng\IndirectReferences.props" Condition="'$(IsUnitTestProject)' == 'true'" />
 
 </Project>
