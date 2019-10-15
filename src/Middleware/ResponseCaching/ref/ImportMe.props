@@ -1,0 +1,2 @@
+Microsoft.AspNetCore.ResponseCaching
+Microsoft.AspNetCore.Http.Extensions;Microsoft.AspNetCore.Http;Microsoft.AspNetCore.ResponseCaching.Abstractions;Microsoft.AspNetCore.Http.Abstractions;Microsoft.AspNetCore.Http.Features;Microsoft.AspNetCore.WebUtilities;Microsoft.Net.Http.Headers

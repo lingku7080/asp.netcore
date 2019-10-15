@@ -1,0 +1,2 @@
+Microsoft.AspNetCore.SignalR.Common
+Microsoft.AspNetCore.Connections.Abstractions;Microsoft.AspNetCore.Http.Features

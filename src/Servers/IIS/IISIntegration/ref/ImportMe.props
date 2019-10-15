@@ -1,0 +1,2 @@
+Microsoft.AspNetCore.Server.IISIntegration
+Microsoft.AspNetCore.Hosting.Abstractions;Microsoft.AspNetCore.Hosting.Server.Abstractions;Microsoft.AspNetCore.Authentication.Core;Microsoft.AspNetCore.Http.Extensions;Microsoft.AspNetCore.Http;Microsoft.AspNetCore.HttpOverrides;Microsoft.AspNetCore.Authentication.Abstractions;Microsoft.AspNetCore.Http.Abstractions;Microsoft.AspNetCore.Http.Features;Microsoft.AspNetCore.WebUtilities;Microsoft.Net.Http.Headers

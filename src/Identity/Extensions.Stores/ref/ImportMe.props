@@ -1,0 +1,2 @@
+Microsoft.Extensions.Identity.Stores
+Microsoft.Extensions.Identity.Core;Microsoft.AspNetCore.Cryptography.Internal;Microsoft.AspNetCore.Cryptography.KeyDerivation

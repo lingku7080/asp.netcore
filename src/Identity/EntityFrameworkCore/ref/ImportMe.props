@@ -1,0 +1,2 @@
+Microsoft.AspNetCore.Identity.EntityFrameworkCore
+Microsoft.Extensions.Identity.Stores;Microsoft.AspNetCore.Cryptography.Internal;Microsoft.AspNetCore.Cryptography.KeyDerivation;Microsoft.Extensions.Identity.Core

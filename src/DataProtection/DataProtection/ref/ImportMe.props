@@ -1,0 +1,2 @@
+Microsoft.AspNetCore.DataProtection
+Microsoft.AspNetCore.DataProtection.Abstractions;Microsoft.AspNetCore.Cryptography.Internal
