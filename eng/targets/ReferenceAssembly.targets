@@ -53,6 +53,7 @@
       <_RefSourceFileName>$(AssemblyName).$(TargetFramework).cs</_RefSourceFileName>
       <_ManualRefSourceFileName>$(AssemblyName).Manual.cs</_ManualRefSourceFileName>
       <_RefSourceFileOutputPath>$(_RefSourceOutputPath)$(_RefSourceFileName)</_RefSourceFileOutputPath>
+      <_RefIndirectReferencesFileOutputPath>$(_RefSourceOutputPath)ImportMe.props</_RefIndirectReferencesFileOutputPath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -95,11 +96,21 @@
   </ItemGroup>
 ]]>
       </ReferencesContent>
+
+      <IndirectReferencesContent>
+      <![CDATA[
+$(AssemblyName)
+@(ProjectReference->'%(Filename)')
+]]>
+      </IndirectReferencesContent>
     </PropertyGroup>
 
     <ItemGroup>
       <ProjectListContent Include="$(ReferencesContent)" TargetFramework="$(TargetFramework)" />
     </ItemGroup>
+
+    <WriteLinesToFile Condition="'$(OS)' == 'Windows_NT'"
+                      File="$(_RefIndirectReferencesFileOutputPath)" Lines="$([MSBuild]::Escape($(IndirectReferencesContent)))" Overwrite="true" />
   </Target>
 
 </Project>
