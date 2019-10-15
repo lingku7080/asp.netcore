@@ -154,6 +154,7 @@
   </Target>
 
   <Import Project="eng\Workarounds.targets" />
+  <Import Project="eng\IndirectReferences.props" Condition="'$(IsUnitTestProject)' == 'true'" />
   <Import Project="eng\targets\ResolveIisReferences.targets" Condition=" '$(MSBuildProjectExtension)' != '.vcxproj' " />
   <Import Project="eng\targets\Cpp.Common.targets"  Condition="'$(MSBuildProjectExtension)' == '.vcxproj'" />
   <Import Project="eng\targets\CSharp.Common.targets"  Condition="'$(MSBuildProjectExtension)' == '.csproj'" />
@@ -161,6 +162,5 @@
   <Import Project="eng\targets\Wix.Common.targets"  Condition="'$(MSBuildProjectExtension)' == '.wixproj'" />
   <Import Project="eng\targets\Npm.Common.targets"  Condition="'$(MSBuildProjectExtension)' == '.npmproj'" />
   <Import Project="eng\targets\ReferenceAssembly.targets" Condition=" '$(HasReferenceAssembly)' == 'true' " />
-  <Import Project="eng\IndirectReferences.props" Condition="'$(IsUnitTestProject)' == 'true'" />
 
 </Project>
