@@ -79,6 +79,11 @@
       <FilteredOriginalReferences
         Include="%(_OriginalReferences.Identity)"
         Condition="'%(_OriginalReferences.NuGetPackageId)' == '' AND '%(_OriginalReferences.PrivateAssets)' != 'All'" />
+      <FilteredOriginalDup Include="@(FilteredOriginalReferences)" Original="%(Identity)" />
+      <FilteredOriginalExtensionsFlipped Include="@(FilteredOriginalDup->Contains('Microsoft.Extensions'))" />
+      <FilteredOriginalExtensions Include="@(FilteredOriginalExtensionsFlipped->WithMetadataValue('Identity', 'true')->'%(Original)')"  />
+      <IndirectReferencesItem Include="@(ProjectReference->'%(Filename)'" />
+      <IndirectReferencesItem Include="@(FilteredOriginalExtensions)" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -100,7 +105,7 @@
       <IndirectReferencesContent>
       <![CDATA[
 $(AssemblyName)
-@(ProjectReference->'%(Filename)')
+@(IndirectReferencesItem)
 ]]>
       </IndirectReferencesContent>
     </PropertyGroup>
