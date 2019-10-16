@@ -1,3 +1,2 @@
 Microsoft.AspNetCore.DataProtection
-Microsoft.AspNetCore.DataProtection.Abstractions;Microsoft.AspNetCore.Cryptography.Internal
-Microsoft.Extensions.DependencyInjection.Abstractions;Microsoft.Extensions.Hosting.Abstractions;Microsoft.Extensions.Logging.Abstractions;Microsoft.Extensions.Options
+Microsoft.AspNetCore.DataProtection.Abstractions;Microsoft.AspNetCore.Cryptography.Internal;Microsoft.Extensions.DependencyInjection.Abstractions;Microsoft.Extensions.Hosting.Abstractions;Microsoft.Extensions.Logging.Abstractions;Microsoft.Extensions.Options

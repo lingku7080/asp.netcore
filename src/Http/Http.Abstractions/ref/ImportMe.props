@@ -1,3 +1,2 @@
 Microsoft.AspNetCore.Http.Abstractions
-Microsoft.Net.Http.Headers;Microsoft.AspNetCore.Http.Features
-Microsoft.Extensions.ActivatorUtilities.Sources
+Microsoft.Net.Http.Headers;Microsoft.AspNetCore.Http.Features;Microsoft.Extensions.ActivatorUtilities.Sources

@@ -1,3 +1,2 @@
 Microsoft.AspNetCore.Razor
-Microsoft.AspNetCore.Html.Abstractions
-Microsoft.Extensions.HashCodeCombiner.Sources
+Microsoft.AspNetCore.Html.Abstractions;Microsoft.Extensions.HashCodeCombiner.Sources

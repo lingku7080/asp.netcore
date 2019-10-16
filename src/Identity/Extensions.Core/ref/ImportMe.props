@@ -1,3 +1,2 @@
 Microsoft.Extensions.Identity.Core
-Microsoft.AspNetCore.Cryptography.KeyDerivation;Microsoft.AspNetCore.Cryptography.Internal
-Microsoft.Extensions.Logging;Microsoft.Extensions.Options
+Microsoft.AspNetCore.Cryptography.KeyDerivation;Microsoft.AspNetCore.Cryptography.Internal;Microsoft.Extensions.Logging;Microsoft.Extensions.Options

@@ -1,3 +1,2 @@
 Microsoft.AspNetCore.Localization
-Microsoft.AspNetCore.Http.Extensions;Microsoft.AspNetCore.Http.Abstractions;Microsoft.AspNetCore.Http.Features;Microsoft.Net.Http.Headers
-Microsoft.AspNetCore.Http.Extensions;Microsoft.Extensions.Localization.Abstractions;Microsoft.Extensions.Logging.Abstractions;Microsoft.Extensions.Options
+Microsoft.AspNetCore.Http.Extensions;Microsoft.AspNetCore.Http.Abstractions;Microsoft.AspNetCore.Http.Features;Microsoft.Net.Http.Headers;Microsoft.Extensions.Localization.Abstractions;Microsoft.Extensions.Logging.Abstractions;Microsoft.Extensions.Options

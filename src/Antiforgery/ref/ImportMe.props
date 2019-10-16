@@ -1,3 +1,2 @@
 Microsoft.AspNetCore.Antiforgery
-Microsoft.AspNetCore.DataProtection;Microsoft.AspNetCore.Http.Abstractions;Microsoft.AspNetCore.Http.Extensions;Microsoft.AspNetCore.WebUtilities;Microsoft.AspNetCore.Cryptography.Internal;Microsoft.AspNetCore.DataProtection.Abstractions;Microsoft.AspNetCore.Http.Features;Microsoft.Net.Http.Headers
-Microsoft.AspNetCore.Http.Extensions;Microsoft.Extensions.ObjectPool
+Microsoft.AspNetCore.DataProtection;Microsoft.AspNetCore.Http.Abstractions;Microsoft.AspNetCore.Http.Extensions;Microsoft.AspNetCore.WebUtilities;Microsoft.AspNetCore.Cryptography.Internal;Microsoft.AspNetCore.DataProtection.Abstractions;Microsoft.AspNetCore.Http.Features;Microsoft.Net.Http.Headers;Microsoft.Extensions.ObjectPool

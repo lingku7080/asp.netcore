@@ -1,3 +1,2 @@
 Microsoft.AspNetCore.Server.Kestrel.Core
-Microsoft.AspNetCore.Hosting.Abstractions;Microsoft.Net.Http.Headers;Microsoft.AspNetCore.Http;Microsoft.AspNetCore.WebUtilities;Microsoft.AspNetCore.Connections.Abstractions;Microsoft.AspNetCore.Hosting.Server.Abstractions;Microsoft.AspNetCore.Http.Abstractions;Microsoft.AspNetCore.Http.Features
-Microsoft.Extensions.Configuration.Binder;Microsoft.Extensions.Logging.Abstractions;Microsoft.Extensions.Options
+Microsoft.AspNetCore.Hosting.Abstractions;Microsoft.Net.Http.Headers;Microsoft.AspNetCore.Http;Microsoft.AspNetCore.WebUtilities;Microsoft.AspNetCore.Connections.Abstractions;Microsoft.AspNetCore.Hosting.Server.Abstractions;Microsoft.AspNetCore.Http.Abstractions;Microsoft.AspNetCore.Http.Features;Microsoft.Extensions.Configuration.Binder;Microsoft.Extensions.Logging.Abstractions;Microsoft.Extensions.Options
