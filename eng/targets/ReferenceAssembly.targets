@@ -1,6 +1,6 @@
 <Project>
 
-  <Target Name="GenerateReferenceSource" Condition="'$(HasReferenceAssembly)' == 'true'">
+  <Target Name="GenerateReferenceSource" Condition="'$(HasReferenceAssembly)' == 'true' OR '$(IsImplementationProject)' == 'true'">
     <PropertyGroup>
       <_RefSourceOutputPath>$([System.IO.Directory]::GetParent('$(MSBuildProjectDirectory)'))/ref/</_RefSourceOutputPath>
       <_RefProjectFileOutputPath>$(_RefSourceOutputPath)$(AssemblyName).csproj</_RefProjectFileOutputPath>
@@ -73,7 +73,7 @@
 
     <MakeDir Directories="$(_RefSourceOutputPath)" />
     <Message Importance="High" Text="Generating $(_RefSourceFileOutputPath)" />
-    <Exec Command="$(_GenAPICmd)" />
+    <!--<Exec Command="$(_GenAPICmd)" />-->
 
     <ItemGroup>
       <FilteredOriginalReferences
