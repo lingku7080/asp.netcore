@@ -1,0 +1,2 @@
+dotnet-user-secrets
+Microsoft.Extensions.CommandLineUtils.Sources;Microsoft.Extensions.Configuration.UserSecrets
