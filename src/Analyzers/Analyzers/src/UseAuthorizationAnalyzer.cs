@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System.Diagnostics;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 
@@ -27,6 +28,7 @@ namespace Microsoft.AspNetCore.Analyzers
             {
                 MiddlewareItem? useAuthorizationItem = default;
                 MiddlewareItem? useRoutingItem = default;
+                MiddlewareItem? useEndpoint = default;
 
                 var length = middlewareAnalysis.Middleware.Length;
                 for (var i = length - 1; i >= 0; i-- )
@@ -70,9 +72,18 @@ namespace Microsoft.AspNetCore.Analyzers
                                 useAuthorizationItem.Operation.Syntax.GetLocation(),
                                 middlewareItem.UseMethod.Name));
                         }
+
+                        useEndpoint = middlewareItem;
                     }
                     else if (middleware == "UseRouting")
                     {
+                        if (useEndpoint is null)
+                        {
+                            // We're likely here because the middleware uses an expression chain. app.UseRouting().UseAuthorization().UseEndpoints(..));
+                            // Avoid providing an erronoues diagnostic.
+                            return;
+                        }
+
                         useRoutingItem = middlewareItem;
                     }
                 }

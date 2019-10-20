@@ -229,11 +229,13 @@ namespace Microsoft.AspNetCore.Analyzers
                 });
         }
 
-        [Fact]
-        public async Task StartupAnalyzer_UseAuthorizationConfiguredCorrectly_ReportsNoDiagnostics()
+        [Theory]
+        //[InlineData(nameof(TestFiles.StartupAnalyzerTest.UseAuthConfiguredCorrectly))]
+        [InlineData(nameof(TestFiles.StartupAnalyzerTest.UseAuthConfiguredCorrectlyChained))]
+        public async Task StartupAnalyzer_UseAuthorizationConfiguredCorrectly_ReportsNoDiagnostics(string sourceFileName)
         {
             // Arrange
-            var source = Read(nameof(TestFiles.StartupAnalyzerTest.UseAuthConfiguredCorrectly));
+            var source = Read(sourceFileName);
 
             // Act
             var diagnostics = await Runner.GetDiagnosticsAsync(source.Source);
@@ -244,11 +246,13 @@ namespace Microsoft.AspNetCore.Analyzers
             Assert.Empty(diagnostics);
         }
 
-        [Fact]
-        public async Task StartupAnalyzer_UseAuthorizationInvokedMultipleTimesInEndpointRoutingBlock_ReportsNoDiagnostics()
+        [Theory]
+        [InlineData(nameof(TestFiles.StartupAnalyzerTest.UseAuthMultipleTimes))]
+        [InlineData(nameof(TestFiles.StartupAnalyzerTest.UseAuthMultipleTimesChained))]
+        public async Task StartupAnalyzer_UseAuthorizationInvokedMultipleTimesInEndpointRoutingBlock_ReportsNoDiagnostics(string sourceFileName)
         {
             // Arrange
-            var source = Read(nameof(TestFiles.StartupAnalyzerTest.UseAuthMultipleTimes));
+            var source = Read(sourceFileName);
 
             // Act
             var diagnostics = await Runner.GetDiagnosticsAsync(source.Source);
@@ -259,11 +263,13 @@ namespace Microsoft.AspNetCore.Analyzers
             Assert.Empty(diagnostics);
         }
 
-        [Fact]
-        public async Task StartupAnalyzer_UseAuthorizationConfiguredBeforeUseRouting_ReportsDiagnostics()
+        [Theory]
+        // [InlineData(nameof(TestFiles.StartupAnalyzerTest.UseAuthBeforeUseRouting))]
+        [InlineData(nameof(TestFiles.StartupAnalyzerTest.UseAuthBeforeUseRoutingChained))]
+        public async Task StartupAnalyzer_UseAuthorizationConfiguredBeforeUseRouting_ReportsDiagnostics(string sourceFileName)
         {
             // Arrange
-            var source = Read(nameof(TestFiles.StartupAnalyzerTest.UseAuthBeforeUseRouting));
+            var source = Read(sourceFileName);
 
             // Act
             var diagnostics = await Runner.GetDiagnosticsAsync(source.Source);
@@ -279,11 +285,13 @@ namespace Microsoft.AspNetCore.Analyzers
                 });
         }
 
-        [Fact]
-        public async Task StartupAnalyzer_UseAuthorizationConfiguredAfterUseEndpoints_ReportsDiagnostics()
+        [Theory]
+        [InlineData(nameof(TestFiles.StartupAnalyzerTest.UseAuthAfterUseEndpoints))]
+        [InlineData(nameof(TestFiles.StartupAnalyzerTest.UseAuthAfterUseEndpointsChained))]
+        public async Task StartupAnalyzer_UseAuthorizationConfiguredAfterUseEndpoints_ReportsDiagnostics(string sourceFileName)
         {
             // Arrange
-            var source = Read(nameof(TestFiles.StartupAnalyzerTest.UseAuthAfterUseEndpoints));
+            var source = Read(sourceFileName);
 
             // Act
             var diagnostics = await Runner.GetDiagnosticsAsync(source.Source);
@@ -299,11 +307,13 @@ namespace Microsoft.AspNetCore.Analyzers
                 });
         }
 
-        [Fact]
-        public async Task StartupAnalyzer_MultipleUseAuthorization_ReportsNoDiagnostics()
+        [Theory]
+        [InlineData(nameof(TestFiles.StartupAnalyzerTest.UseAuthFallbackPolicy))]
+        [InlineData(nameof(TestFiles.StartupAnalyzerTest.UseAuthFallbackPolicyChained))]
+        public async Task StartupAnalyzer_MultipleUseAuthorization_ReportsNoDiagnostics(string sourceFileName)
         {
             // Arrange
-            var source = Read(nameof(TestFiles.StartupAnalyzerTest.UseAuthFallbackPolicy));
+            var source = Read(sourceFileName);
 
             // Act
             var diagnostics = await Runner.GetDiagnosticsAsync(source.Source);

@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -35,6 +36,31 @@ namespace Microsoft.AspNetCore.Analyzers
                     invocation.Arguments.Length >= 1 &&
                     invocation.Arguments[0].Parameter?.Type == _context.StartupSymbols.IApplicationBuilder)
                 {
+                    // Chained methods arrive in reverse order
+                    // e.g. app.UseRouting()
+                    //         .UseAuthorization()
+                    //         .UseEndpoints();
+                    // will appear as 3 separate invocations of this callback in the order:
+                    // UseEndpoints(), UseAuthorization(), UseRouting()
+                    // Preserving the source order is required for UseAuthorizationAnalyzer.
+
+                    //var length = middleware.Count;
+                    //for (var i = length - 1; i >= 0; i--)
+                    //{
+                    //    var middlewareItem = middleware[i];
+                    //    if (!(middlewareItem.Operation.Parent is IInvocationOperation parent))
+                    //    {
+                    //        // Not a chain.
+                    //        break;
+                    //    }
+
+                    //    if (invocation == parent)
+                    //    {
+                    //        middleware.Insert(i, new MiddlewareItem(invocation));
+                    //        return;
+                    //    }
+                    //}
+
                     middleware.Add(new MiddlewareItem(invocation));
                 }
             }, OperationKind.Invocation);
