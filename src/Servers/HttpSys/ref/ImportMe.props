@@ -1,2 +1,0 @@
-Microsoft.AspNetCore.Server.HttpSys
-Microsoft.AspNetCore.Hosting;Microsoft.AspNetCore.Authentication.Core;Microsoft.Net.Http.Headers;Microsoft.AspNetCore.Connections.Abstractions;Microsoft.AspNetCore.Authentication.Abstractions;Microsoft.AspNetCore.Hosting.Abstractions;Microsoft.AspNetCore.Hosting.Server.Abstractions;Microsoft.AspNetCore.Http;Microsoft.AspNetCore.Http.Abstractions;Microsoft.AspNetCore.Http.Extensions;Microsoft.AspNetCore.Http.Features;Microsoft.AspNetCore.WebUtilities

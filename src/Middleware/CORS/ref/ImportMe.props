@@ -1,2 +1,0 @@
-Microsoft.AspNetCore.Cors
-Microsoft.AspNetCore.Http.Extensions;Microsoft.AspNetCore.Routing;Microsoft.AspNetCore.Authorization;Microsoft.AspNetCore.Http.Abstractions;Microsoft.AspNetCore.Http.Features;Microsoft.AspNetCore.Metadata;Microsoft.AspNetCore.Routing.Abstractions;Microsoft.Net.Http.Headers;Microsoft.Extensions.Configuration.Abstractions;Microsoft.Extensions.DependencyInjection.Abstractions;Microsoft.Extensions.Logging.Abstractions;Microsoft.Extensions.Options

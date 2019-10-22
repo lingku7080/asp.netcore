@@ -1,2 +1,0 @@
-Microsoft.AspNetCore.Rewrite
-Microsoft.AspNetCore.Hosting.Abstractions;Microsoft.AspNetCore.Http.Extensions;Microsoft.AspNetCore.Hosting.Server.Abstractions;Microsoft.AspNetCore.Http.Abstractions;Microsoft.AspNetCore.Http.Features;Microsoft.Net.Http.Headers;Microsoft.Extensions.Configuration.Abstractions;Microsoft.Extensions.FileProviders.Abstractions;Microsoft.Extensions.Logging.Abstractions;Microsoft.Extensions.Options

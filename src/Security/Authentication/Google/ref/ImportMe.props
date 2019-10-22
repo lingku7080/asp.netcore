@@ -1,2 +1,0 @@
-Microsoft.AspNetCore.Authentication.Google
-Microsoft.AspNetCore.Authentication.OAuth;Microsoft.AspNetCore.Authentication;Microsoft.AspNetCore.Authentication.Abstractions;Microsoft.AspNetCore.Authentication.Core;Microsoft.AspNetCore.Cryptography.Internal;Microsoft.AspNetCore.DataProtection;Microsoft.AspNetCore.DataProtection.Abstractions;Microsoft.AspNetCore.Http;Microsoft.AspNetCore.Http.Abstractions;Microsoft.AspNetCore.Http.Extensions;Microsoft.AspNetCore.Http.Features;Microsoft.AspNetCore.WebUtilities;Microsoft.Net.Http.Headers

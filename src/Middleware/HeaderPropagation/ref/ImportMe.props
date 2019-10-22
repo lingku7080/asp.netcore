@@ -1,2 +1,0 @@
-Microsoft.AspNetCore.HeaderPropagation
-Microsoft.AspNetCore.Http;Microsoft.AspNetCore.Http.Abstractions;Microsoft.AspNetCore.Http.Features;Microsoft.AspNetCore.WebUtilities;Microsoft.Net.Http.Headers;Microsoft.Extensions.Http;Microsoft.Extensions.DependencyInjection

@@ -1,2 +1,0 @@
-Microsoft.AspNetCore.Authentication
-Microsoft.AspNetCore.DataProtection;Microsoft.AspNetCore.Authentication.Core;Microsoft.AspNetCore.Http.Extensions;Microsoft.AspNetCore.Http;Microsoft.AspNetCore.Authentication.Abstractions;Microsoft.AspNetCore.Cryptography.Internal;Microsoft.AspNetCore.DataProtection.Abstractions;Microsoft.AspNetCore.Http.Abstractions;Microsoft.AspNetCore.Http.Features;Microsoft.AspNetCore.WebUtilities;Microsoft.Net.Http.Headers;Microsoft.Extensions.Logging.Abstractions;Microsoft.Extensions.Options;Microsoft.Extensions.WebEncoders
