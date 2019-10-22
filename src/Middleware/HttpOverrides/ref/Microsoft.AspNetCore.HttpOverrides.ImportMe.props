@@ -1,0 +1,2 @@
+Microsoft.AspNetCore.HttpOverrides
+Microsoft.AspNetCore.Http.Extensions;Microsoft.AspNetCore.Http.Abstractions;Microsoft.AspNetCore.Http.Features;Microsoft.Net.Http.Headers;Microsoft.Extensions.Logging.Abstractions;Microsoft.Extensions.Options

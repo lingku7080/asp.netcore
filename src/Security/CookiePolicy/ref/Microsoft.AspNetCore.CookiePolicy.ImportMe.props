@@ -1,0 +1,2 @@
+Microsoft.AspNetCore.CookiePolicy
+Microsoft.AspNetCore.Http;Microsoft.AspNetCore.Http.Abstractions;Microsoft.AspNetCore.Http.Features;Microsoft.AspNetCore.WebUtilities;Microsoft.Net.Http.Headers;Microsoft.Extensions.Logging.Abstractions;Microsoft.Extensions.Options

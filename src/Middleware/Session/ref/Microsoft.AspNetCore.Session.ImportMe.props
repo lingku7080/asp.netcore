@@ -1,0 +1,2 @@
+Microsoft.AspNetCore.Session
+Microsoft.AspNetCore.DataProtection;Microsoft.AspNetCore.Http.Abstractions;Microsoft.AspNetCore.Cryptography.Internal;Microsoft.AspNetCore.DataProtection.Abstractions;Microsoft.AspNetCore.Http.Features;Microsoft.Net.Http.Headers;Microsoft.Extensions.Caching.Abstractions;Microsoft.Extensions.Logging.Abstractions;Microsoft.Extensions.Options

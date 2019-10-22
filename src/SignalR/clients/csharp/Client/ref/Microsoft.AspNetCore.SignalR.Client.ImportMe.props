@@ -1,0 +1,2 @@
+Microsoft.AspNetCore.SignalR.Client
+Microsoft.AspNetCore.SignalR.Client.Core;Microsoft.AspNetCore.Http.Connections.Client;Microsoft.AspNetCore.Connections.Abstractions;Microsoft.AspNetCore.Http.Connections.Common;Microsoft.AspNetCore.Http.Features;Microsoft.AspNetCore.SignalR.Common;Microsoft.AspNetCore.SignalR.Protocols.Json
