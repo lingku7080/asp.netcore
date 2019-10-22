@@ -1,6 +1,6 @@
 <Project>
 
-  <Target Name="GenerateReferenceSource" Condition="'$(HasReferenceAssembly)' == 'true' OR '$(IsImplementationProject)' == 'true'">
+  <Target Name="GenerateReferenceSource" Condition="'$(HasReferenceAssembly)' == 'true' OR '$(IsImplementationProject)' == 'true' OR '$(IsTestAssetProject)' == 'true' OR '$(IsSampleProject)' == 'true'">
     <PropertyGroup>
       <_RefSourceOutputPath>$([System.IO.Directory]::GetParent('$(MSBuildProjectDirectory)'))/ref/</_RefSourceOutputPath>
       <_RefProjectFileOutputPath>$(_RefSourceOutputPath)$(AssemblyName).csproj</_RefProjectFileOutputPath>
@@ -53,7 +53,7 @@
       <_RefSourceFileName>$(AssemblyName).$(TargetFramework).cs</_RefSourceFileName>
       <_ManualRefSourceFileName>$(AssemblyName).Manual.cs</_ManualRefSourceFileName>
       <_RefSourceFileOutputPath>$(_RefSourceOutputPath)$(_RefSourceFileName)</_RefSourceFileOutputPath>
-      <_RefIndirectReferencesFileOutputPath>$(_RefSourceOutputPath)ImportMe.props</_RefIndirectReferencesFileOutputPath>
+      <_RefIndirectReferencesFileOutputPath>$(_RefSourceOutputPath)$(AssemblyName).ImportMe.props</_RefIndirectReferencesFileOutputPath>
     </PropertyGroup>
 
     <ItemGroup>
