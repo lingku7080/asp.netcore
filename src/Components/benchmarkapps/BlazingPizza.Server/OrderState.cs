@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 
 namespace BlazingPizza.Server
@@ -44,7 +44,13 @@ namespace BlazingPizza.Server
         {
             logger.LogInformation($"Adding pizza {ConfiguringPizza.SpecialId}");
 
+            if (Order.Pizzas.Count > 9)
+            {
+                Order.Pizzas.Clear();
+            }
+
             Order.Pizzas.Add(ConfiguringPizza);
+            
             ConfiguringPizza = null;
 
             ShowingConfigureDialog = false;
