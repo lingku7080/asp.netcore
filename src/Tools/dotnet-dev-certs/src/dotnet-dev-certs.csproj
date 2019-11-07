@@ -45,8 +45,11 @@
 
     <!--All published file in different tools/rid-->
     <ItemGroup>
-      <TfmSpecificPackageFile Include="@(_PlatformSpecificFiles)">
+      <TfmSpecificPackageFile Include="@(_PlatformSpecificFiles)" Condition="'%(_PlatformSpecificFiles.Extension)' != ''">
         <PackagePath>tools/$(targetframework)/%(_PlatformSpecificFiles.Rid)/%(_PlatformSpecificFiles.RecursiveDir)%(_PlatformSpecificFiles.Filename)%(_PlatformSpecificFiles.Extension)</PackagePath>
+      </TfmSpecificPackageFile>
+      <TfmSpecificPackageFile Include="@(_PlatformSpecificFiles)" Condition="'%(_PlatformSpecificFiles.Extension)' == ''">
+        <PackagePath>tools/$(targetframework)/%(_PlatformSpecificFiles.Rid)/%(_PlatformSpecificFiles.RecursiveDir)</PackagePath>
       </TfmSpecificPackageFile>
     </ItemGroup>
   </Target>

@@ -197,14 +197,63 @@ namespace Microsoft.AspNetCore.Certificates.Generation
                 // Then, the first time the user chooses to trust the certificate (through their IDE or through dotnet dev-certs https --trust)
                 // we will take the necessary steps to make sure the key is accessible across boundaries (and potentially remove any unnecessary
                 // key/certificate) from the store.
+
+                // Pending:
+                // We need to have a certificate with an associated key in the trusted partition. Ideally we want to have that same certificate
+                // with a key in the untrusted partition so that it only needs to be trusted once. The code below guarantees that there is a valid
+                // certificate in each partition, but not that they are the same. In the general case, they will be though.
+                // We can refine this later.
                 return certificates.Except(certificatesWithInaccessibleKeys).Any() &&
                     CanAccessCertificatesFromUnsignedProcess();
             }
         }
 
+        // This code runs on osx only.
         private bool CanAccessCertificatesFromUnsignedProcess()
         {
-            throw new NotImplementedException();
+            if(Environment.GetEnvironmentVariable("ASPNETCORE_EXECUTIONCONTEXT") == "UNTRUSTED")
+            {
+                // We are running as an unsigned process, simply return.
+                return true;
+            }
+
+            // We are running in the context of a signed process so we have access to the security partition where the key is stored inside
+            // the login keychain. In order to check if an unsigned host has access to the certificate, then we are going to do the following:
+            // We are going to find our platform-specific executable (that we compiled and bundled alongside with the SDK) which is not signed.
+            // We are going to launch a process from that executable and check the keys there. That process runs this same code. We are going
+            // pass a bunch of environment variables to the new process to indicate:
+            // * That the process is "untrusted" (We consider the default to be "trusted").
+            //   * So that we don't have to run this code again.
+            //   * A temporary file path, so that it writes the thumbprints of the certificates it has keys with access.
+            //   * We can refine this later with a named pipe or something like that.
+
+            // The layout inside the tool/SDK is as follows
+            // <<dotnet-dev-certs>>/<<version>>/any/dotnet-dev-certs.dll (this is where we are currently running).
+            // <<dotnet-dev-certs>>/<<version>>/osx-x64/dotnet-dev-certs (this is the untrusted executable we are going to run).
+            var currentDllFolder = Path.GetDirectoryName(typeof(CertificateManager).Assembly.Location);
+
+            var executablePath = Path.GetFullPath(Path.Combine(currentDllFolder, "../osx-x64/dotnet-dev-certs"));
+
+            var processStartInfo = new ProcessStartInfo(executablePath, "https --check");
+            processStartInfo.EnvironmentVariables.Add("ASPNETCORE_EXECUTIONCONTEXT", "UNTRUSTED");
+
+            var checkProcess = Process.Start(processStartInfo);
+            checkProcess.WaitForExit(5000);
+            if (!checkProcess.HasExited)
+            {
+                try
+                {
+                    checkProcess.Kill();
+                }
+                catch (Exception)
+                {
+                }
+                return false;
+            }
+            else
+            {
+                return checkProcess.ExitCode == 0;
+            }
         }
 
         private static void DisposeCertificates(IEnumerable<X509Certificate2> disposables)
