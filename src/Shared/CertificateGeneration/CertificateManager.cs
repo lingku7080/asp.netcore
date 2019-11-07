@@ -91,6 +91,7 @@ namespace Microsoft.AspNetCore.Certificates.Generation
                         var validCertificates = matchingCertificates
                             .Where(c => c.NotBefore <= now &&
                                 now <= c.NotAfter &&
+                                // requireExportable = false is only passed when we are checking for a certificate in the trusted root certificate store
                                 (!requireExportable || !RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || IsExportable(c))
                                 && MatchesVersion(c))
                             .ToArray();
@@ -105,7 +106,7 @@ namespace Microsoft.AspNetCore.Certificates.Generation
                         matchingCertificates = validCertificates;
                     }
 
-                    // We need to enumerate the certificates early to prevent dispoisng issues.
+                    // We need to enumerate the certificates early to prevent disposing issues.
                     matchingCertificates = matchingCertificates.ToList();
 
                     var certificatesToDispose = certificates.Except(matchingCertificates);
@@ -161,6 +162,49 @@ namespace Microsoft.AspNetCore.Certificates.Generation
                 ((c.GetRSAPrivateKey() is RSACryptoServiceProvider rsaPrivateKey &&
                     rsaPrivateKey.CspKeyContainerInfo.Exportable) || !(c.GetRSAPrivateKey() is RSACryptoServiceProvider));
 #endif
+        }
+
+        internal bool CanAccessKey(IList<X509Certificate2> certificates, DiagnosticInformation diagnostics = null)
+        {
+            var certificatesWithInaccessibleKeys = certificates.Where(c => !CheckDeveloperCertificateKey(c)).ToList();
+            if (certificatesWithInaccessibleKeys.Count > 0)
+            {
+                diagnostics?.Debug("The current process can't access the certificate key for the following certificates:");
+                diagnostics?.Debug(diagnostics.DescribeCertificates(certificatesWithInaccessibleKeys));
+            }
+
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                return certificates.Except(certificatesWithInaccessibleKeys).Any();
+            }
+            else
+            {
+                // Due to new restrictions in Mac OS Catalina .NET becomes a "hardened" runtime which means that it is signed and
+                // notarized by Apple. This produces additional complexity when running .NET applications in different ways as the
+                // way you run your application impacts whether or not it has access to the underlying key chain the certificate store
+                // is based on.
+                // The scenarios are as follows:
+                // dotnet run -> unsigned.
+                // dotnet <<path-to-dll> signed.
+                // ./<<path-to-published-app>> unsigned.
+                // Running dotnet dev-certs the application runs through the signed process host, so it is considered "signed".
+                // Running dotnet ./<<path-to-dotnet-dev-certs.dll>> the application runs through the unsigned process host, so it is considered unsigned.
+                // For that reason we need to make sure that our certificate is accessible across security partitions (or accessible by
+                // unsigned processes).
+                // Unfortunately that can't be done without user interaction, so to ensure that 'dotnet run' is able to work with ASP.NET Core
+                // apps after the first run experience we need to import the same certificate twice inside the key chain so that it can be
+                // accessible by all partitions.
+                // Then, the first time the user chooses to trust the certificate (through their IDE or through dotnet dev-certs https --trust)
+                // we will take the necessary steps to make sure the key is accessible across boundaries (and potentially remove any unnecessary
+                // key/certificate) from the store.
+                return certificates.Except(certificatesWithInaccessibleKeys).Any() &&
+                    CanAccessCertificatesFromUnsignedProcess();
+            }
+        }
+
+        private bool CanAccessCertificatesFromUnsignedProcess()
+        {
+            throw new NotImplementedException();
         }
 
         private static void DisposeCertificates(IEnumerable<X509Certificate2> disposables)

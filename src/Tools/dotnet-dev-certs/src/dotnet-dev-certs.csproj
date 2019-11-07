@@ -7,9 +7,15 @@
     <RootNamespace>Microsoft.AspNetCore.DeveloperCertificates.Tools</RootNamespace>
     <PackageTags>dotnet;developercertificates</PackageTags>
     <PackAsTool>true</PackAsTool>
+    <RuntimeIdentifiers>win-x64;linux-x64;osx-x64</RuntimeIdentifiers>
     <!-- This package is for internal use only. It contains a CLI which is bundled in the .NET Core SDK. -->
     <IsShippingPackage>false</IsShippingPackage>
     <ExcludeFromSourceBuild>false</ExcludeFromSourceBuild>
+  </PropertyGroup>
+
+  <!-- https://github.com/NuGet/Home/issues/6321#issuecomment-353511169 -->
+  <PropertyGroup>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificBuildOutput);PackagePublishedTools</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,5 +27,28 @@
     <Reference Include="Microsoft.Extensions.CommandLineUtils.Sources" />
     <Reference Include="System.Security.Cryptography.Cng" />
   </ItemGroup>
+
+
+  <Target Name="PublishAll" DependsOnTargets="PackTool">
+    <ItemGroup>
+      <_RuntimeIdentifier Include="$(RuntimeIdentifiers)" />
+    </ItemGroup>
+    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="Publish" Properties="TargetFramework=$(TargetFramework);RuntimeIdentifier=%(_RuntimeIdentifier.Identity);SelfContained=false" />
+  </Target>
+
+  <Target Name="PackagePublishedTools" DependsOnTargets="PublishAll">
+    <ItemGroup>
+      <_PlatformSpecificFiles Include="$(OutputPath)%(_RuntimeIdentifier.Identity)\$(PublishDirName)\**\*">
+        <Rid>%(_RuntimeIdentifier.Identity)</Rid>
+      </_PlatformSpecificFiles>
+    </ItemGroup>
+
+    <!--All published file in different tools/rid-->
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="@(_PlatformSpecificFiles)">
+        <PackagePath>tools/$(targetframework)/%(_PlatformSpecificFiles.Rid)/%(_PlatformSpecificFiles.RecursiveDir)%(_PlatformSpecificFiles.Filename)%(_PlatformSpecificFiles.Extension)</PackagePath>
+      </TfmSpecificPackageFile>
+    </ItemGroup>
+  </Target>
 
 </Project>

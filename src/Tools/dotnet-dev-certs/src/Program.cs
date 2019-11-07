@@ -24,6 +24,7 @@ namespace Microsoft.AspNetCore.DeveloperCertificates.Tools
         private const int ErrorNoValidCertificateFound = 6;
         private const int ErrorCertificateNotTrusted = 7;
         private const int ErrorCleaningUpCertificates = 8;
+        private const int ErrorInnaccessibleKey = 9;
 
         public static readonly TimeSpan HttpsCertificateValidity = TimeSpan.FromDays(365);
 
@@ -159,6 +160,12 @@ namespace Microsoft.AspNetCore.DeveloperCertificates.Tools
             else
             {
                 reporter.Output("A valid certificate was found.");
+            }
+
+            if (!certificateManager.CanAccessKey(certificates))
+            {
+                reporter.Output("One or more valid certificates were found, but the keys are not accessible.");
+                return ErrorInnaccessibleKey;
             }
 
             if (trust != null && trust.HasValue())
