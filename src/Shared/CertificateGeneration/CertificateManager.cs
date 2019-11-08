@@ -164,7 +164,15 @@ namespace Microsoft.AspNetCore.Certificates.Generation
 #endif
         }
 
-        internal bool CanAccessKey(IList<X509Certificate2> certificates, DiagnosticInformation diagnostics = null)
+        internal enum KeyAccessResult
+        {
+            Success,
+            TrustedCanAccess,
+            UntrustedCanAccess,
+            Failure
+        }
+
+        internal KeyAccessResult CanAccessKey(IList<X509Certificate2> certificates, DiagnosticInformation diagnostics = null)
         {
             var certificatesWithInaccessibleKeys = certificates.Where(c => !CheckDeveloperCertificateKey(c)).ToList();
             if (certificatesWithInaccessibleKeys.Count > 0)
@@ -175,7 +183,7 @@ namespace Microsoft.AspNetCore.Certificates.Generation
 
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                return certificates.Except(certificatesWithInaccessibleKeys).Any();
+                return certificates.Except(certificatesWithInaccessibleKeys).Any() ? KeyAccessResult.Success : KeyAccessResult.Failure;
             }
             else
             {
@@ -203,8 +211,16 @@ namespace Microsoft.AspNetCore.Certificates.Generation
                 // with a key in the untrusted partition so that it only needs to be trusted once. The code below guarantees that there is a valid
                 // certificate in each partition, but not that they are the same. In the general case, they will be though.
                 // We can refine this later.
-                return certificates.Except(certificatesWithInaccessibleKeys).Any() &&
-                    CanAccessCertificatesFromUnsignedProcess();
+                bool trustedProcessCanAccessKey = certificates.Except(certificatesWithInaccessibleKeys).Any();
+                bool untrustedProcessCanAccessKey = CanAccessCertificatesFromUnsignedProcess();
+
+                return (trustedProcessCanAccessKey, untrustedProcessCanAccessKey) switch
+                {
+                    (true, true) => KeyAccessResult.Success,
+                    (true, false) => KeyAccessResult.TrustedCanAccess,
+                    (false, true) => KeyAccessResult.UntrustedCanAccess,
+                    (false, false) => KeyAccessResult.Failure
+                };
             }
         }
 
@@ -234,7 +250,7 @@ namespace Microsoft.AspNetCore.Certificates.Generation
 
             var executablePath = Path.GetFullPath(Path.Combine(currentDllFolder, "../osx-x64/dotnet-dev-certs"));
 
-            var processStartInfo = new ProcessStartInfo(executablePath, "https --check");
+            var processStartInfo = new ProcessStartInfo(executablePath, "https --check -q");
             processStartInfo.EnvironmentVariables.Add("ASPNETCORE_EXECUTIONCONTEXT", "UNTRUSTED");
 
             var checkProcess = Process.Start(processStartInfo);

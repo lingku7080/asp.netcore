@@ -162,10 +162,21 @@ namespace Microsoft.AspNetCore.DeveloperCertificates.Tools
                 reporter.Output("A valid certificate was found.");
             }
 
-            if (!certificateManager.CanAccessKey(certificates))
+            switch (certificateManager.CanAccessKey(certificates))
             {
-                reporter.Output("One or more valid certificates were found, but the keys are not accessible.");
-                return ErrorInnaccessibleKey;
+                case CertificateManager.KeyAccessResult.Success:
+                    break;
+                case CertificateManager.KeyAccessResult.TrustedCanAccess:
+                    reporter.Output("One or more valid certificates were found, but the keys are not accessible by untrusted processes.");
+                    return ErrorInnaccessibleKey;
+                case CertificateManager.KeyAccessResult.UntrustedCanAccess:
+                    reporter.Output("One or more valid certificates were found, but the keys are not accessible by trusted processes.");
+                    return ErrorInnaccessibleKey;
+                case CertificateManager.KeyAccessResult.Failure:
+                    reporter.Output("One or more valid certificates were found, but the keys are not accessible.");
+                    return ErrorInnaccessibleKey;
+                default:
+                    break;
             }
 
             if (trust != null && trust.HasValue())
