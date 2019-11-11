@@ -39,6 +39,15 @@ namespace Microsoft.AspNetCore.DeveloperCertificates.Tools
 
                 app.Command("https", c =>
                 {
+                    if (Environment.GetEnvironmentVariable("ASPNETCORE_ACTION") == "IMPORT_CERTIFICATE")
+                    {
+                        var importPath = Environment.GetEnvironmentVariable("ASPNETCORE_CERTIFICATE_PATH");
+                        var importPassword = Environment.GetEnvironmentVariable("ASPNETCORE_CERTIFICATE_PASSWORD");
+
+                        var certificate = new X509Certificate2(importPath, importPassword, X509KeyStorageFlags.Exportable);
+                        CertificateManager.SaveCertificateInStore(certificate, StoreName.My, StoreLocation.CurrentUser);
+                    }
+
                     var exportPath = c.Option("-ep|--export-path",
                         "Full path to the exported certificate",
                         CommandOptionType.SingleValue);
@@ -138,7 +147,7 @@ namespace Microsoft.AspNetCore.DeveloperCertificates.Tools
                 reporter.Output("HTTPS development certificates successfully removed from the machine.");
                 return Success;
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 reporter.Error("There was an error trying to clean HTTPS development certificates on this machine.");
                 reporter.Error(e.Message);

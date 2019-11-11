@@ -227,7 +227,7 @@ namespace Microsoft.AspNetCore.Certificates.Generation
         // This code runs on osx only.
         private bool CanAccessCertificatesFromUnsignedProcess()
         {
-            if(Environment.GetEnvironmentVariable("ASPNETCORE_EXECUTIONCONTEXT") == "UNTRUSTED")
+            if (Environment.GetEnvironmentVariable("ASPNETCORE_EXECUTIONCONTEXT") == "UNTRUSTED")
             {
                 // We are running as an unsigned process, simply return.
                 return true;
@@ -239,19 +239,30 @@ namespace Microsoft.AspNetCore.Certificates.Generation
             // We are going to launch a process from that executable and check the keys there. That process runs this same code. We are going
             // pass a bunch of environment variables to the new process to indicate:
             // * That the process is "untrusted" (We consider the default to be "trusted").
-            //   * So that we don't have to run this code again.
-            //   * A temporary file path, so that it writes the thumbprints of the certificates it has keys with access.
-            //   * We can refine this later with a named pipe or something like that.
+            //   * This affects the logic and answers it gives.
+            //   * An optional certificate hash, to see if it has access to that certificate key from an untrusted host.
 
+            return RunDevCertsCommandAsUntrusted("--check -q") == 0;
+        }
+
+        private static int RunDevCertsCommandAsUntrusted(string action, IDictionary<string, string> additionalEnvironmentVariables = null)
+        {
             // The layout inside the tool/SDK is as follows
             // <<dotnet-dev-certs>>/<<version>>/any/dotnet-dev-certs.dll (this is where we are currently running).
             // <<dotnet-dev-certs>>/<<version>>/osx-x64/dotnet-dev-certs (this is the untrusted executable we are going to run).
             var currentDllFolder = Path.GetDirectoryName(typeof(CertificateManager).Assembly.Location);
 
-            var executablePath = Path.GetFullPath(Path.Combine(currentDllFolder, "../osx-x64/dotnet-dev-certs"));
+            var executablePath = ResolveExecutablePath(currentDllFolder);
 
-            var processStartInfo = new ProcessStartInfo(executablePath, "https --check -q");
+            var processStartInfo = new ProcessStartInfo(executablePath, $"https {action}");
             processStartInfo.EnvironmentVariables.Add("ASPNETCORE_EXECUTIONCONTEXT", "UNTRUSTED");
+            if (additionalEnvironmentVariables != null)
+            {
+                foreach (var (key, value) in additionalEnvironmentVariables)
+                {
+                    processStartInfo.EnvironmentVariables.Add(key, value);
+                }
+            }
 
             var checkProcess = Process.Start(processStartInfo);
             checkProcess.WaitForExit(5000);
@@ -264,12 +275,34 @@ namespace Microsoft.AspNetCore.Certificates.Generation
                 catch (Exception)
                 {
                 }
-                return false;
+                return -1;
             }
             else
             {
-                return checkProcess.ExitCode == 0;
+                return checkProcess.ExitCode;
             }
+        }
+
+        private static string ResolveExecutablePath(string currentDllFolder)
+        {
+            var subPath = typeof(CertificateManager).Assembly.GetName().Name != "Microsoft.AspNetCore.DeveloperCertificates.XPlat" ?
+                "../osx-x64/dotnet-dev-certs" :
+                ResolveToolFrom(currentDllFolder, "DotnetTools/dotnet-dev-certs/");
+
+            return Path.GetFullPath(Path.Combine(currentDllFolder, subPath));
+        }
+
+        private static string ResolveToolFrom(string currentDllFolder, string subPath)
+        {
+            var fullPath = Path.Combine(currentDllFolder, subPath);
+            Debug.Assert(Directory.Exists(fullPath));
+            var versionFolders = Directory.GetDirectories(fullPath);
+            Debug.Assert(versionFolders.Length == 1);
+            var pathWithVersion = Path.Combine(versionFolders[0], "tools");
+            var targetFrameworkFolders = Directory.GetDirectories(pathWithVersion);
+            Debug.Assert(targetFrameworkFolders.Length == 1);
+            var pathToExe = Path.Combine(targetFrameworkFolders[0], "osx-x64/dotnet-dev-certs");
+            return Path.GetRelativePath(currentDllFolder, pathToExe);
         }
 
         private static void DisposeCertificates(IEnumerable<X509Certificate2> disposables)
@@ -396,7 +429,7 @@ namespace Microsoft.AspNetCore.Certificates.Generation
             }
         }
 
-        public X509Certificate2 SaveCertificateInStore(X509Certificate2 certificate, StoreName name, StoreLocation location, DiagnosticInformation diagnostics = null)
+        public static X509Certificate2 SaveCertificateInStore(X509Certificate2 certificate, StoreName name, StoreLocation location, DiagnosticInformation diagnostics = null)
         {
             diagnostics?.Debug("Saving the certificate into the certificate store.");
             var imported = certificate;
@@ -838,34 +871,51 @@ namespace Microsoft.AspNetCore.Certificates.Generation
 
             var result = new DetailedEnsureCertificateResult();
 
-            var certificates = ListCertificates(purpose, StoreName.My, StoreLocation.CurrentUser, isValid: true, requireExportable: true, result.Diagnostics).Concat(
-                ListCertificates(purpose, StoreName.My, StoreLocation.LocalMachine, isValid: true, requireExportable: true, result.Diagnostics));
+            var currentUserCertificates = ListCertificates(purpose, StoreName.My, StoreLocation.CurrentUser, isValid: true, requireExportable: true, result.Diagnostics);
+            var localMachineCertificates = ListCertificates(purpose, StoreName.My, StoreLocation.LocalMachine, isValid: true, requireExportable: true, result.Diagnostics);
+            var certificates = currentUserCertificates.Concat(localMachineCertificates).ToList();
 
-            var filteredCertificates = subject == null ? certificates : certificates.Where(c => c.Subject == subject);
             if (subject != null)
             {
+                currentUserCertificates = currentUserCertificates.Where(c => c.Subject == subject).ToList();
+                localMachineCertificates = localMachineCertificates.Where(c => c.Subject == subject).ToList();
+
+                var filteredCertificates = currentUserCertificates.Concat(localMachineCertificates).ToList();
                 var excludedCertificates = certificates.Except(filteredCertificates);
 
                 result.Diagnostics.Debug($"Filtering found certificates to those with a subject equal to '{subject}'");
                 result.Diagnostics.Debug(result.Diagnostics.DescribeCertificates(filteredCertificates));
                 result.Diagnostics.Debug($"Listing certificates excluded from consideration.");
                 result.Diagnostics.Debug(result.Diagnostics.DescribeCertificates(excludedCertificates));
+
+                certificates = filteredCertificates.ToList();
             }
             else
             {
                 result.Diagnostics.Debug("Skipped filtering certificates by subject.");
             }
 
-            certificates = filteredCertificates;
-
             result.ResultCode = EnsureCertificateResult.Succeeded;
 
             X509Certificate2 certificate = null;
+
+            certificates = FilterCertificatesWithInaccesibleKeys(currentUserCertificates.ToList());
+
             if (certificates.Count() > 0)
             {
                 result.Diagnostics.Debug("Found valid certificates present on the machine.");
                 result.Diagnostics.Debug(result.Diagnostics.DescribeCertificates(certificates));
-                certificate = certificates.First();
+
+                // When in Mac OS we might be invoked as an untrusted process and asked to export a given certificate.
+                // The presence of the environment variable below determines that. As such, it might be that there is none, one or many
+                // instances of the same certificate in the keychain and we try to determine which one is the best. For that we check the
+                // certificates with a matching hash and we try to pick the one that has access to the key.
+                // If we don't find any, then we resort to the first one that matches.
+                // Otherwise, we simply pick the first valid certificate.
+                var certificateHash = Environment.GetEnvironmentVariable("ASPNETCORE_CERTIFICATE_HASH");
+                certificate = string.IsNullOrEmpty(certificateHash) ? certificates.First() : certificates.FirstOrDefault(c => c.GetCertHashString() == certificateHash && CheckDeveloperCertificateKey(c));
+                certificate ??= certificates.First(c => c.GetCertHashString() == certificateHash);
+
                 result.Diagnostics.Debug("Selected certificate");
                 result.Diagnostics.Debug(result.Diagnostics.DescribeCertificates(certificate));
                 result.ResultCode = EnsureCertificateResult.ValidCertificatePresent;
@@ -904,6 +954,7 @@ namespace Microsoft.AspNetCore.Certificates.Generation
                     return result;
                 }
             }
+
             if (path != null)
             {
                 result.Diagnostics.Debug("Trying to export the certificate.");
@@ -942,6 +993,157 @@ namespace Microsoft.AspNetCore.Certificates.Generation
             }
 
             return result;
+        }
+
+        private List<X509Certificate2> FilterCertificatesWithInaccesibleKeys(List<X509Certificate2> currentUserCertificates)
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_UNTRUSTED")))
+            {
+                // We don't want to check the key accessibility here as we want to prevent systemic issues where we can't access the key after
+                // we created it and that could cause the system to be spammed with developer certificates.
+                // We are only going to check the key in the OS X case where we know it's an OS level issue.
+                return currentUserCertificates;
+            }
+            else
+            {
+                // Given the limitations imposed by Mac OS Catalina, we need to be extra thorough here, check for access to the key
+                // in both, trusted and untrusted contexts, and try and offer the best fix for a key we can offer.
+                // The dotnet executable can itself be trusted or untrusted, depending on the sequence of installations that the user
+                // made. While we plan to sign all supported versions, users might have older versions in their machines that can
+                // install on top. We might consider discarding this scenario and only support moving forward, which assumes that when
+                // the tool runs for the first time, it does so in the context of a trusted process.
+                // Scenarios:
+                // * We can be upgrading from an existing installation to a new version (signed): In this case, it is likely that the user
+                //   has an existing valid certificate that was created in the untrusted partition but that we don't have access to from
+                //   the current partition.
+                //   To fix this case, we are going to invoke an untrusted executable (that we included in the SDK) and we are going to ask
+                //   it to export the certificate into a location and with a key that we provided. If that completes successfully, then we
+                //   can import the certificate into the store again and the key will be imported into the trusted partition.
+                //   This should work without requiring user-interaction, so it is appropriate for the first run experience.
+                // * We can be on a clean 3.1 install, in which there is no certificate available and we will be creating one during the first
+                //   run experience. We will have to populate the certificate in the trusted and in the untrusted partition. To that end we will
+                //   export the certificate to a temporary file and we will invoke the untrusted executable to import the certificate into the
+                //   key chain. That way there should be a certificate instance with a key available on both partitions.
+                // * We can be in a situation where a user installed an older version of the SDK that is not signed and overrode the 'dotnet'
+                //   executable or is using an unsigned 'dotnet' from a binary package. In this case this process won't even have access to the
+                //   key and we won't be able to do anything, other than to ask the user to run dotnet dev-certs 'https --clean and then dotnet-
+                //   dev-certs https --trust'.
+                //   The result of that action will be that all the certificates get purged from the user machine, which means that a new untrusted
+                //   certificate will be created. At that point, 'dotnet run' and './publishedapp' should work, and I believe that 'dotnet './app.dll'
+                //   would work or not depending on whether the host is considered signed or unsigned at that point.
+                // Fixes:
+                // * There are two types of fixes that we plan to do:
+                //   * Importing the certificate into the user keychain through an unsigned executable. There will be two certificates on the user
+                //     machine with the same key but for which each key is in a different security partition. At runtime we will simply iterate over
+                //     the valid certificates and will perform a keycheck to validate the certificate works.
+                //     * We will print a message too, indicating that to avoid future problems we will make the key accessible across partitions.
+                //   * Making the key accessible across partitions. We can't do this inside the first run experience as it requires interaction, but we
+                //     will keep track of it in the following situations:
+                //     * When running dotnet dev-certs https --check: We will indicate that the key is not available in some context through a new return code.
+                //     * When running dotnet dev-certs https: If no key is present, we will generate a new one, installing it on the trusted partition and
+                //       making the key accessible across partitions. This will require user interaction, which will technically be breaking (as some script that
+                //       might be invoking the tool will break, but it is highly unlikely).
+                //       We will only try to enable access to the key across partitions automatically when we determine that all the 'localhost' certificates present
+                //       on the current key chain are associated with ASP.NET Core.
+                //     * When running 'dotnet dev-certs https --trust' as we are already asking him for permisions to trust the certificate.
+
+                // At this initial stage we are going to evaluate the state of the certificates in the current user store.
+                // If we find one that is accessible in both partitions, we will filter results to that, essentially ignoring others.
+                // If we find one that is accessible in the untrusted partition, we will try to import it here.
+                // If we find one that is accessible in the trusted partition, we will try to import it there by invoking the tool in a special "secret" way.
+                // If we find that the key is innaccessible in any partition it can mean that someone overrode the 'dotnet' executable and is untrusted.
+                // We are going to have a maximum threshold of 10 keys after which we stop trying. This is to prevent users from running dotnet dev-certs https
+                // multiple times and filling their stores/keychains with certificates if there is a systemic issue that is preventing certificates from being
+                // accessed after the cert is imported.
+                var keyAccessStatus = new Dictionary<X509Certificate2, (KeyAccessResult result, string path, string password)>();
+                foreach (var candidate in currentUserCertificates)
+                {
+                    // We consider our process trusted by default, if that isn't the case, we'll end up creating a new key/certificate.
+                    var canAccessCurrentProcess = CheckDeveloperCertificateKey(candidate);
+                    var certificatePassword = Guid.NewGuid().ToString("N");
+                    var certificateFilePath = Path.GetTempFileName();
+
+                    var additionalEnvironmentVariables = new Dictionary<string, string>
+                    {
+                        ["ASPNETCORE_CERTIFICATE_HASH"] = candidate.GetCertHashString(HashAlgorithmName.SHA256)
+                    };
+
+                    var untrustedResult = RunDevCertsCommandAsUntrusted(
+                        $"-ep ${certificateFilePath} -p ${certificatePassword}",
+                        additionalEnvironmentVariables);
+
+                    var canAccessFromUntrustedProcess = untrustedResult == 0;
+                    keyAccessStatus[candidate] = (canAccessCurrentProcess, canAccessCurrentProcess) switch
+                    {
+                        (true, true) => (KeyAccessResult.Success, certificateFilePath, certificatePassword),
+                        (true, false) => (KeyAccessResult.TrustedCanAccess, certificateFilePath, certificatePassword),
+                        (false, true) => (KeyAccessResult.UntrustedCanAccess, certificateFilePath, certificatePassword),
+                        (false, false) => (KeyAccessResult.Failure, certificateFilePath, certificatePassword)
+                    };
+                }
+
+                // We will do two passes, one to discard easy cases, where there are existing certificates we can use
+                // (in which case we won't even bother repairing the old certificates).
+                // or when we've found ourselves in a situation where there are two many invalid keys and we give up to
+                // make sure other issues can't cause the certificate store/key chain to be populated with a large amount of keys.
+                var failedCertificates = new List<X509Certificate2>();
+                var successfulCertificates = new List<X509Certificate2>();
+                foreach (var (candidate, (result, _, _)) in keyAccessStatus)
+                {
+                    if (result == KeyAccessResult.Failure)
+                    {
+                        failedCertificates.Add(candidate);
+                    }
+                    else if (result == KeyAccessResult.Success)
+                    {
+                        successfulCertificates.Add(candidate);
+                    }
+                }
+
+                if (successfulCertificates.Count > 0)
+                {
+                    return successfulCertificates;
+                }
+
+                // Don't try to filter if there is more than 10 innaccessible certs and simply fail.
+                if (failedCertificates.Count > 10)
+                {
+                    return currentUserCertificates;
+                }
+
+                // We are collecting a new list because we might need to export the certificate again later, so we need to ensure we have the
+                // right handle to it.
+                var resultingCertificates = new List<X509Certificate2>();
+
+                // We are now on to repair keys.
+                foreach (var (candidate, (result, path, password)) in keyAccessStatus)
+                {
+                    if (result == KeyAccessResult.UntrustedCanAccess)
+                    {
+                        // At this point the key has been exported to a known PFX that we have stored in path with password password.
+                        var candidateWithKey = new X509Certificate2(path, password, X509KeyStorageFlags.Exportable);
+                        resultingCertificates.Add(SaveCertificateInStore(candidateWithKey, StoreName.My, StoreLocation.CurrentUser));
+                    }
+                    else if (result == KeyAccessResult.TrustedCanAccess)
+                    {
+                        // At this point we can access the key, but the untrusted process can't. We will export the certificate and
+                        // invoke the executable in a special way to signal it needs to import the certificate provided through environment
+                        // variables.
+                        ExportCertificate(candidate, path, includePrivateKey: true, password);
+                        var additionalEnvironmentVariables = new Dictionary<string, string>
+                        {
+                            ["ASPNETCORE_ACTION"] = "IMPORT_CERTIFICATE",
+                            ["ASPNETCORE_CERTIFICATE_PATH"] = path,
+                            ["ASPNETCORE_CERTIFICATE_PASSWORD"] = password
+                        };
+
+                        _ = RunDevCertsCommandAsUntrusted("", additionalEnvironmentVariables);
+                        resultingCertificates.Add(candidate);
+                    }
+                }
+
+                return resultingCertificates;
+            }
         }
 
         private class UserCancelledTrustException : Exception
