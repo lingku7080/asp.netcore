@@ -39,15 +39,6 @@ namespace Microsoft.AspNetCore.DeveloperCertificates.Tools
 
                 app.Command("https", c =>
                 {
-                    if (Environment.GetEnvironmentVariable("ASPNETCORE_ACTION") == "IMPORT_CERTIFICATE")
-                    {
-                        var importPath = Environment.GetEnvironmentVariable("ASPNETCORE_CERTIFICATE_PATH");
-                        var importPassword = Environment.GetEnvironmentVariable("ASPNETCORE_CERTIFICATE_PASSWORD");
-
-                        var certificate = new X509Certificate2(importPath, importPassword, X509KeyStorageFlags.Exportable);
-                        CertificateManager.SaveCertificateInStore(certificate, StoreName.My, StoreLocation.CurrentUser);
-                    }
-
                     var exportPath = c.Option("-ep|--export-path",
                         "Full path to the exported certificate",
                         CommandOptionType.SingleValue);
@@ -86,6 +77,22 @@ namespace Microsoft.AspNetCore.DeveloperCertificates.Tools
 
                     c.OnExecute(() =>
                     {
+                        if (Environment.GetEnvironmentVariable("ASPNETCORE_ACTION") == "IMPORT_CERTIFICATE")
+                        {
+                            var importPath = Environment.GetEnvironmentVariable("ASPNETCORE_CERTIFICATE_PATH");
+                            var importPassword = Environment.GetEnvironmentVariable("ASPNETCORE_CERTIFICATE_PASSWORD");
+
+                            var certificate = new X509Certificate2(importPath, importPassword, X509KeyStorageFlags.Exportable);
+                            try
+                            {
+                                CertificateManager.SaveCertificateInStore(certificate, StoreName.My, StoreLocation.CurrentUser);
+                            }
+                            catch (Exception)
+                            {
+                                return ErrorSavingTheCertificate;
+                            }
+                        }
+
                         var reporter = new ConsoleReporter(PhysicalConsole.Singleton, verbose.HasValue(), quiet.HasValue());
                         if ((clean.HasValue() && (exportPath.HasValue() || password.HasValue() || trust?.HasValue() == true)) ||
                             (check.HasValue() && (exportPath.HasValue() || password.HasValue() || clean.HasValue())))

@@ -997,7 +997,8 @@ namespace Microsoft.AspNetCore.Certificates.Generation
 
         private List<X509Certificate2> FilterCertificatesWithInaccesibleKeys(List<X509Certificate2> currentUserCertificates)
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_UNTRUSTED")))
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ||
+                !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_UNTRUSTED")))
             {
                 // We don't want to check the key accessibility here as we want to prevent systemic issues where we can't access the key after
                 // we created it and that could cause the system to be spammed with developer certificates.
