@@ -40,11 +40,12 @@ namespace Microsoft.AspNetCore.Certificates.Generation
         private const string MacOSDeleteCertificateCommandLineArgumentsFormat = "security delete-certificate -Z {0} {1}";
         private const string MacOSTrustCertificateCommandLine = "sudo";
         private static readonly string MacOSTrustCertificateCommandLineArguments = "security add-trusted-cert -d -r trustRoot -k " + MacOSSystemKeyChain + " ";
+
         private const int UserCancelledErrorCode = 1223;
 
         // Setting to 0 means we don't append the version byte,
         // which is what all machines currently have.
-        public static int AspNetHttpsCertificateVersion { get; set; } = 1;
+        public static int AspNetHttpsCertificateVersion { get; set; } = 2;
 
         public static bool IsHttpsDevelopmentCertificate(X509Certificate2 certificate) =>
             certificate.Extensions.OfType<X509Extension>()
@@ -290,29 +291,76 @@ namespace Microsoft.AspNetCore.Certificates.Generation
         public X509Certificate2 SaveCertificateInStore(X509Certificate2 certificate, StoreName name, StoreLocation location, DiagnosticInformation diagnostics = null)
         {
             diagnostics?.Debug("Saving the certificate into the certificate store.");
-            var imported = certificate;
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                // On non OSX systems we need to export the certificate and import it so that the transient
-                // key that we generated gets persisted.
-                var export = certificate.Export(X509ContentType.Pkcs12, "");
-                imported = new X509Certificate2(export, "", X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.Exportable);
-                Array.Clear(export, 0, export.Length);
-            }
+
+            // On non OSX systems we need to export the certificate and import it so that the transient
+            // key that we generated gets persisted. On OSX we need to persist it to disk to invoke the
+            // security tool to import it, as it's the only thing that allows us provision the cert in a
+            // way that works across security contexts without requiring user interaction.
+            var password = Guid.NewGuid().ToString("N");
+            var export = certificate.Export(X509ContentType.Pkcs12, password);
+            var imported = new X509Certificate2(export, password, X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.Exportable);
+            Array.Clear(export, 0, export.Length);
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 imported.FriendlyName = certificate.FriendlyName;
             }
 
-            using (var store = new X509Store(name, location))
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                store.Open(OpenFlags.ReadWrite);
-                store.Add(imported);
-                store.Close();
-            };
+                using (var store = new X509Store(name, location))
+                {
+                    store.Open(OpenFlags.ReadWrite);
+                    store.Add(imported);
+                    store.Close();
+                };
+            }
+            else
+            {
+                var tmpFile = Path.GetTempFileName();
+                try
+                {
+                    File.WriteAllBytes(tmpFile, export);
+                    RunImportCommand(tmpFile, password, diagnostics);
+                }
+                catch (Exception e)
+                {
+                    diagnostics?.Error("Error saving the certificate to a temporary file.", e);
+                    throw;
+                }
+                finally
+                {
+                    try
+                    {
+                        if (File.Exists(tmpFile))
+                        {
+                            File.Delete(tmpFile);
+                        }
+                    }
+                    catch
+                    {
+                        // We don't care if we can't delete the temp file.
+                    }
+                }
+            }
 
             return imported;
+
+            static void RunImportCommand(string certificatePath, string certificatePassword, DiagnosticInformation diagnostics = null)
+            {
+                const string MacOSImportCertificateCommandLine = "security";
+                var MacOSImportCertificateCommandLineArguments = $"import {certificatePath} -k {MacOSUserKeyChain} -t priv -f pkcs12 -A -P {certificatePassword}";
+                var tmpFile = Path.GetTempFileName();
+                diagnostics?.Debug("Running the import command on Mac OS");
+
+                using var process = Process.Start(MacOSImportCertificateCommandLine, MacOSImportCertificateCommandLineArguments);
+
+                process.WaitForExit();
+                if (process.ExitCode != 0)
+                {
+                    throw new InvalidOperationException("There was an error importing the certificate.");
+                }
+            }
         }
 
         public void ExportCertificate(X509Certificate2 certificate, string path, bool includePrivateKey, string password, DiagnosticInformation diagnostics = null)
