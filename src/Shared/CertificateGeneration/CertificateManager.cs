@@ -299,7 +299,6 @@ namespace Microsoft.AspNetCore.Certificates.Generation
             var password = Guid.NewGuid().ToString("N");
             var export = certificate.Export(X509ContentType.Pkcs12, password);
             var imported = new X509Certificate2(export, password, X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.Exportable);
-            Array.Clear(export, 0, export.Length);
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -321,7 +320,16 @@ namespace Microsoft.AspNetCore.Certificates.Generation
                 try
                 {
                     File.WriteAllBytes(tmpFile, export);
-                    RunImportCommand(tmpFile, password, diagnostics);
+
+                    try
+                    {
+                        RunImportCommand(tmpFile, password, diagnostics);
+                    }
+                    catch (Exception e)
+                    {
+                        diagnostics?.Error("Error running the import command on OSX.", e);
+                        throw;
+                    }
                 }
                 catch (Exception e)
                 {
@@ -344,15 +352,16 @@ namespace Microsoft.AspNetCore.Certificates.Generation
                 }
             }
 
+            Array.Clear(export, 0, export.Length);
+
             return imported;
 
             static void RunImportCommand(string certificatePath, string certificatePassword, DiagnosticInformation diagnostics = null)
             {
                 const string MacOSImportCertificateCommandLine = "security";
-                var MacOSImportCertificateCommandLineArguments = $"import {certificatePath} -k {MacOSUserKeyChain} -t priv -f pkcs12 -A -P {certificatePassword}";
-                var tmpFile = Path.GetTempFileName();
-                diagnostics?.Debug("Running the import command on Mac OS");
+                var MacOSImportCertificateCommandLineArguments = $"import {certificatePath} -k {MacOSUserKeyChain} -t cert -f pkcs12 -A -P {certificatePassword}";
 
+                diagnostics?.Debug("Running the import command on Mac OS");
                 using var process = Process.Start(MacOSImportCertificateCommandLine, MacOSImportCertificateCommandLineArguments);
 
                 process.WaitForExit();
@@ -950,7 +959,6 @@ namespace Microsoft.AspNetCore.Certificates.Generation
                     Messages.Add("Exception message: " + ex.Message);
                     ex = ex.InnerException;
                 }
-
             }
         }
     }
