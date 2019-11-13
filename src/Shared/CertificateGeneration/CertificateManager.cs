@@ -809,7 +809,7 @@ namespace Microsoft.AspNetCore.Certificates.Generation
             result.ResultCode = EnsureCertificateResult.Succeeded;
 
             X509Certificate2 certificate = null;
-            if (certificates.Count() > 0)
+            if (certificates.Count() > 0 && certificates.Any(c => CheckDeveloperCertificateKey(c)))
             {
                 result.Diagnostics.Debug("Found valid certificates present on the machine.");
                 result.Diagnostics.Debug(result.Diagnostics.DescribeCertificates(certificates));

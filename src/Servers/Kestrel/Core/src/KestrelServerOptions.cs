@@ -143,7 +143,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core
                 try
                 {
                     DefaultCertificate = CertificateManager.ListCertificates(CertificatePurpose.HTTPS, StoreName.My, StoreLocation.CurrentUser, isValid: true)
-                        .FirstOrDefault();
+                        .FirstOrDefault(c => CertificateManager.CheckDeveloperCertificateKey(c));
 
                     if (DefaultCertificate != null)
                     {

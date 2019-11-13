@@ -24,6 +24,7 @@ namespace Microsoft.AspNetCore.DeveloperCertificates.Tools
         private const int ErrorNoValidCertificateFound = 6;
         private const int ErrorCertificateNotTrusted = 7;
         private const int ErrorCleaningUpCertificates = 8;
+        private const int CertificateKeyInnaccessible = 9;
 
         public static readonly TimeSpan HttpsCertificateValidity = TimeSpan.FromDays(365);
 
@@ -155,6 +156,13 @@ namespace Microsoft.AspNetCore.DeveloperCertificates.Tools
             {
                 reporter.Output("No valid certificate found.");
                 return ErrorNoValidCertificateFound;
+            }
+            else if (!certificates.Any(c => CertificateManager.CheckDeveloperCertificateKey(c)))
+            {
+                // We check that the key is not accessible here as doing so inside the certificate manager would trigger
+                // a prompt on OSX during the first run experience, and we want to avoid that.
+                reporter.Output("A valid certificate was found but the key is not accessible in the current context.");
+                return CertificateKeyInnaccessible;
             }
             else
             {
