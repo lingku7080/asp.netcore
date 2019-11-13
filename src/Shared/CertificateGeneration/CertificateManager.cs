@@ -305,71 +305,71 @@ namespace Microsoft.AspNetCore.Certificates.Generation
                 imported.FriendlyName = certificate.FriendlyName;
             }
 
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
+            //if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            //{
                 using (var store = new X509Store(name, location))
                 {
                     store.Open(OpenFlags.ReadWrite);
                     store.Add(imported);
                     store.Close();
                 };
-            }
-            else
-            {
-                var tmpFile = Path.GetTempFileName();
-                try
-                {
-                    File.WriteAllBytes(tmpFile, export);
+            //}
+            //else
+            //{
+            //    var tmpFile = Path.GetTempFileName();
+            //    try
+            //    {
+            //        File.WriteAllBytes(tmpFile, export);
 
-                    try
-                    {
-                        RunImportCommand(tmpFile, password, diagnostics);
-                    }
-                    catch (Exception e)
-                    {
-                        diagnostics?.Error("Error running the import command on OSX.", e);
-                        throw;
-                    }
-                }
-                catch (Exception e)
-                {
-                    diagnostics?.Error("Error saving the certificate to a temporary file.", e);
-                    throw;
-                }
-                finally
-                {
-                    try
-                    {
-                        if (File.Exists(tmpFile))
-                        {
-                            File.Delete(tmpFile);
-                        }
-                    }
-                    catch
-                    {
-                        // We don't care if we can't delete the temp file.
-                    }
-                }
-            }
+            //        try
+            //        {
+            //            RunImportCommand(tmpFile, password, diagnostics);
+            //        }
+            //        catch (Exception e)
+            //        {
+            //            diagnostics?.Error("Error running the import command on OSX.", e);
+            //            throw;
+            //        }
+            //    }
+            //    catch (Exception e)
+            //    {
+            //        diagnostics?.Error("Error saving the certificate to a temporary file.", e);
+            //        throw;
+            //    }
+            //    finally
+            //    {
+            //        try
+            //        {
+            //            if (File.Exists(tmpFile))
+            //            {
+            //                File.Delete(tmpFile);
+            //            }
+            //        }
+            //        catch
+            //        {
+            //            // We don't care if we can't delete the temp file.
+            //        }
+            //    }
+            //}
 
             Array.Clear(export, 0, export.Length);
 
             return imported;
 
-            static void RunImportCommand(string certificatePath, string certificatePassword, DiagnosticInformation diagnostics = null)
-            {
-                const string MacOSImportCertificateCommandLine = "security";
-                var MacOSImportCertificateCommandLineArguments = $"import {certificatePath} -k {MacOSUserKeyChain} -t cert -f pkcs12 -A -P {certificatePassword}";
+            //static void RunImportCommand(string certificatePath, string certificatePassword, DiagnosticInformation diagnostics = null)
+            //{
+            //    const string MacOSImportCertificateCommandLine = "security";
+            //    var MacOSImportCertificateCommandLineArguments = $"import {certificatePath} -k {MacOSUserKeyChain} -t cert -f pkcs12 -A -P {certificatePassword}";
 
-                diagnostics?.Debug("Running the import command on Mac OS");
-                using var process = Process.Start(MacOSImportCertificateCommandLine, MacOSImportCertificateCommandLineArguments);
+            //    diagnostics?.Debug("Running the import command on Mac OS");
+            //    using var process = Process.Start(MacOSImportCertificateCommandLine, MacOSImportCertificateCommandLineArguments);
 
-                process.WaitForExit();
-                if (process.ExitCode != 0)
-                {
-                    throw new InvalidOperationException("There was an error importing the certificate.");
-                }
-            }
+            //    process.WaitForExit();
+            //    if (process.ExitCode != 0)
+            //    {
+            //        throw new InvalidOperationException("There was an error importing the certificate.");
+            //    }
+            //}
         }
 
         public void ExportCertificate(X509Certificate2 certificate, string path, bool includePrivateKey, string password, DiagnosticInformation diagnostics = null)
