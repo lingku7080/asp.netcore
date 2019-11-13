@@ -298,7 +298,9 @@ namespace Microsoft.AspNetCore.Certificates.Generation
             // way that works across security contexts without requiring user interaction.
             var password = Guid.NewGuid().ToString("N");
             var export = certificate.Export(X509ContentType.Pkcs12, password);
-            var imported = new X509Certificate2(export, password, X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.Exportable);
+            var imported = !RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?
+                new X509Certificate2(export, password, X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.Exportable) :
+                certificate;
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
