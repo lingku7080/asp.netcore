@@ -1,4 +1,4 @@
-import { MethodHandle, System_Object, System_String, System_Array, Pointer, Platform } from '../Platform';
+import { System_Object, System_String, System_Array, Pointer, Platform } from '../Platform';
 import { getFileNameFromUrl } from '../Url';
 import { attachDebuggerHotkey, hasDebuggingEnabled } from './MonoDebugger';
 import { showErrorNotification } from '../../BootErrors';
@@ -171,7 +171,7 @@ function createEmscriptenModuleInstance(loadAssemblyUrls: string[], onReady: () 
     mono_bind_static_method = Module.mono_bind_static_method;
 
     mono_string_get_utf8 = Module.cwrap('mono_wasm_string_get_utf8', 'number', ['number']);
-    mono_obj_array_new = Module.cwrap ('mono_wasm_obj_array_new', 'number', ['number']);
+    mono_obj_array_new = Module.cwrap('mono_wasm_obj_array_new', 'number', ['number']);
 
     MONO.loaded_files = [];
 
@@ -244,14 +244,14 @@ function getArrayDataPointer<T>(array: System_Array<T>): number {
   return <number><any>array + 12; // First byte from here is length, then following bytes are entries
 }
 
-function bindStaticMethod(assembly: string, typeName: string, method: string) : (...args: any[]) => any {
+function bindStaticMethod(assembly: string, typeName: string, method: string): (...args: any[]) => any {
   // Fully qualified name looks like this: "[debugger-test] Math:IntAdd"
   const fqn = `[${assembly}] ${typeName}:${method}`;
   return mono_bind_static_method(fqn);
 }
 
 function attachInteropInvoker(): void {
-  const dotNetDispatcherInvokeMethodHandle =  bindStaticMethod('Mono.WebAssembly.Interop', 'Mono.WebAssembly.Interop.MonoWebAssemblyJSRuntime', 'InvokeDotNet');
+  const dotNetDispatcherInvokeMethodHandle = bindStaticMethod('Mono.WebAssembly.Interop', 'Mono.WebAssembly.Interop.MonoWebAssemblyJSRuntime', 'InvokeDotNet');
   const dotNetDispatcherBeginInvokeMethodHandle = bindStaticMethod('Mono.WebAssembly.Interop', 'Mono.WebAssembly.Interop.MonoWebAssemblyJSRuntime', 'BeginInvokeDotNet');
   const dotNetDispatcherEndInvokeJSMethodHandle = bindStaticMethod('Mono.WebAssembly.Interop', 'Mono.WebAssembly.Interop.MonoWebAssemblyJSRuntime', 'EndInvokeJS');
 
@@ -266,12 +266,12 @@ function attachInteropInvoker(): void {
         ? dotNetObjectId.toString()
         : assemblyName;
 
-        dotNetDispatcherBeginInvokeMethodHandle(
-          callId ? callId.toString() : null,
-          assemblyNameOrDotNetObjectId,
-          methodIdentifier,
-          argsJson,
-        );
+      dotNetDispatcherBeginInvokeMethodHandle(
+        callId ? callId.toString() : null,
+        assemblyNameOrDotNetObjectId,
+        methodIdentifier,
+        argsJson,
+      );
     },
     endInvokeJSFromDotNet: (asyncHandle, succeeded, serializedArgs): void => {
       dotNetDispatcherEndInvokeJSMethodHandle(
