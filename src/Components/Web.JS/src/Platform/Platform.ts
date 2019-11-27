@@ -2,11 +2,7 @@ export interface Platform {
   start(loadAssemblyUrls: string[]): Promise<void>;
 
   callEntryPoint(assemblyName: string): System_Object;
-  findMethod(assemblyName: string, namespace: string, className: string, methodName: string): MethodHandle;
-  callMethod(method: MethodHandle, target: System_Object | null, args: (System_Object | null)[]): System_Object;
-
   toJavaScriptString(dotNetString: System_String): string;
-  toDotNetString(javaScriptString: string): System_String;
 
   toUint8Array(array: System_Array<any>): Uint8Array;
 

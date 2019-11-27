@@ -11,6 +11,7 @@ declare namespace Module {
   function FS_createDataFile(parent, name, data, canRead, canWrite, canOwn);
 
   function mono_call_assembly_entry_point(assemblyName: string, args: any[]): any;
+  function mono_bind_static_method(fqn: string): (args: any[]) => any;
 }
 
 // Emscripten declares these globals
