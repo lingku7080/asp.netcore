@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="NuGet.Protocol" Version="4.8.2" />
+    <PackageReference Include="NuGet.Protocol" Version="4.9.6+a32bce39889f724fbd11cfd12e946f802168b583" />
     <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="1.1.0" />
   </ItemGroup>
 
